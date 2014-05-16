@@ -115,6 +115,8 @@ func main() {
 	yay := 0
 	sure := 0
 	sureBad := 0
+	unsure := 0
+	unsureBad := 0
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
 		seq, chrom, pos := fa.Subsequence(readLength,
@@ -124,31 +126,24 @@ func main() {
 		}
 		
 		// Mutate
-		seq = seqtools.MutateSNP(seq, 3)
+		// seq = seqtools.MutateSNP(seq, 3)
 		
 		// Search
 		matches := idx.Search(seq, 1, true)
 		
 		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 0)
+		leaders := scoreLeaders(matches, 1)
 		
 		// Make a guess
 		var yoink myindex.GenPos
 		if len(leaders) > 1 {
+			unsure++
+		
 			// Pick the position with the least number of SNPs
 			yoinkD := len(seq)
 			for _,leader := range leaders {
 				upto := min(leader.Pos() + len(seq),
 						len(fa[leader.Chr()].Sequence))
-				// if leader.Chr() >= len(fa) {
-					// panic(fmt.Sprint("bad chromosome: ", leader.Chr(),
-							// " (max is ", len(fa)-1, ")"))
-				// }
-				// if leader.Pos() >= len(fa[leader.Chr()].Sequence) {
-					// panic(fmt.Sprint("bad index at chr", leader.Chr(),
-							// ": ", leader.Pos(), " (max: ",
-							// len(fa[leader.Chr()].Sequence) - 1, ")"))	
-				// }
 				
 				guessSeq := fa[leader.Chr()].Sequence[leader.Pos() : upto]
 				ham := hamming(seq, guessSeq)
@@ -170,6 +165,9 @@ func main() {
 		} else if len(leaders) == 1 {
 			// I was sure but still wrong
 			sureBad++
+		} else {
+			// Unsure and wrong
+			unsureBad++
 		}
 		
 	}
@@ -177,7 +175,11 @@ func main() {
 	pe("took", tools.Toc())
 	fmt.Fprintf(os.Stderr,
 			"succeeded %.1f%%\n", 100 * float64(yay) / float64(numOfReads))
-	fmt.Fprintf(os.Stderr, "sure %.1f%% (%d wrong)\n",
-			100 * float64(sure) / float64(numOfReads), sureBad)
+	fmt.Fprintf(os.Stderr, "sure %.1f%% (%.3f%% wrong)\n",
+			100 * float64(sure) / float64(numOfReads),
+			100 * float64(sureBad) / float64(sure))
+	fmt.Fprintf(os.Stderr, "unsure %.1f%% (%.3f%% wrong)\n",
+			100 * float64(unsure) / float64(numOfReads),
+			100 * float64(unsureBad) / float64(unsure))
 	
 }
