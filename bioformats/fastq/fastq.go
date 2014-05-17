@@ -27,23 +27,23 @@ type Fastq struct {
 	Quals    []byte
 }
 
-// Returns a formatted representation of the entry, ready to be printed.
-// Includes a new line at the end.
+// Returns a formatted representation of the entry, ready to be printed
+// (no new line at the end).
 func (f *Fastq) String() string {
-	return fmt.Sprintf("@%s\n%s\n+\n%s\n", f.Id, f.Sequence, f.Quals)
+	return fmt.Sprintf("@%s\n%s\n+\n%s", f.Id, f.Sequence, f.Quals)
 }
 
 // Returns a byte representation of the given score, for the Fastq format.
 func phred(score int) byte {
 	// Score <=> byte offset (see Fastq spec in Wikipedia)
 	// BUG( ) Is this offset valid for all sequencing machines?
-	const offset = 33
+	const offset = 64
 
 	return byte(score + offset)
 }
 
 // Returns a qual string for the given sequence.
-func makeQuals(sequence []byte) []byte {
+func MakeQuals(sequence []byte) []byte {
 	result := make([]byte, len(sequence))
 
 	// Generate values
