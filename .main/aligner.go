@@ -107,7 +107,7 @@ func main() {
 	in := bufio.NewReaderSize(os.Stdin, tools.Mega)
 	
 	// Look up reads
-	pe("looking up reads...")
+	pe("looking up reads (standard input)...")
 	tools.Tic()
 	var fq *fastq.Fastq
 	
@@ -119,16 +119,22 @@ func main() {
 		// Pick the best scoring positions
 		leaders := scoreLeaders(matches, 1)
 		
-		// Map only if one candidate
-		if len(leaders) != 1 { continue }
-		
-		leader := leaders[0]
-		
+		// If mapped
 		var samLine sam.Sam
+		if len(leaders) == 1 {
+			leader := leaders[0]
+			samLine.Rname = string(fa[leader.Chr()].Title)
+			samLine.Pos = leader.Pos() + 1 // sam are 1-based
+			samLine.Mapq = 60
+		
+		// If not mapped
+		} else {
+			samLine.Rname = "*"
+			samLine.Pos = 0
+			samLine.Mapq = 0
+		}
+		
 		samLine.Qname = string(fq.Id)
-		samLine.Rname = string(fa[leader.Chr()].Title)
-		samLine.Pos = leader.Pos() + 1 // sam are 1-based
-		samLine.Mapq = 60
 		samLine.Cigar = "*"
 		samLine.Rnext = "*"
 		samLine.Pnext = "*"
@@ -138,5 +144,6 @@ func main() {
 		fmt.Println(samLine)
 	}
 	
+	pe("took", tools.Toc())
 	pe("error:", err.Error())
 }

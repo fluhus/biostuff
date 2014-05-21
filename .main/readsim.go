@@ -32,7 +32,7 @@ func main() {
 		}
 		
 		quals := fastq.MakeQuals(seq)
-		id := fmt.Sprintf("%d.%d.%d", chr, pos, strand)
+		id := fmt.Sprintf("%s.%d.%d", fa[chr].Title, pos, strand)
 		
 		fmt.Println(&fastq.Fastq{[]byte(id), []byte(seq), []byte(quals)})
 	}
