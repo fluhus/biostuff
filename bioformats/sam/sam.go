@@ -2,7 +2,12 @@
 package sam
 
 import (
+	"io"
 	"fmt"
+	"bufio"
+	"errors"
+	"strconv"
+	"strings"
 )
 
 // *** SAM LINE ****************************************************************
@@ -36,68 +41,57 @@ func (s Sam) String() string {
 
 // *** SAM READER **************************************************************
 
-// BUG( ) TODO rewrite sam reading mechanism.
-
-// Reads sam lines from a file.
-// type SamReader struct {
-	// rd *bufio.Reader
-// }
-
-// Returns a new SAM reader (1MB buffer).
-// If file cannot be opened, returns nil.
-// func NewSamReader(name string) *SamReader {
-	// Open file
-	// file, err := os.Open(name)
-	// if err != nil {return nil}
-
-	// return &SamReader{bufio.NewReaderSize(file, tools.Mega)}
-// }
-
 // Returns the next line from a SAM file.
-// Returns nil if the line is corrupt (bad format), a read error occured or
-// reached EOF.
-// func (srd *SamReader) NextLine() *SamLine {
-	// var line []byte
+// Returns the error that the read action had returned.
+func ReadNext(in *bufio.Reader) (*Sam, error) {
+	var line []byte
+	var err error
 
-	// for {
+	for {
 		// Try to read line
-		// line, err := srd.rd.ReadBytes('\n')
-		// line = []byte(strings.Trim(string(line), "\r\n"))
+		line, err = in.ReadBytes('\n')
+		line = []byte(strings.Trim(string(line), "\r\n"))
 
-		// Check for error
-		// if err != nil {return nil}
+		// Check for error (ignore if EOF and a line was read)
+		if err != nil &&
+				!(err == io.EOF && len(line) > 0) {
+			return nil, err
+		}
 
 		// Break only if non-comment (starting with '@')
-		// if line[0] != '@' {
-			// break
-		// }
-	// }
+		if line[0] != '@' {
+			break
+		}
+	}
 
 	// Split to fields
-	// fields := strings.Fields(string(line))
-	// if len(fields) < samFields {return nil}
+	fields := strings.Fields(string(line))
+	if len(fields) < samFields {
+		return nil, errors.New(fmt.Sprintf("bad SAM line, only" +
+				" %d fields (out of required %d)", len(fields), samFields))
+	}
 
 	// Generate result & assign fields
-	// Atoi := strconv.Atoi
+	atoi := strconv.Atoi
 
-	// result := &SamLine{}
+	result := &Sam{}
 
 	// BUG( ) TODO check int parsing errors and alert about them
 	
-	// result.Qname   = fields[0]
-	// result.Flag, _ = Atoi(fields[1])
-	// result.Rname   = fields[2]
-	// result.Pos, _  = Atoi(fields[3])
-	// result.Mapq, _ = Atoi(fields[4])
-	// result.Cigar   = fields[5]
-	// result.Rnext   = fields[6]
-	// result.Pnext   = fields[7]
-	// result.Tlen, _ = Atoi(fields[8])
-	// result.Seq     = fields[9]
-	// result.Qual    = fields[10]
+	result.Qname   = fields[0]
+	result.Flag, _ = atoi(fields[1])
+	result.Rname   = fields[2]
+	result.Pos, _  = atoi(fields[3])
+	result.Mapq, _ = atoi(fields[4])
+	result.Cigar   = fields[5]
+	result.Rnext   = fields[6]
+	result.Pnext   = fields[7]
+	result.Tlen, _ = atoi(fields[8])
+	result.Seq     = fields[9]
+	result.Qual    = fields[10]
 
-	// return result
-// }
+	return result, nil
+}
 
 
 
