@@ -7,6 +7,7 @@ import (
 	// "bufio"
 	"tools"
 	"myindex"
+	"strdist"
 	"seqtools"
 	"math/rand"
 	"bioformats/fasta"
@@ -107,7 +108,6 @@ func main() {
 	
 	// Look up simulated reads
 	const numOfReads = 10000
-	const readLength = 50
 	pe("looking up", numOfReads, "SIMULATED reads...")
 	tools.Randomize()
 	tools.Tic()
@@ -117,16 +117,23 @@ func main() {
 	sureBad := 0
 	unsure := 0
 	unsureBad := 0
+	
+	distances := make([]int, 51)
+	// distancesYay := make([]int, 31)
+	minuses := 0
+	
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
+		const readLength = 53
 		seq, chrom, pos := fa.Subsequence(readLength,
 			rand.Intn(fa.NumberOfSubsequences(readLength)))
-		if rand.Intn(2) == 0 {
+		if true {//rand.Intn(2) == 0 {
+			minuses++
 			seq = seqtools.ReverseComplement(seq)
 		}
 		
 		// Mutate
-		// seq = seqtools.MutateSNP(seq, 3)
+		seq = seqtools.MutateDel(seq, 3)
 		
 		// Search
 		matches := idx.Search(seq, 1, true)
@@ -135,51 +142,61 @@ func main() {
 		leaders := scoreLeaders(matches, 1)
 		
 		// Make a guess
-		var yoink myindex.GenPos
+		var guess myindex.GenPos
 		if len(leaders) > 1 {
 			unsure++
 		
 			// Pick the position with the least number of SNPs
-			yoinkD := len(seq)
+			guessD := len(seq)
 			for _,leader := range leaders {
 				upto := min(leader.Pos() + len(seq),
 						len(fa[leader.Chr()].Sequence))
 				
 				guessSeq := fa[leader.Chr()].Sequence[leader.Pos() : upto]
-				ham := hamming(seq, guessSeq)
+				// if leader.Strand() == myindex.Minus {
+					// guessSeq = seqtools.ReverseComplement(guessSeq)
+				// }
+				ham := strdist.HammingDistanceBytes(seq, guessSeq)
 			
-				if ham < yoinkD {
-					yoink = leader
-					yoinkD = ham
+				if ham < guessD {
+					guess = leader
+					guessD = ham
 				}
 			}
+			if guessD < len(distances) {
+				distances[guessD]++
+			}
+			
 		} else if len(leaders) == 1 {
 			sure++
-			yoink = leaders[0]
+			guess = leaders[0]
 		}
 		
 		// Test if position is correct
-		if yoink.Chr() == chrom &&
-				abs(yoink.Pos() - pos) <= 5 {
+		if guess.Chr() == chrom &&
+				abs(guess.Pos() - pos) <= 5 {
 			yay++
 		} else if len(leaders) == 1 {
 			// I was sure but still wrong
 			sureBad++
-		} else {
+		} else if len(leaders) > 1 {
 			// Unsure and wrong
 			unsureBad++
 		}
-		
 	}
 	
 	pe("took", tools.Toc())
 	fmt.Fprintf(os.Stderr,
 			"succeeded %.1f%%\n", 100 * float64(yay) / float64(numOfReads))
-	fmt.Fprintf(os.Stderr, "sure %.1f%% (%.3f%% wrong)\n",
+	fmt.Fprintf(os.Stderr, "sure %.1f%% (%.3f%% success)\n",
 			100 * float64(sure) / float64(numOfReads),
-			100 * float64(sureBad) / float64(sure))
-	fmt.Fprintf(os.Stderr, "unsure %.1f%% (%.3f%% wrong)\n",
+			100 * float64(sure - sureBad) / float64(sure))
+	fmt.Fprintf(os.Stderr, "unsure %.1f%% (%.3f%% success)\n",
 			100 * float64(unsure) / float64(numOfReads),
-			100 * float64(unsureBad) / float64(unsure))
+			100 * float64(unsure - unsureBad) / float64(unsure))
 	
+	if false {
+		pe("minuses:", minuses)
+		pe(distances)
+	}
 }
