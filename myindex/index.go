@@ -51,7 +51,7 @@ func New(fa fasta.Fasta, kmerLength int, kmerInterval int) (*Index, error) {
 			// Add position to index
 			kmer := kmerIndex( sequence[pos : pos + kmerLength] )
 			if kmer != -1 {
-				index[kmer] = append(index[kmer], NewGenPos(chr, pos))
+				index[kmer] = append(index[kmer], NewGenPos(chr, pos, Plus))
 			}
 		}
 	}
@@ -113,7 +113,7 @@ func (idx *Index) Search(query []byte, kmerInterval int,
 				continue
 			}
 			
-			candidate := NewGenPos(amit.Chr(), amit.Pos() - i)
+			candidate := NewGenPos(amit.Chr(), amit.Pos() - i, Plus)
 			posmap[candidate]++
 		}
 	}
@@ -138,7 +138,7 @@ func (idx *Index) Search(query []byte, kmerInterval int,
 					continue
 				}
 				
-				candidate := NewGenPos(amit.Chr(), amit.Pos() - i)
+				candidate := NewGenPos(amit.Chr(), amit.Pos() - i, Minus)
 				posmap[candidate]++
 			}
 		}
