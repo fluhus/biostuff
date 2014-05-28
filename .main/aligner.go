@@ -107,7 +107,8 @@ func main() {
 	in := bufio.NewReaderSize(os.Stdin, tools.Mega)
 	
 	// Look up reads
-	pe("looking up reads (standard input)...")
+	pe("looking up reads (standard input) and printing sam to standard" +
+			" output...")
 	tools.Tic()
 	var fq *fastq.Fastq
 	
