@@ -16,6 +16,18 @@ func pe(a ...interface{}) {
 	fmt.Fprint(os.Stderr, "\n")
 }
 
+func pfe(s string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, s, a...)
+}
+
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	} else {
+		return a
+	}
+}
+
 func main() {
 	// Open buffer on stdin
 	in := bufio.NewReaderSize(os.Stdin, tools.Mega)
@@ -38,7 +50,7 @@ func main() {
 		pos, _ := strconv.Atoi(split[len(split) - 2])
 		
 		// Check if mapped correctly
-		if chr == line.Rname && pos == line.Pos - 1 {
+		if chr == line.Rname && abs(pos - (line.Pos - 1)) < 5 {
 			goodMaps++
 		} else {
 			if line.Mapq == 0 {
@@ -52,10 +64,12 @@ func main() {
 	}
 	
 	pe("\nerr=", err.Error())
-	pe("\nreads\t\t", reads)
-	pe("correct\t\t", goodMaps)
-	pe("incorrect\t", badMaps)
-	pe("unmapped\t", unMaps)
+	pfe("\nreads\t\t%.1f%%\t%d\n", 100.0, reads)
+	pfe("correct\t\t%.1f%%\t%d\n", float64(goodMaps) / float64(reads) * 100, goodMaps)
+	pfe("incorrect\t%.1f%%\t%d\n", float64(badMaps) / float64(reads) * 100, badMaps)
+	pfe("unmapped\t%.1f%%\t%d\n", float64(unMaps) / float64(reads) * 100, unMaps)
+	// pe("incorrect\t", badMaps)
+	// pe("unmapped\t", unMaps)
 }
 
 
