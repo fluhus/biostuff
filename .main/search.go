@@ -1,4 +1,4 @@
-// Analyzes hot-spots in sequencing results.
+// Search scratchpad.
 package main
 
 import (
@@ -51,8 +51,26 @@ func scoreDist(matches map[myindex.GenPos]int) []int {
 	return result
 }
 
+type leadersType [][]myindex.GenPos
+
+func (l leadersType) count() int {
+	result := 0
+	for _,arr := range l {
+		result += len(arr)
+	}
+	return result
+}
+
+func (l leadersType) toSlice() []myindex.GenPos {
+	var result []myindex.GenPos
+	for _,arr := range l {
+		result = append(result, arr...)
+	}
+	return result
+}
+
 func scoreLeaders(matches map[myindex.GenPos]int,
-		howLess int) []myindex.GenPos {
+		howLess int) leadersType {
 	// Find max
 	max := 0
 	for _,score := range matches {
@@ -61,28 +79,10 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 		}
 	}
 	
-	var result []myindex.GenPos
+	result := make([][]myindex.GenPos, howLess + 1)
 	for match, score := range matches {
-		if score >= max - howLess {
-			result = append(result, match)
-		}
-	}
-	
-	return result
-}
-
-func hamming(s1, s2 []byte) int {
-	// Make sure s1 is the longer
-	if len(s2) > len(s1) {
-		s1, s2 = s2, s1
-	}
-	
-	result := len(s1) - len(s2)
-	
-	// Count differences (iterate over shorter sequence)
-	for i := range s2 {
-		if s1[i] != s2[i] {
-			result++
+		if max - score <= howLess {
+			result[max - score] = append(result[max - score], match)
 		}
 	}
 	
@@ -95,7 +95,6 @@ func main() {
 	// Load fasta
 	pe("loading fasta...")
 	fa, err := fasta.FastaFromFile("data/fasta/Yeast.fa")
-	// fa, err := fasta.FastaFromFile("fasta/Yeast.fa")
 	if err != nil { panic(err.Error()) }
 	
 	// Create index
@@ -117,18 +116,15 @@ func main() {
 	sureBad := 0
 	unsure := 0
 	unsureBad := 0
-	
-	distances := make([]int, 51)
-	// distancesYay := make([]int, 31)
-	minuses := 0
+	subsure := 0
+	subsureBad := 0
 	
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
 		const readLength = 53
 		seq, chrom, pos := fa.Subsequence(readLength,
 			rand.Intn(fa.NumberOfSubsequences(readLength)))
-		if true {//rand.Intn(2) == 0 {
-			minuses++
+		if rand.Intn(2) == 0 {
 			seq = seqtools.ReverseComplement(seq)
 		}
 		
@@ -139,49 +135,71 @@ func main() {
 		matches := idx.Search(seq, 1, true)
 		
 		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 1)
+		leaders := scoreLeaders(matches, 2)
+		
+		// If not found
+		if leaders.count() == 0 {
+			continue
+		}
 		
 		// Make a guess
 		var guess myindex.GenPos
-		if len(leaders) > 1 {
+		var guesses []myindex.GenPos
+		guessD := len(seq)
+		sureGuess := false
+		if len(leaders[0]) == 1 && len(leaders[1]) == 0 {
+			sure++
+			sureGuess = true
+			guess = leaders[0][0]
+		} else {
 			unsure++
 		
 			// Pick the position with the least number of SNPs
-			guessD := len(seq)
-			for _,leader := range leaders {
+			for _,leader := range leaders.toSlice() {
 				upto := min(leader.Pos() + len(seq),
 						len(fa[leader.Chr()].Sequence))
 				
 				guessSeq := fa[leader.Chr()].Sequence[leader.Pos() : upto]
-				// if leader.Strand() == myindex.Minus {
-					// guessSeq = seqtools.ReverseComplement(guessSeq)
-				// }
-				ham := strdist.HammingDistanceBytes(seq, guessSeq)
+				if leader.Strand() == myindex.Minus {
+					guessSeq = seqtools.ReverseComplement(guessSeq)
+				}
+				
+				ham := strdist.HammingDistance(seq, guessSeq) //+
+						// strdist.EditDistance(seq, guessSeq)
 			
 				if ham < guessD {
-					guess = leader
+					guesses = []myindex.GenPos{leader}
 					guessD = ham
+				} else if ham == guessD {
+					guesses = append(guesses, leader)
 				}
 			}
-			if guessD < len(distances) {
-				distances[guessD]++
-			}
 			
-		} else if len(leaders) == 1 {
-			sure++
-			guess = leaders[0]
+			// Pick one at random
+			guess = guesses[rand.Intn(len(guesses))]
+			if len(guesses) == 1 {subsure++}
 		}
-		
+			
 		// Test if position is correct
 		if guess.Chr() == chrom &&
 				abs(guess.Pos() - pos) <= 5 {
 			yay++
-		} else if len(leaders) == 1 {
+			
+			if !sureGuess && len(guesses) == 1 {
+				fmt.Printf("- d=%d guesses=%d leaders=%d\tseq=%s\n",
+						guessD, len(guesses), len(leaders), seq)
+			}
+		} else if sureGuess {
 			// I was sure but still wrong
 			sureBad++
-		} else if len(leaders) > 1 {
+		} else {
 			// Unsure and wrong
 			unsureBad++
+			if len(guesses) == 1 {
+				fmt.Printf("X d=%d guesses=%d leaders=%d\tseq=%s\n",
+						guessD, len(guesses), len(leaders), seq)
+				subsureBad++
+			}
 		}
 	}
 	
@@ -194,9 +212,8 @@ func main() {
 	fmt.Fprintf(os.Stderr, "unsure %.1f%% (%.3f%% success)\n",
 			100 * float64(unsure) / float64(numOfReads),
 			100 * float64(unsure - unsureBad) / float64(unsure))
-	
-	if false {
-		pe("minuses:", minuses)
-		pe(distances)
-	}
+	fmt.Fprintf(os.Stderr, "subsure %.1f%% (%.3f%% success)\n",
+			100 * float64(subsure) / float64(numOfReads),
+			100 * float64(subsure - subsureBad) / float64(subsure))
+	// pe("subsure", subsure, "subsureBad", subsureBad)
 }
