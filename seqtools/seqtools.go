@@ -126,7 +126,7 @@ func MutateSNP(sequence []byte, n int) (mutant []byte) {
 func MutateIns(sequence []byte, size int) (mutant []byte) {
 	// Check input
 	if size < 0 {
-		panic(fmt.Sprintf("Bad size: %d", size))
+		panic(fmt.Sprintf("bad size: %d", size))
 	}
 
 	// Create result slice
