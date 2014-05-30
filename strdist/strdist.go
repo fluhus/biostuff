@@ -7,7 +7,7 @@ import (
 )
 
 // Computes the edit distance for 2 byte arrays.
-func EditDistanceBytes(s1, s2 []byte) int {
+func EditDistance(s1, s2 []byte) int {
 	// Lengths
 	m, n := len(s1), len(s2)
 
@@ -50,12 +50,12 @@ func EditDistanceBytes(s1, s2 []byte) int {
 }
 
 // Computes the edit distance for 2 strings.
-func EditDistance(s1, s2 string) int {
-	return EditDistanceBytes([]byte(s1), []byte(s2))
+func EditDistanceStrings(s1, s2 string) int {
+	return EditDistance([]byte(s1), []byte(s2))
 }
 
 // Returns the n-gram distance between 2 DNA sequences
-func NgramDistanceBytes(n int, s1, s2 []byte) int {
+func NgramDistance(n int, s1, s2 []byte) int {
 	// Get n-gram vectors
 	v1 := seqtools.NgramVector(n, s1)
 	v2 := seqtools.NgramVector(n, s2)
@@ -75,22 +75,22 @@ func NgramDistanceBytes(n int, s1, s2 []byte) int {
 }
 
 // Returns the n-gram distance between 2 DNA sequences
-func NgramDistance(n int, s1, s2 string) int {
-	return NgramDistanceBytes(n, []byte(s1), []byte(s2))
+func NgramDistanceStrings(n int, s1, s2 string) int {
+	return NgramDistance(n, []byte(s1), []byte(s2))
 }
 
 // Calculates bi-gram distance between 2 DNA sequences.
-func BigramDistance(s1, s2 string) int {
-	return NgramDistanceBytes(2, []byte(s1), []byte(s2))
+func BigramDistanceStrings(s1, s2 string) int {
+	return NgramDistance(2, []byte(s1), []byte(s2))
 }
 
 // Calculates bi-gram distance between 2 DNA sequences.
-func BigramDistanceBytes(s1, s2 []byte) int {
-	return NgramDistanceBytes(2, s1, s2)
+func BigramDistance(s1, s2 []byte) int {
+	return NgramDistance(2, s1, s2)
 }
 
 // Returns the Hamming distance between 2 byte arrays.
-func HammingDistanceBytes(s1, s2 []byte) int {
+func HammingDistance(s1, s2 []byte) int {
 	// String lengths
 	l1, l2 := len(s1), len(s2)
 
@@ -112,8 +112,8 @@ func HammingDistanceBytes(s1, s2 []byte) int {
 }
 
 // Returns the Hamming distance between 2 strings.
-func HammingDistance(s1, s2 string) int {
-	return HammingDistanceBytes([]byte(s1), []byte(s2))
+func HammingDistanceStrings(s1, s2 string) int {
+	return HammingDistance([]byte(s1), []byte(s2))
 }
 
 // Returns the maximal out of input ints.
@@ -177,7 +177,7 @@ type blastBlock struct {
 // Implements the Blast algorithm for 2 byte arrays.
 // The scores should be high for "bad" operations (mismatches, gaps), and
 // low for matches.
-func BlastDistanceBytes(s1 []byte, s2 []byte, scores BlastScores) int {
+func BlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 	// Step type constants
 	const mm = 0   // Match/mismatch
 	const g1 = 1   // Gap in sequence 1
@@ -285,15 +285,15 @@ func BlastDistanceBytes(s1 []byte, s2 []byte, scores BlastScores) int {
 // Implements the Blast algorithm for 2 strings.
 // The scores should be high for "bad" operations (mismatches, gaps), and
 // low for matches.
-func BlastDistance(s1 string, s2 string, scores BlastScores) int {
-	return BlastDistanceBytes([]byte(s1), []byte(s2), scores)
+func BlastDistanceStrings(s1 string, s2 string, scores BlastScores) int {
+	return BlastDistance([]byte(s1), []byte(s2), scores)
 }
 
 // Implements the Blast algorithm for 2 byte arrays.
 // The scores should be high for "bad" operations (mismatches, gaps), and
 // low for matches.
 // *** LOCAL ***
-func LocalBlastDistanceBytes(s1 []byte, s2 []byte, scores BlastScores) int {
+func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 	// Step type constants
 	const mm = 0   // Match/mismatch
 	const g1 = 1   // Gap in sequence 1
