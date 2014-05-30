@@ -7,12 +7,15 @@ import (
 	// "bufio"
 	"tools"
 	"myindex"
-	"strdist"
+	// "strdist"
+	"learning"
 	"seqtools"
 	"math/rand"
 	"bioformats/fasta"
 	// "bioformats/fastq"
 )
+
+// *** MATH HELPERS ***********************************************************
 
 func max(a, b int) int {
 	if a < b { return b }
@@ -29,27 +32,49 @@ func abs(a int) int {
 	return a
 }
 
+// *** OTHER HELPERS **********************************************************
+
 func pe(a ...interface{}) {
 	fmt.Fprintln(os.Stderr, a...)
 }
 
-func scoreDist(matches map[myindex.GenPos]int) []int {
-	// Find max
-	max := 0
-	for _,score := range matches {
-		if score > max {
-			max = score
+func trimLeft(slice []int) []int {
+	for i,v := range slice {
+		if v != 0 {
+			return slice[i:]
 		}
 	}
+	return nil
+}
+
+func randomRead(fa fasta.Fasta) (seq []byte, chr int, pos int) {
+	const readLength = 50
+	seq, chr, pos = fa.Subsequence(readLength,
+		rand.Intn(fa.NumberOfSubsequences(readLength)))
 	
-	// Create distribution
-	result := make([]int, max+1)
-	for _,score := range matches {
-		result[score]++
+	// Minus strand
+	if rand.Intn(2) == 0 {
+		seq = seqtools.ReverseComplement(seq)
 	}
 	
+	// Mutate
+	// seq = seqtools.MutateSNP(seq, 3)
+	
+	return
+}
+
+func intsToString(slice []int) string {
+	result := ""
+	for i := range slice {
+		if i > 0 {
+			result += " "
+		}
+		result += fmt.Sprintf("%d", slice[i])
+	}
 	return result
 }
+
+// *** LEADERS TYPE ***********************************************************
 
 type leadersType [][]myindex.GenPos
 
@@ -57,6 +82,14 @@ func (l leadersType) count() int {
 	result := 0
 	for _,arr := range l {
 		result += len(arr)
+	}
+	return result
+}
+
+func (l leadersType) lens() []int {
+	result := make([]int, len(l))
+	for i,arr := range l {
+		result[i] = len(arr)
 	}
 	return result
 }
@@ -89,6 +122,8 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 	return result
 }
 
+// *** MAIN *******************************************************************
+
 func main() {
 	// p := fmt.Println
 
@@ -105,31 +140,18 @@ func main() {
 	pe(idx)
 	if err != nil { panic(err.Error()) }
 	
-	// Look up simulated reads
-	const numOfReads = 10000
-	pe("looking up", numOfReads, "SIMULATED reads...")
+	// Variables
+	perc := learning.NewSvmUnbiased(3, 0.1)
+	
+	// Learn from simulated reads
+	const numOfReads = 100000
+	pe("learning with", numOfReads, "SIMULATED reads...")
 	tools.Randomize()
 	tools.Tic()
 	
-	yay := 0
-	sure := 0
-	sureBad := 0
-	unsure := 0
-	unsureBad := 0
-	subsure := 0
-	subsureBad := 0
-	
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
-		const readLength = 53
-		seq, chrom, pos := fa.Subsequence(readLength,
-			rand.Intn(fa.NumberOfSubsequences(readLength)))
-		if rand.Intn(2) == 0 {
-			seq = seqtools.ReverseComplement(seq)
-		}
-		
-		// Mutate
-		seq = seqtools.MutateDel(seq, 3)
+		seq, chr, pos := randomRead(fa)
 		
 		// Search
 		matches := idx.Search(seq, 1, true)
@@ -142,78 +164,84 @@ func main() {
 			continue
 		}
 		
-		// Make a guess
-		var guess myindex.GenPos
-		var guesses []myindex.GenPos
-		guessD := len(seq)
-		sureGuess := false
-		if len(leaders[0]) == 1 && len(leaders[1]) == 0 {
-			sure++
-			sureGuess = true
-			guess = leaders[0][0]
-		} else {
-			unsure++
-		
-			// Pick the position with the least number of SNPs
-			for _,leader := range leaders.toSlice() {
-				upto := min(leader.Pos() + len(seq),
-						len(fa[leader.Chr()].Sequence))
-				
-				guessSeq := fa[leader.Chr()].Sequence[leader.Pos() : upto]
-				if leader.Strand() == myindex.Minus {
-					guessSeq = seqtools.ReverseComplement(guessSeq)
-				}
-				
-				ham := strdist.HammingDistance(seq, guessSeq) //+
-						// strdist.EditDistance(seq, guessSeq)
+		// If one leading leader, learn how to classify
+		if len(leaders[0]) == 1 {
+			leader := leaders[0][0]
 			
-				if ham < guessD {
-					guesses = []myindex.GenPos{leader}
-					guessD = ham
-				} else if ham == guessD {
-					guesses = append(guesses, leader)
-				}
+			// If correct
+			y := 0
+			if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+				y = 1
+			
+			// If incorrect
+			} else {
+				y = -1
 			}
 			
-			// Pick one at random
-			guess = guesses[rand.Intn(len(guesses))]
-			if len(guesses) == 1 {subsure++}
+			perc.LearnInt(leaders.lens(), y)
 		}
+	}
+	
+	// Test predictions
+	pe("testing on", numOfReads, "SIMULATED reads...")
+	
+	classPosGood := 0
+	classPosBad  := 0
+	classNegGood := 0
+	classNegBad  := 0
+	
+	for i := 0; i < numOfReads; i++ {
+		// Generate random read
+		seq, chr, pos := randomRead(fa)
+		
+		// Search
+		matches := idx.Search(seq, 1, true)
+		
+		// Pick the best scoring positions
+		leaders := scoreLeaders(matches, 2)
+		
+		// If not found
+		if leaders.count() == 0 {
+			continue
+		}
+		
+		// If one leading leader, classify and predict
+		if len(leaders[0]) == 1 {
+			leader := leaders[0][0]
 			
-		// Test if position is correct
-		if guess.Chr() == chrom &&
-				abs(guess.Pos() - pos) <= 5 {
-			yay++
+			// If correct
+			if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+				// fmt.Printf("- %v\t%v\n", leader, leaders.lens())
+				fmt.Printf("1 %s\n", intsToString(leaders.lens()))
+				if c := perc.ClassifyInt(leaders.lens()); c == 1 {
+				// if len(leaders[1]) == 0 {
+					classPosGood++
+				} else if c == -1 {
+				// } else {
+					classNegGood++
+				}
 			
-			if !sureGuess && len(guesses) == 1 {
-				fmt.Printf("- d=%d guesses=%d leaders=%d\tseq=%s\n",
-						guessD, len(guesses), len(leaders), seq)
-			}
-		} else if sureGuess {
-			// I was sure but still wrong
-			sureBad++
-		} else {
-			// Unsure and wrong
-			unsureBad++
-			if len(guesses) == 1 {
-				fmt.Printf("X d=%d guesses=%d leaders=%d\tseq=%s\n",
-						guessD, len(guesses), len(leaders), seq)
-				subsureBad++
+			// If incorrect
+			} else {
+				// fmt.Printf("X %v\t%v\n", leader, leaders.lens())
+				fmt.Printf("-1 %s\n", intsToString(leaders.lens()))
+				if c := perc.ClassifyInt(leaders.lens()); c == 1 {
+				// if len(leaders[1]) == 0 {
+					classPosBad++
+				} else if c == -1 {
+				// } else {
+					classNegBad++
+				}
 			}
 		}
 	}
 	
 	pe("took", tools.Toc())
-	fmt.Fprintf(os.Stderr,
-			"succeeded %.1f%%\n", 100 * float64(yay) / float64(numOfReads))
-	fmt.Fprintf(os.Stderr, "sure %.1f%% (%.3f%% success)\n",
-			100 * float64(sure) / float64(numOfReads),
-			100 * float64(sure - sureBad) / float64(sure))
-	fmt.Fprintf(os.Stderr, "unsure %.1f%% (%.3f%% success)\n",
-			100 * float64(unsure) / float64(numOfReads),
-			100 * float64(unsure - unsureBad) / float64(unsure))
-	fmt.Fprintf(os.Stderr, "subsure %.1f%% (%.3f%% success)\n",
-			100 * float64(subsure) / float64(numOfReads),
-			100 * float64(subsure - subsureBad) / float64(subsure))
-	// pe("subsure", subsure, "subsureBad", subsureBad)
+	
+	pe("classPosGood", classPosGood)
+	pe("classPosBad", classPosBad)
+	pe("classNegGood", classNegGood)
+	pe("classNegBad", classNegBad)
+	
+	pe("w:", perc.W())
 }
