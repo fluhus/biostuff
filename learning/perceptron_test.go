@@ -7,7 +7,7 @@ import (
 )
 
 func Test_perceptron(t *testing.T) {
-	p := NewPerceptronBiased(2)
+	p := NewPerceptronBiased(2, 1, 1)
 	
 	// Learn
 	p.LearnInt( []int{2,2}, 1 )

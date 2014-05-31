@@ -11,18 +11,24 @@ import (
 type Perceptron struct {
 	w []float64   // Classification hyperplane
 	biased bool   // True if biased
+	updateCoefficients [3]float64  // Coefficients of update for false
+	                               // positive(0) and false negative(2)
 }
 
 // Returns a new unbiased perceptron with the given dimention.
-func NewPerceptronUnbiased(dimention int) *Perceptron {
+func NewPerceptronUnbiased(dimention int,
+		falsePositiveWeight, falseNegativeWeight float64) *Perceptron {
 	// BUG( ) TODO check dimention
-	return &Perceptron{ make([]float64, dimention), false }
+	return &Perceptron{ make([]float64, dimention), false,
+			[3]float64{falsePositiveWeight, 0, falseNegativeWeight} }
 }
 
 // Returns a new biased perceptron with the given dimention.
-func NewPerceptronBiased(dimention int) *Perceptron {
+func NewPerceptronBiased(dimention int,
+		falsePositiveWeight, falseNegativeWeight float64) *Perceptron {
 	// BUG( ) TODO check dimention
-	return &Perceptron{ make([]float64, dimention + 1), true }
+	return &Perceptron{ make([]float64, dimention + 1), true,
+			[3]float64{falsePositiveWeight, 0, falseNegativeWeight} }
 }
 
 // Learns the given vector, if it maps incorrectly.
@@ -50,8 +56,8 @@ func (p *Perceptron) LearnFloat(x []float64, y int) {
 	if y * p.ClassifyFloat(x) <= 0 {
 		// Add x to w
 		for i := range xBiased {
-			p.w[i] += float64(y) * xBiased[i] * float64([...]int{1,0,1}[y+1])
-			// BUG( ) TODO remove last element [...]
+			p.w[i] += float64(y) * xBiased[i] *
+					float64(p.updateCoefficients[y+1])
 		}
 	}
 }
@@ -102,6 +108,19 @@ func (p *Perceptron) W() []float64 {
 	w := make([]float64, len(p.w))
 	copy(w, p.w)
 	return w
+}
+
+// Sets the classification of this perceptro.
+func (p *Perceptron) SetW(w []float64) {
+	// BUG( ) should I keep this function?
+	
+	// Input check
+	if len(w) != len(p.w) {
+		panic(fmt.Sprintf("inconsistent dimention: %d, expected %d",
+				len(w), len(p.w)))
+	}
+	
+	p.w = w
 }
 
 
