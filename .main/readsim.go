@@ -17,8 +17,8 @@ func main() {
 	fa, err := fasta.FastaFromFile("data/fasta/Yeast.fa")
 	if err != nil { panic(err.Error()) }
 	
-	const ssl = 50
-	const numOfReads = 100000
+	const ssl = 53
+	const numOfReads = 10000
 	numOfSubsequences := fa.NumberOfSubsequences(ssl)
 	
 	for i := 0; i < numOfReads; i++ {
@@ -30,6 +30,8 @@ func main() {
 			strand = 1
 			seq = seqtools.ReverseComplement(seq)
 		}
+		
+		seq = seqtools.MutateDel(seq, 3)
 		
 		quals := fastq.MakeQuals(seq)
 		id := fmt.Sprintf("%s.%d.%d", fa[chr].Title, pos, strand)
