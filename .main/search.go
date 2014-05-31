@@ -1,4 +1,4 @@
-// Search scratchpad.
+// Search sandbox.
 package main
 
 import (
@@ -7,7 +7,7 @@ import (
 	// "bufio"
 	"tools"
 	"myindex"
-	// "strdist"
+	"strdist"
 	"learning"
 	"seqtools"
 	"math/rand"
@@ -58,9 +58,17 @@ func randomRead(fa fasta.Fasta) (seq []byte, chr int, pos int) {
 	}
 	
 	// Mutate
-	// seq = seqtools.MutateSNP(seq, 3)
+	seq = seqtools.MutateSNP(seq, 3)
 	
 	return
+}
+
+func distanceTo(seq []byte, pos myindex.GenPos, fa fasta.Fasta) int {
+	chr  := pos.Chr()
+	from := pos.Pos()
+	to   := min(from + len(seq), len(fa[chr].Sequence))
+	
+	return strdist.HammingDistance(seq, fa[chr].Sequence[from:to])
 }
 
 func intsToString(slice []int) string {
@@ -122,6 +130,29 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 	return result
 }
 
+func distanceLeaders(seq []byte, matches []myindex.GenPos,
+		fa fasta.Fasta, howMore int) leadersType {
+	// Find min
+	min := len(seq)
+	
+	for i := range matches {
+		dist := distanceTo(seq, matches[i], fa)
+		if dist < min {
+			min = dist
+		}
+	}
+	
+	// Gather leaders
+	result := make([][]myindex.GenPos, howMore + 1)
+	for i := range matches {
+		if diff := distanceTo(seq, matches[i], fa) - min; diff <= howMore {
+			result[diff] = append(result[diff], matches[i])
+		}
+	}
+	
+	return result
+}
+
 // *** MAIN *******************************************************************
 
 func main() {
@@ -141,10 +172,10 @@ func main() {
 	if err != nil { panic(err.Error()) }
 	
 	// Variables
-	perc := learning.NewSvmUnbiased(3, 0.1)
+	perc := learning.NewPerceptronBiased(3, 400, 1)
 	
 	// Learn from simulated reads
-	const numOfReads = 100000
+	const numOfReads = 30000
 	pe("learning with", numOfReads, "SIMULATED reads...")
 	tools.Randomize()
 	tools.Tic()
@@ -164,22 +195,20 @@ func main() {
 			continue
 		}
 		
-		// If one leading leader, learn how to classify
-		if len(leaders[0]) == 1 {
-			leader := leaders[0][0]
+		// Learn how to classify
+		leader := leaders[0][rand.Intn(len(leaders[0]))]
 			
-			// If correct
-			y := 0
-			if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-				y = 1
+		// If correct
+		y := 0
+		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+			y = 1
 			
-			// If incorrect
-			} else {
-				y = -1
-			}
-			
-			perc.LearnInt(leaders.lens(), y)
+		// If incorrect
+		} else {
+			y = -1
 		}
+			
+		perc.LearnInt(leaders.lens(), y)
 	}
 	
 	// Test predictions
@@ -189,6 +218,9 @@ func main() {
 	classPosBad  := 0
 	classNegGood := 0
 	classNegBad  := 0
+	// perc.SetW([]float64{rand.NormFloat64(), rand.NormFloat64(),
+			// rand.NormFloat64(), rand.NormFloat64()})
+	// perc.SetW([]float64{1.5, -1, -1, 0})
 	
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
@@ -206,32 +238,26 @@ func main() {
 		}
 		
 		// If one leading leader, classify and predict
-		if len(leaders[0]) == 1 {
-			leader := leaders[0][0]
+		leader := leaders[0][rand.Intn(len(leaders[0]))]
 			
-			// If correct
-			if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-				// fmt.Printf("- %v\t%v\n", leader, leaders.lens())
-				fmt.Printf("1 %s\n", intsToString(leaders.lens()))
-				if c := perc.ClassifyInt(leaders.lens()); c == 1 {
-				// if len(leaders[1]) == 0 {
-					classPosGood++
-				} else if c == -1 {
-				// } else {
-					classNegGood++
-				}
-			
-			// If incorrect
+		// If correct
+		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+			// fmt.Printf("- %v\t%v\n", leader, leaders.lens())
+			if c := perc.ClassifyInt(leaders.lens()); c == 1 {
+			// if len(leaders[0]) == 1 && len(leaders[1]) == 0 {
+				classPosGood++
 			} else {
-				// fmt.Printf("X %v\t%v\n", leader, leaders.lens())
-				fmt.Printf("-1 %s\n", intsToString(leaders.lens()))
-				if c := perc.ClassifyInt(leaders.lens()); c == 1 {
-				// if len(leaders[1]) == 0 {
-					classPosBad++
-				} else if c == -1 {
-				// } else {
-					classNegBad++
-				}
+				classNegGood++
+			}
+			
+		// If incorrect
+		} else {
+			// fmt.Printf("X %v\t%v\n", leader, leaders.lens())
+			if c := perc.ClassifyInt(leaders.lens()); c == 1 {
+			// if len(leaders[0]) == 1 && len(leaders[1]) == 0 {
+				classPosBad++
+			} else {
+				classNegBad++
 			}
 		}
 	}
