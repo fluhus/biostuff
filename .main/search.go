@@ -172,7 +172,7 @@ func main() {
 	if err != nil { panic(err.Error()) }
 	
 	// Variables
-	perc := learning.NewPerceptronBiased(3, 400, 1)
+	perc := learning.NewPerceptronBiased(2, 100, 1)
 	
 	// Learn from simulated reads
 	const numOfReads = 30000
@@ -186,14 +186,12 @@ func main() {
 		
 		// Search
 		matches := idx.Search(seq, 1, true)
+		if len(matches) == 0 {
+			continue
+		}
 		
 		// Pick the best scoring positions
 		leaders := scoreLeaders(matches, 2)
-		
-		// If not found
-		if leaders.count() == 0 {
-			continue
-		}
 		
 		// Learn how to classify
 		leader := leaders[0][rand.Intn(len(leaders[0]))]
@@ -208,19 +206,22 @@ func main() {
 			y = -1
 		}
 			
-		perc.LearnInt(leaders.lens(), y)
+		perc.LearnInt(leaders.lens()[:2], y)
 	}
+	
+	pe("took", tools.Toc())
 	
 	// Test predictions
 	pe("testing on", numOfReads, "SIMULATED reads...")
+	tools.Tic()
 	
 	classPosGood := 0
 	classPosBad  := 0
 	classNegGood := 0
 	classNegBad  := 0
-	// perc.SetW([]float64{rand.NormFloat64(), rand.NormFloat64(),
-			// rand.NormFloat64(), rand.NormFloat64()})
+	
 	// perc.SetW([]float64{1.5, -1, -1, 0})
+	// perc.SetW([]float64{1.5, -1, -1})
 	
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
@@ -228,23 +229,19 @@ func main() {
 		
 		// Search
 		matches := idx.Search(seq, 1, true)
+		if len(matches) == 0 {
+			continue
+		}
 		
 		// Pick the best scoring positions
 		leaders := scoreLeaders(matches, 2)
-		
-		// If not found
-		if leaders.count() == 0 {
-			continue
-		}
 		
 		// If one leading leader, classify and predict
 		leader := leaders[0][rand.Intn(len(leaders[0]))]
 			
 		// If correct
 		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-			// fmt.Printf("- %v\t%v\n", leader, leaders.lens())
-			if c := perc.ClassifyInt(leaders.lens()); c == 1 {
-			// if len(leaders[0]) == 1 && len(leaders[1]) == 0 {
+			if c := perc.ClassifyInt(leaders.lens()[:2]); c == 1 {
 				classPosGood++
 			} else {
 				classNegGood++
@@ -252,9 +249,7 @@ func main() {
 			
 		// If incorrect
 		} else {
-			// fmt.Printf("X %v\t%v\n", leader, leaders.lens())
-			if c := perc.ClassifyInt(leaders.lens()); c == 1 {
-			// if len(leaders[0]) == 1 && len(leaders[1]) == 0 {
+			if c := perc.ClassifyInt(leaders.lens()[:2]); c == 1 {
 				classPosBad++
 			} else {
 				classNegBad++
@@ -269,5 +264,106 @@ func main() {
 	pe("classNegGood", classNegGood)
 	pe("classNegBad", classNegBad)
 	
-	pe("w:", perc.W())
+	// pe("w:", perc.W())
+	
+	// Learn second phase
+	pe("learning distances on", numOfReads, "SIMULATED reads...")
+	perc2 := learning.NewPerceptronBiased(3, 1, 1)
+	tools.Tic()
+	
+	negatives := 0
+	
+	for i := 0; i < numOfReads; i++ {
+		// Generate random read
+		seq, chr, pos := randomRead(fa)
+		
+		// Search
+		matches := idx.Search(seq, 1, true)
+		if len(matches) == 0 {
+			continue
+		}
+		
+		// Pick the best scoring positions
+		leaders := scoreLeaders(matches, 2)
+		
+		// Classify
+		if perc.ClassifyInt(leaders.lens()[:2]) == 1 {
+			continue
+		}
+		
+		negatives++
+		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 2)
+		leader := dLeaders[0][rand.Intn(len(dLeaders[0]))]
+		
+		// If correct
+		y := 0
+		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+			y = 1
+			
+		// If incorrect
+		} else {
+			y = -1
+		}
+			
+		perc2.LearnInt(leaders.lens(), y)
+	}
+	
+	pe("took", tools.Toc())
+	pe("negatives", negatives)
+	
+	// Test second phase
+	pe("testing distances on", numOfReads, "SIMULATED reads...")
+	tools.Tic()
+	
+	classPosGood = 0
+	classPosBad  = 0
+	classNegGood = 0
+	classNegBad  = 0
+	perc2.SetW([]float64{1.5, -1, -1, 0})
+	
+	for i := 0; i < numOfReads; i++ {
+		// Generate random read
+		seq, chr, pos := randomRead(fa)
+		
+		// Search
+		matches := idx.Search(seq, 1, true)
+		if len(matches) == 0 {
+			continue
+		}
+		
+		// Pick the best scoring positions
+		leaders := scoreLeaders(matches, 2)
+		
+		// Classify
+		if perc.ClassifyInt(leaders.lens()[:2]) == 1 {
+			continue
+		}
+		
+		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 2)
+		leader := dLeaders[0][rand.Intn(len(dLeaders[0]))]
+		
+		// If correct
+		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+			if c := perc2.ClassifyInt(dLeaders.lens()); c == 1 {
+				classPosGood++
+			} else {
+				classNegGood++
+			}
+			
+		// If incorrect
+		} else {
+			if c := perc2.ClassifyInt(dLeaders.lens()); c == 1 {
+				classPosBad++
+			} else {
+				classNegBad++
+			}
+		}
+	}
+	
+	pe("took", tools.Toc())
+	
+	pe("classPosGood", classPosGood)
+	pe("classPosBad", classPosBad)
+	pe("classNegGood", classNegGood)
+	pe("classNegBad", classNegBad)
 }
