@@ -3,52 +3,22 @@ package main
 
 import (
 	"os"
+	"io"
 	"fmt"
 	"bufio"
 	"tools"
 	"myindex"
-	// "seqtools"
-	// "math/rand"
 	"bioformats/sam"
 	"bioformats/fasta"
 	"bioformats/fastq"
 )
 
-func max(a, b int) int {
-	if a < b { return b }
-	return a
-}
-
-func min(a, b int) int {
-	if a > b { return b }
-	return a
-}
-
-func abs(a int) int {
-	if a < 0 { return -a }
-	return a
-}
-
 func pe(a ...interface{}) {
 	fmt.Fprintln(os.Stderr, a...)
 }
 
-func scoreDist(matches map[myindex.GenPos]int) []int {
-	// Find max
-	max := 0
-	for _,score := range matches {
-		if score > max {
-			max = score
-		}
-	}
-	
-	// Create distribution
-	result := make([]int, max+1)
-	for _,score := range matches {
-		result[score]++
-	}
-	
-	return result
+func pef(s string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, s, a...)
 }
 
 func scoreLeaders(matches map[myindex.GenPos]int,
@@ -71,49 +41,60 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 	return result
 }
 
-func hamming(s1, s2 []byte) int {
-	// Make sure s1 is the longer
-	if len(s2) > len(s1) {
-		s1, s2 = s2, s1
-	}
-	
-	result := len(s1) - len(s2)
-	
-	// Count differences (iterate over shorter sequence)
-	for i := range s2 {
-		if s1[i] != s2[i] {
-			result++
-		}
-	}
-	
-	return result
-}
-
 func main() {
+	// Parse arguments
+	if len(os.Args) != 4 {
+		pe("Usage:\njo <reference fasta> <reads fastq> <output sam>")
+		return;
+	}
+
 	// Load fasta
 	pe("loading fasta...")
-	fa, err := fasta.FastaFromFile("data/fasta/Yeast.fa")
-	if err != nil { panic(err.Error()) }
+	tools.Tic()
+	fa, err := fasta.FastaFromFile(os.Args[1])
+	if err != nil {
+		pe("error reading fasta:", err.Error())
+		return
+	}
+	pe("took", tools.Toc())
+	
+	// Open fastq
+	pe("opening fastq...")
+	fastqFile, err := os.Open(os.Args[2])
+	if err != nil {
+		pe("error opening fastq:", err.Error())
+		return
+	}
+	
+	// Open sam
+	pe("creating sam...")
+	samFile, err := os.Create(os.Args[3])
+	if err != nil {
+		pe("error creating output sam:", err.Error())
+		return
+	}
 	
 	// Create index
 	pe("building index...")
 	tools.Tic()
-	idx, err := myindex.New(fa, 12, 4)
+	idx, err := myindex.New(fa, 12, 1)
+	// pe(idx)
+	if err != nil {
+		pe("error building index:", err.Error())
+	}
 	pe("took", tools.Toc())
-	pe(idx)
-	if err != nil { panic(err.Error()) }
 	
-	// Open fastq
-	in := bufio.NewReaderSize(os.Stdin, tools.Mega)
+	// Buffers
+	fastqBuf := bufio.NewReader(fastqFile)
+	samBuf := bufio.NewWriter(samFile)
 	
 	// Look up reads
-	pe("looking up reads (standard input) and printing sam to standard" +
-			" output...")
+	pe("looking up reads...")
 	tools.Tic()
 	var fq *fastq.Fastq
 	
-	for fq, err = fastq.ReadNext(in); err == nil;
-			fq, err = fastq.ReadNext(in) {
+	for fq, err = fastq.ReadNext(fastqBuf); err == nil;
+			fq, err = fastq.ReadNext(fastqBuf) {
 		// Search
 		matches := idx.Search(fq.Sequence, 1, true)
 		
@@ -126,7 +107,7 @@ func main() {
 			leader := leaders[0]
 			samLine.Rname = string(fa[leader.Chr()].Title)
 			samLine.Pos = leader.Pos() + 1 // sam are 1-based
-			samLine.Mapq = 60
+			samLine.Mapq = 60  //TODO learn the actual mapq
 		
 		// If not mapped
 		} else {
@@ -142,9 +123,13 @@ func main() {
 		samLine.Seq =  string(fq.Sequence)
 		samLine.Qual = string(fq.Quals)
 		
-		fmt.Println(samLine)
+		fmt.Fprintln(samBuf, samLine)
+	}
+	
+	if err != io.EOF {
+		pe("error reading fastq:", err)
+		return
 	}
 	
 	pe("took", tools.Toc())
-	pe("error:", err.Error())
 }

@@ -11,7 +11,7 @@ import (
 )
 
 // Enables assertions.
-const assert = true;
+const assert = false
 
 // Reports if assertions are enabled.
 func init() {
