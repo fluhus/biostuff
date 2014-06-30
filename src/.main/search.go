@@ -8,7 +8,6 @@ import (
 	"tools"
 	"myindex"
 	"strdist"
-	"learning"
 	"seqtools"
 	"math/rand"
 	"bioformats/fasta"
@@ -38,6 +37,10 @@ func pe(a ...interface{}) {
 	fmt.Fprintln(os.Stderr, a...)
 }
 
+func pef(s string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, s, a...)
+}
+
 func trimLeft(slice []int) []int {
 	for i,v := range slice {
 		if v != 0 {
@@ -58,7 +61,7 @@ func randomRead(fa fasta.Fasta) (seq []byte, chr int, pos int) {
 	}
 	
 	// Mutate
-	seq = seqtools.MutateIns(seq, 3)
+	// seq = seqtools.MutateIns(seq, 3)
 	
 	return
 }
@@ -177,15 +180,19 @@ func main() {
 	// Create index
 	pe("building index...")
 	tools.Tic()
-	idx, err := myindex.New(fa, 12, 4)
+	idx, err := myindex.New(fa, 12, 1)
 	pe("took", tools.Toc())
 	pe(idx)
 	if err != nil { panic(err.Error()) }
 	
 	// Variables
-	perc := learning.NewPerceptronBiased(2, 100, 1)
+	sureGood := 0
+	sureBad := 0
+	unsureGood := 0
+	unsureBad := 0
+	unsureUnsure := 0
 	
-	// Learn from simulated reads
+	// Seach simulated reads
 	const numOfReads = 10000
 	pe("learning with", numOfReads, "SIMULATED reads...")
 	tools.Randomize()
@@ -194,6 +201,7 @@ func main() {
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
 		seq, chr, pos := randomRead(fa)
+		if rand.Intn(1) == 0 { seq = seqtools.ReverseComplement(seq) }
 		
 		// Search
 		matches := idx.Search(seq, 1, true)
@@ -202,181 +210,40 @@ func main() {
 		}
 		
 		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 2)
+		leaders := scoreLeaders(matches, 1)
 		
-		// Learn how to classify
-		leader := leaders[0][rand.Intn(len(leaders[0]))]
+		// Sure
+		if leaders.count() == 1 {
+			leader := leaders[0][0]
 			
-		// If correct
-		y := 0
-		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-			y = 1
-			
-		// If incorrect
-		} else {
-			y = -1
-		}
-			
-		perc.LearnInt(leaders.lens()[:2], y)
-	}
-	
-	pe("took", tools.Toc())
-	
-	// Test predictions
-	pe("testing on", numOfReads, "SIMULATED reads...")
-	tools.Tic()
-	
-	classPosGood := 0
-	classPosBad  := 0
-	classNegGood := 0
-	classNegBad  := 0
-	
-	// perc.SetW([]float64{1.5, -1, -1, 0})
-	// perc.SetW([]float64{1.5, -1, -1})
-	
-	for i := 0; i < numOfReads; i++ {
-		// Generate random read
-		seq, chr, pos := randomRead(fa)
-		
-		// Search
-		matches := idx.Search(seq, 1, true)
-		if len(matches) == 0 {
-			continue
-		}
-		
-		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 2)
-		
-		// If one leading leader, classify and predict
-		leader := leaders[0][rand.Intn(len(leaders[0]))]
-			
-		// If correct
-		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-			if c := perc.ClassifyInt(leaders.lens()[:2]); c == 1 {
-				classPosGood++
+			if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+				sureGood++
 			} else {
-				classNegGood++
+				sureBad++
 			}
-			
-		// If incorrect
+		
+		// Unsure
 		} else {
-			if c := perc.ClassifyInt(leaders.lens()[:2]); c == 1 {
-				classPosBad++
+			leaders = distanceLeaders(seq, leaders.toSlice(), fa, 2)
+			if leaders.count() == 1 {
+				leader := leaders[0][0]
+				
+				if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+					unsureGood++
+				} else {
+					unsureBad++
+				}
 			} else {
-				classNegBad++
+				unsureUnsure++
 			}
 		}
 	}
 	
 	pe("took", tools.Toc())
 	
-	pe("classPosGood", classPosGood)
-	pe("classPosBad", classPosBad)
-	pe("classNegGood", classNegGood)
-	pe("classNegBad", classNegBad)
-	
-	// pe("w:", perc.W())
-	
-	// Learn second phase
-	pe("learning distances on", numOfReads, "SIMULATED reads...")
-	perc2 := learning.NewPerceptronBiased(4, 1, 1)
-	tools.Tic()
-	
-	negatives := 0
-	
-	for i := 0; i < numOfReads; i++ {
-		// Generate random read
-		seq, chr, pos := randomRead(fa)
-		
-		// Search
-		matches := idx.Search(seq, 1, true)
-		if len(matches) == 0 {
-			continue
-		}
-		
-		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 2)
-		
-		// Classify
-		if perc.ClassifyInt(leaders.lens()[:2]) == 1 { continue }
-		
-		negatives++
-		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 3)
-		leader := dLeaders[0][rand.Intn(len(dLeaders[0]))]
-		
-		// if len(dLeaders[0]) != 1 { continue }
-		
-		// If correct
-		y := 0
-		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-			y = 1
-			
-		// If incorrect
-		} else {
-			y = -1
-		}
-			
-		perc2.LearnInt(dLeaders.lens(), y)
-	}
-	
-	pe("took", tools.Toc())
-	pe("negatives", negatives)
-	
-	// Test second phase
-	pe("testing distances on", numOfReads, "SIMULATED reads...")
-	tools.Tic()
-	
-	classPosGood = 0
-	classPosBad  = 0
-	classNegGood = 0
-	classNegBad  = 0
-	perc2.SetW([]float64{1.5, -1, -1, -1, -1}); pe("PERC2 - CHANGED")
-	
-	for i := 0; i < numOfReads; i++ {
-		// Generate random read
-		seq, chr, pos := randomRead(fa)
-		
-		// Search
-		matches := idx.Search(seq, 1, true)
-		if len(matches) == 0 {
-			continue
-		}
-		
-		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 2)
-		
-		// Classify
-		if perc.ClassifyInt(leaders.lens()[:2]) == 1 { continue }
-		
-		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 3)
-		leader := dLeaders[0][rand.Intn(len(dLeaders[0]))]
-		
-		// if len(dLeaders[0]) != 1 { continue }
-		
-		// If correct
-		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
-			fmt.Println("-", intsToString(dLeaders.lens()))
-			if c := perc2.ClassifyInt(dLeaders.lens()); c == 1 {
-				classPosGood++
-			} else {
-				classNegGood++
-			}
-			
-		// If incorrect
-		} else {
-			fmt.Println("X", intsToString(dLeaders.lens()))
-			if c := perc2.ClassifyInt(dLeaders.lens()); c == 1 {
-				classPosBad++
-			} else {
-				classNegBad++
-			}
-		}
-	}
-	
-	pe("took", tools.Toc())
-	
-	pe("True pos ", classPosGood)
-	pe("False pos", classPosBad)
-	pe("True neg ", classNegBad)
-	pe("False neg", classNegGood)
+	pef("sure   + %4d (%4.1f%%)\n", sureGood, float64(sureGood) / float64(numOfReads) * 100)
+	pef("sure   - %4d (%4.1f%%)\n", sureBad, float64(sureBad) / float64(numOfReads) * 100)
+	pef("unsure + %4d (%4.1f%%)\n", unsureGood, float64(unsureGood) / float64(numOfReads) * 100)
+	pef("unsure - %4d (%4.1f%%)\n", unsureBad, float64(unsureBad) / float64(numOfReads) * 100)
+	pef("UNSURE   %4d (%4.1f%%)\n", unsureUnsure, float64(unsureUnsure) / float64(numOfReads) * 100)
 }
