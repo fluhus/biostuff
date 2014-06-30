@@ -48,7 +48,7 @@ func trimLeft(slice []int) []int {
 }
 
 func randomRead(fa fasta.Fasta) (seq []byte, chr int, pos int) {
-	const readLength = 50
+	const readLength = 47
 	seq, chr, pos = fa.Subsequence(readLength,
 		rand.Intn(fa.NumberOfSubsequences(readLength)))
 	
@@ -58,7 +58,7 @@ func randomRead(fa fasta.Fasta) (seq []byte, chr int, pos int) {
 	}
 	
 	// Mutate
-	seq = seqtools.MutateSNP(seq, 3)
+	seq = seqtools.MutateIns(seq, 3)
 	
 	return
 }
@@ -78,6 +78,17 @@ func intsToString(slice []int) string {
 			result += " "
 		}
 		result += fmt.Sprintf("%d", slice[i])
+	}
+	return result
+}
+
+func floatsToString(slice []float64) string {
+	result := ""
+	for i := range slice {
+		if i > 0 {
+			result += " "
+		}
+		result += fmt.Sprintf("%f", slice[i])
 	}
 	return result
 }
@@ -175,7 +186,7 @@ func main() {
 	perc := learning.NewPerceptronBiased(2, 100, 1)
 	
 	// Learn from simulated reads
-	const numOfReads = 30000
+	const numOfReads = 10000
 	pe("learning with", numOfReads, "SIMULATED reads...")
 	tools.Randomize()
 	tools.Tic()
@@ -268,7 +279,7 @@ func main() {
 	
 	// Learn second phase
 	pe("learning distances on", numOfReads, "SIMULATED reads...")
-	perc2 := learning.NewPerceptronBiased(3, 1, 1)
+	perc2 := learning.NewPerceptronBiased(4, 1, 1)
 	tools.Tic()
 	
 	negatives := 0
@@ -287,13 +298,13 @@ func main() {
 		leaders := scoreLeaders(matches, 2)
 		
 		// Classify
-		if perc.ClassifyInt(leaders.lens()[:2]) == 1 {
-			continue
-		}
+		if perc.ClassifyInt(leaders.lens()[:2]) == 1 { continue }
 		
 		negatives++
-		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 2)
+		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 3)
 		leader := dLeaders[0][rand.Intn(len(dLeaders[0]))]
+		
+		// if len(dLeaders[0]) != 1 { continue }
 		
 		// If correct
 		y := 0
@@ -305,7 +316,7 @@ func main() {
 			y = -1
 		}
 			
-		perc2.LearnInt(leaders.lens(), y)
+		perc2.LearnInt(dLeaders.lens(), y)
 	}
 	
 	pe("took", tools.Toc())
@@ -319,7 +330,7 @@ func main() {
 	classPosBad  = 0
 	classNegGood = 0
 	classNegBad  = 0
-	perc2.SetW([]float64{1.5, -1, -1, 0})
+	perc2.SetW([]float64{1.5, -1, -1, -1, -1}); pe("PERC2 - CHANGED")
 	
 	for i := 0; i < numOfReads; i++ {
 		// Generate random read
@@ -335,15 +346,16 @@ func main() {
 		leaders := scoreLeaders(matches, 2)
 		
 		// Classify
-		if perc.ClassifyInt(leaders.lens()[:2]) == 1 {
-			continue
-		}
+		if perc.ClassifyInt(leaders.lens()[:2]) == 1 { continue }
 		
-		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 2)
+		dLeaders := distanceLeaders(seq, leaders.toSlice(), fa, 3)
 		leader := dLeaders[0][rand.Intn(len(dLeaders[0]))]
+		
+		// if len(dLeaders[0]) != 1 { continue }
 		
 		// If correct
 		if leader.Chr() == chr && abs(leader.Pos() - pos) <= 5 {
+			fmt.Println("-", intsToString(dLeaders.lens()))
 			if c := perc2.ClassifyInt(dLeaders.lens()); c == 1 {
 				classPosGood++
 			} else {
@@ -352,6 +364,7 @@ func main() {
 			
 		// If incorrect
 		} else {
+			fmt.Println("X", intsToString(dLeaders.lens()))
 			if c := perc2.ClassifyInt(dLeaders.lens()); c == 1 {
 				classPosBad++
 			} else {
@@ -362,8 +375,8 @@ func main() {
 	
 	pe("took", tools.Toc())
 	
-	pe("classPosGood", classPosGood)
-	pe("classPosBad", classPosBad)
-	pe("classNegGood", classNegGood)
-	pe("classNegBad", classNegBad)
+	pe("True pos ", classPosGood)
+	pe("False pos", classPosBad)
+	pe("True neg ", classNegBad)
+	pe("False neg", classNegGood)
 }
