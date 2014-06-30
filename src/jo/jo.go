@@ -125,6 +125,7 @@ func main() {
 		
 		fmt.Fprintln(samBuf, samLine)
 	}
+	samBuf.Flush()
 	
 	if err != io.EOF {
 		pe("error reading fastq:", err)
