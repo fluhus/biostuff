@@ -11,6 +11,7 @@ import (
 	"bioformats/sam"
 	"bioformats/fasta"
 	"bioformats/fastq"
+	"runtime/pprof"
 )
 
 func pe(a ...interface{}) {
@@ -41,7 +42,17 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 	return result
 }
 
+// If true, will generate a CPU profile
+const profiling = true
+
 func main() {
+	if profiling {
+		profFile, _ := os.Create("jo.prof")
+		defer profFile.Close()
+		pprof.StartCPUProfile(profFile)
+		defer pprof.StopCPUProfile()
+	}
+	
 	// Parse arguments
 	if len(os.Args) != 4 {
 		pe("Usage:\njo <reference fasta> <reads fastq> <output sam>")
