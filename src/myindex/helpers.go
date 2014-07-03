@@ -54,3 +54,8 @@ func numOfKmers(k int) int {
 	return int( math.Pow(4, float64(k)) )
 }
 
+// Returns true iff n is in "acgtACGT".
+func isNucleotide(n byte) bool {
+	_,ok := nt2int[n]
+	return ok
+}

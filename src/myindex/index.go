@@ -47,10 +47,35 @@ func New(fa fasta.Fasta, kmerLength int, kmerInterval int) (*Index, error) {
 		}
 		
 		// Go over sequence
-		for pos := 0; pos < numOfWords; pos += kmerInterval {
-			// Add position to index
-			kmer := kmerIndex( sequence[pos : pos + kmerLength] )
-			if kmer != -1 {
+		var kmer int
+		var lastNonNucleotide int = -1
+		numberOfKmers := numOfKmers(kmerLength)
+		for pos := 0; pos < numOfWords; pos++ {
+		// for pos := 0; pos < numOfWords; pos += kmerInterval {
+			// Update kmer index
+			if pos == 0 {
+				kmer = kmerIndex(sequence[:kmerLength])
+				
+				// If met a non-nucleotide, find its index
+				if kmer == -1 {
+					kmer = 0
+					for pos2 := 0; pos2 < kmerLength; pos2++ {
+						if !isNucleotide(sequence[pos2]) {
+							lastNonNucleotide = pos2
+							// Don't break, there may be more ahead
+						}
+					}
+				}
+			} else {
+				kmer = 4*kmer + nt2int[sequence[pos + kmerLength - 1]]
+				kmer %= numberOfKmers
+				if !isNucleotide(sequence[pos + kmerLength - 1]) {
+					lastNonNucleotide = pos + kmerLength - 1
+				}
+			}
+			
+			// Add position to index?
+			if pos % kmerInterval == 0 && lastNonNucleotide < pos {
 				index[kmer] = append(index[kmer], NewGenPos(chr, pos, Plus))
 			}
 		}
