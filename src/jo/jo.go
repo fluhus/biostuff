@@ -51,13 +51,6 @@ func main() {
 		pe("Usage:\njo <reference fasta> <reads fastq> <output sam>")
 		return;
 	}
-
-	if profiling {
-		profFile, _ := os.Create("jo.prof")
-		defer profFile.Close()
-		pprof.StartCPUProfile(profFile)
-		defer pprof.StopCPUProfile()
-	}
 	
 	// Load fasta
 	pe("loading fasta...")
@@ -83,6 +76,14 @@ func main() {
 	if err != nil {
 		pe("error creating output sam:", err.Error())
 		return
+	}
+
+	// Start profiling
+	if profiling {
+		profFile, _ := os.Create("jo.prof")
+		defer profFile.Close()
+		pprof.StartCPUProfile(profFile)
+		defer pprof.StopCPUProfile()
 	}
 	
 	// Create index
