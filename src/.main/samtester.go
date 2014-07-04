@@ -5,7 +5,6 @@ import (
 	"os"
 	"fmt"
 	"bufio"
-	"tools"
 	"strconv"
 	"strings"
 	"bioformats/sam"
@@ -30,7 +29,7 @@ func abs(a int) int {
 
 func main() {
 	// Open buffer on stdin
-	in := bufio.NewReaderSize(os.Stdin, tools.Mega)
+	in := bufio.NewReader(os.Stdin)
 	
 	// Read from stdin
 	pe("reading sam from stdin...")
@@ -50,7 +49,7 @@ func main() {
 		pos, _ := strconv.Atoi(split[len(split) - 2])
 		
 		// Check if mapped correctly
-		if chr == line.Rname && abs(pos - (line.Pos - 1)) < 5 {
+		if chr == line.Rname && abs(pos - (line.Pos - 1)) <= 3 {
 			goodMaps++
 		} else {
 			if line.Mapq == 0 {
@@ -68,8 +67,6 @@ func main() {
 	pfe("correct\t\t%.1f%%\t%d\n", float64(goodMaps) / float64(reads) * 100, goodMaps)
 	pfe("incorrect\t%.1f%%\t%d\n", float64(badMaps) / float64(reads) * 100, badMaps)
 	pfe("unmapped\t%.1f%%\t%d\n", float64(unMaps) / float64(reads) * 100, unMaps)
-	// pe("incorrect\t", badMaps)
-	// pe("unmapped\t", unMaps)
 }
 
 
