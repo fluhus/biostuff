@@ -15,14 +15,17 @@ import (
 	"runtime/pprof"
 )
 
+// Short for fmt.Fprintln(stderr, ...)
 func pe(a ...interface{}) {
 	fmt.Fprintln(os.Stderr, a...)
 }
 
+// Short for fmt.Fprintf(stderr, ...)
 func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
 }
 
+// Returns the best scoring candidate positions from the search results.
 func scoreLeaders(matches map[myindex.GenPos]int,
 		howLess int) []myindex.GenPos {
 	// Find max
@@ -44,7 +47,7 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 }
 
 // If true, will generate a CPU profile
-const profiling = true
+const profiling = false
 
 func main() {
 	// Parse arguments
@@ -103,6 +106,7 @@ func main() {
 	// Prepare threads
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	numberOfThreads := runtime.NumCPU()
+	
 	fastqChannel := make(chan *fastq.Fastq, numberOfThreads)
 	samChannel := make(chan *sam.Sam, numberOfThreads)
 	endOfStream := &sam.Sam{}  // Will be sent to sam printer when done
