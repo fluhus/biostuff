@@ -11,6 +11,7 @@ import (
 	"bioformats/sam"
 	"bioformats/fasta"
 	"bioformats/fastq"
+	"runtime"
 	"runtime/pprof"
 )
 
@@ -90,7 +91,6 @@ func main() {
 	pe("building index...")
 	tools.Tic()
 	idx, err := myindex.New(fa, 12, 1)
-	// pe(idx)
 	if err != nil {
 		pe("error building index:", err.Error())
 	}
@@ -100,49 +100,93 @@ func main() {
 	fastqBuf := bufio.NewReader(fastqFile)
 	samBuf := bufio.NewWriter(samFile)
 	
+	// Prepare threads
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	numberOfThreads := runtime.NumCPU()
+	fastqChannel := make(chan *fastq.Fastq, numberOfThreads)
+	samChannel := make(chan *sam.Sam, numberOfThreads)
+	endOfStream := &sam.Sam{}  // Will be sent to sam printer when done
+	searcherDoneChannel := make(chan int, numberOfThreads)
+	printerDoneChannel := make(chan int, 1)
+	
+	// Create new searcher threads
+	for i := 0; i < numberOfThreads; i++ {
+		go func() {
+			for fq := range fastqChannel {
+				// Search
+				matches := idx.Search(fq.Sequence, 1, true)
+		
+				// Pick the best scoring positions
+				leaders := scoreLeaders(matches, 1)
+		
+				// If mapped
+				samLine := &sam.Sam{}
+				if len(leaders) == 1 {
+					leader := leaders[0]
+					samLine.Rname = string(fa[leader.Chr()].Title)
+					samLine.Pos = leader.Pos() + 1 // sam are 1-based
+					samLine.Mapq = 60  //TODO learn the actual mapq
+		
+				// If not mapped
+				} else {
+					samLine.Rname = "*"
+					samLine.Pos = 0
+					samLine.Mapq = 0
+				}
+		
+				samLine.Qname = string(fq.Id)
+				samLine.Cigar = "*"
+				samLine.Rnext = "*"
+				samLine.Pnext = "*"
+				samLine.Seq =  string(fq.Sequence)
+				samLine.Qual = string(fq.Quals)
+		
+				samChannel <- samLine
+			}
+			
+			searcherDoneChannel <- 1
+		}()
+	}
+	
+	// Create a new sam printer thread
+	go func() {
+		for samLine := range samChannel {
+			if samLine == endOfStream {
+				break
+			}
+			
+			fmt.Fprintln(samBuf, samLine)
+		}
+		
+		samBuf.Flush()
+		printerDoneChannel <- 1
+	}()
+	
 	// Look up reads
-	pe("looking up reads...")
+	pef("looking up reads (%d threads)...\n", numberOfThreads)
 	tools.Tic()
 	var fq *fastq.Fastq
 	
+	// Read fastq
 	for fq, err = fastq.ReadNext(fastqBuf); err == nil;
 			fq, err = fastq.ReadNext(fastqBuf) {
-		// Search
-		matches := idx.Search(fq.Sequence, 1, true)
-		
-		// Pick the best scoring positions
-		leaders := scoreLeaders(matches, 1)
-		
-		// If mapped
-		var samLine sam.Sam
-		if len(leaders) == 1 {
-			leader := leaders[0]
-			samLine.Rname = string(fa[leader.Chr()].Title)
-			samLine.Pos = leader.Pos() + 1 // sam are 1-based
-			samLine.Mapq = 60  //TODO learn the actual mapq
-		
-		// If not mapped
-		} else {
-			samLine.Rname = "*"
-			samLine.Pos = 0
-			samLine.Mapq = 0
-		}
-		
-		samLine.Qname = string(fq.Id)
-		samLine.Cigar = "*"
-		samLine.Rnext = "*"
-		samLine.Pnext = "*"
-		samLine.Seq =  string(fq.Sequence)
-		samLine.Qual = string(fq.Quals)
-		
-		fmt.Fprintln(samBuf, samLine)
+		fastqChannel <- fq
 	}
-	samBuf.Flush()
+	close(fastqChannel)
 	
 	if err != io.EOF {
 		pe("error reading fastq:", err)
 		return
 	}
+	
+	// Join searcher threads
+	for i := 0; i < numberOfThreads; i++ {
+		<-searcherDoneChannel
+	}
+	
+	// Signal end of stream to printer and join
+	samChannel <- endOfStream
+	<-printerDoneChannel
 	
 	pe("took", tools.Toc())
 }

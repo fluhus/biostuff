@@ -33,7 +33,7 @@ type Sam struct {
 
 // A string ready to be printed as a line in a sam file (no new line
 // at the end).
-func (s Sam) String() string {
+func (s *Sam) String() string {
 	return fmt.Sprintf("%s %d %s %d %d %s %s %s %d %s %s",
 			s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar,
 			s.Rnext, s.Pnext, s.Tlen, s.Seq, s.Qual)
