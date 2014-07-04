@@ -37,7 +37,6 @@ func New(fa fasta.Fasta, kmerLength int, kmerInterval int) (*Index, error) {
 	for chr := range fa {
 		// Current sequence
 		sequence   := fa[chr].Sequence
-		numOfWords := len(sequence) - kmerLength + 1
 		
 		// If sequence is too long
 		if len(sequence) > maxPos+1 {
@@ -47,37 +46,17 @@ func New(fa fasta.Fasta, kmerLength int, kmerInterval int) (*Index, error) {
 		}
 		
 		// Go over sequence
-		var kmer int
-		var lastNonNucleotide int = -1
-		numberOfKmers := numOfKmers(kmerLength)
-		for pos := 0; pos < numOfWords; pos++ {
-		// for pos := 0; pos < numOfWords; pos += kmerInterval {
-			// Update kmer index
-			if pos == 0 {
-				kmer = kmerIndex(sequence[:kmerLength])
-				
-				// If met a non-nucleotide, find its index
-				if kmer == -1 {
-					kmer = 0
-					for pos2 := 0; pos2 < kmerLength; pos2++ {
-						if !isNucleotide(sequence[pos2]) {
-							lastNonNucleotide = pos2
-							// Don't break, there may be more ahead
-						}
-					}
-				}
-			} else {
-				kmer = 4*kmer + nt2int[sequence[pos + kmerLength - 1]]
-				kmer %= numberOfKmers
-				if !isNucleotide(sequence[pos + kmerLength - 1]) {
-					lastNonNucleotide = pos + kmerLength - 1
-				}
-			}
+		it := newKmerIterator(sequence, kmerLength)
+		pos := 0
+		for it.hasNext() {
+			kmer := it.next()
 			
 			// Add position to index?
-			if pos % kmerInterval == 0 && lastNonNucleotide < pos {
+			if pos % kmerInterval == 0 && kmer != -1 {
 				index[kmer] = append(index[kmer], NewGenPos(chr, pos, Plus))
 			}
+			
+			pos++
 		}
 	}
 	
@@ -120,12 +99,12 @@ func (idx *Index) Search(query []byte, kmerInterval int,
 	posmap := map[GenPos]int{}
 	
 	// Break into k-mers
-	numOfKmers := len(query) - idx.kmerLength + 1
-	for i := 0; i < numOfKmers; i += kmerInterval {
-		kmer := kmerIndex(query[i : i + idx.kmerLength])
+	it := newKmerIterator(query, idx.kmerLength)
+	pos := 0
+	for it.hasNext() {
+		kmer := it.next()
 		
-		// Bad k-mer
-		if kmer == -1 {
+		if kmer == -1 || pos % kmerInterval != 0 {
 			continue
 		}
 		
@@ -134,23 +113,26 @@ func (idx *Index) Search(query []byte, kmerInterval int,
 			// BUG( ) TODO find a better name for 'amit'.
 			
 			// If points to a negative position
-			if amit.Pos() - i < 0 {
+			if amit.Pos() - pos < 0 {
 				continue
 			}
 			
-			candidate := NewGenPos(amit.Chr(), amit.Pos() - i, Plus)
+			candidate := NewGenPos(amit.Chr(), amit.Pos() - pos, Plus)
 			posmap[candidate]++
 		}
+		
+		pos++
 	}
 	
 	// Search for reverse complement too
 	if reverseComplement {
 		rc := seqtools.ReverseComplement(query)
-		for i := 0; i < numOfKmers; i += kmerInterval {
-			kmer := kmerIndex(rc[i : i + idx.kmerLength])
+		it = newKmerIterator(rc, idx.kmerLength)
+		pos = 0
+		for it.hasNext() {
+			kmer := it.next()
 		
-			// Bad k-mer
-			if kmer == -1 {
+			if kmer == -1 || pos % kmerInterval != 0 {
 				continue
 			}
 		
@@ -159,13 +141,15 @@ func (idx *Index) Search(query []byte, kmerInterval int,
 				// BUG( ) TODO find a better name for 'amit'. Again.
 				
 				// If points to a negative position
-				if amit.Pos() - i < 0 {
+				if amit.Pos() - pos < 0 {
 					continue
 				}
 				
-				candidate := NewGenPos(amit.Chr(), amit.Pos() - i, Minus)
+				candidate := NewGenPos(amit.Chr(), amit.Pos() - pos, Minus)
 				posmap[candidate]++
 			}
+			
+			pos++
 		}
 	}
 	
