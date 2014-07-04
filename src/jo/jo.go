@@ -46,6 +46,12 @@ func scoreLeaders(matches map[myindex.GenPos]int,
 const profiling = true
 
 func main() {
+	// Parse arguments
+	if len(os.Args) != 4 {
+		pe("Usage:\njo <reference fasta> <reads fastq> <output sam>")
+		return;
+	}
+
 	if profiling {
 		profFile, _ := os.Create("jo.prof")
 		defer profFile.Close()
@@ -53,12 +59,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 	
-	// Parse arguments
-	if len(os.Args) != 4 {
-		pe("Usage:\njo <reference fasta> <reads fastq> <output sam>")
-		return;
-	}
-
 	// Load fasta
 	pe("loading fasta...")
 	tools.Tic()
