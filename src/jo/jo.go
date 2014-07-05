@@ -109,7 +109,6 @@ func main() {
 	
 	fastqChannel := make(chan *fastq.Fastq, numberOfThreads)
 	samChannel := make(chan *sam.Sam, numberOfThreads)
-	endOfStream := &sam.Sam{}  // Will be sent to sam printer when done
 	searcherDoneChannel := make(chan int, numberOfThreads)
 	printerDoneChannel := make(chan int, 1)
 	
@@ -155,10 +154,6 @@ func main() {
 	// Create a new sam printer thread
 	go func() {
 		for samLine := range samChannel {
-			if samLine == endOfStream {
-				break
-			}
-			
 			fmt.Fprintln(samBuf, samLine)
 		}
 		
@@ -189,7 +184,7 @@ func main() {
 	}
 	
 	// Signal end of stream to printer and join
-	samChannel <- endOfStream
+	close(samChannel)
 	<-printerDoneChannel
 	
 	pe("took", tools.Toc())
