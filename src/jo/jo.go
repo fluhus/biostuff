@@ -73,6 +73,7 @@ func main() {
 		pe("error opening fastq:", err.Error())
 		return
 	}
+	defer fastqFile.Close()
 	
 	// Open sam
 	pe("creating sam...")
@@ -81,6 +82,7 @@ func main() {
 		pe("error creating output sam:", err.Error())
 		return
 	}
+	defer samFile.Close()
 
 	// Start profiling
 	if profiling {
