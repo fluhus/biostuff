@@ -99,9 +99,9 @@ func (g *GenPos) SetChr(chr int) {
 // Sets the position.
 func (g *GenPos) SetPos(pos int) {
 	// Check input
-	if pos < 0 || pos > maxPos {
+	if pos < 0 || uint64(pos) > maxPos {
 		panic(fmt.Sprintf("bad position: %d (0 <= n <= %d)",
-				pos, maxPos))
+				pos, uint64(maxPos)))
 	}
 	
 	*g = GenPos( (uint64(*g) & ^maskPos) | (uint64(pos) << offsetPos) )

@@ -39,7 +39,7 @@ func New(fa fasta.Fasta, kmerLength int, kmerInterval int) (*Index, error) {
 		sequence   := fa[chr].Sequence
 		
 		// If sequence is too long
-		if len(sequence) > maxPos+1 {
+		if uint64(len(sequence)) > maxPos+1 {
 			return nil, errors.New(
 					fmt.Sprintf("chromosome %d is too long: %d (max=%d)",
 					chr, len(sequence), maxChr+1))
