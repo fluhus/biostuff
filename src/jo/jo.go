@@ -84,9 +84,9 @@ func main() {
 	}
 	defer samFile.Close()
 
-	// Start profiling
+	// Start CPU profiling
 	if profiling {
-		profFile, _ := os.Create("jo.prof")
+		profFile, _ := os.Create("jo.cpu.prof")
 		defer profFile.Close()
 		pprof.StartCPUProfile(profFile)
 		defer pprof.StopCPUProfile()
@@ -190,4 +190,11 @@ func main() {
 	<-printerDoneChannel
 	
 	pe("took", tools.Toc())
+	
+	// Print memory profile
+	if profiling {
+		profFile, _ := os.Create("jo.mem.prof")
+		defer profFile.Close()
+		pprof.WriteHeapProfile(profFile)
+	}
 }
