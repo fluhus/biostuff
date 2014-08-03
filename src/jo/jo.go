@@ -53,7 +53,7 @@ func main() {
 	// Parse arguments
 	if len(os.Args) != 4 {
 		pe("Usage:\njo <reference fasta> <reads fastq> <output sam>")
-		return;
+		return
 	}
 	
 	// Load fasta
