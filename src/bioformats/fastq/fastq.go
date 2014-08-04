@@ -37,7 +37,7 @@ func (f *Fastq) String() string {
 func phred(score int) byte {
 	// Score <=> byte offset (see Fastq spec in Wikipedia)
 	// BUG( ) Is this offset valid for all sequencing machines?
-	const offset = 64
+	const offset = 33
 
 	return byte(score + offset)
 }
