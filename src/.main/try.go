@@ -2,57 +2,61 @@ package main
 
 import (
 	"fmt"
+	"bioformats/fasta"
 	"time"
+	"strdist"
+	"math/rand"
+	"os"
 )
 
-type iterator1 struct {
-	current int
-	n int
-}
-
-func newIterator1(n int) *iterator1 {
-	return &iterator1{0, n}
-}
-
-func (it *iterator1) hasNext() bool {
-	return it.current < it.n
-}
-
-func (it *iterator1) next() int {
-	if !it.hasNext() { panic("NOOOOOOOOOOOOOOOO") }
-	it.current++
-	return it.current - 1
-}
-
-type iterator2 <-chan int
-
-func newIterator2(n int) iterator2 {
-	result := make(chan int)
-	go func() {
-		for i := 0; i < n; i++ {
-			result <- i
-		}
-		close(result)
-	}()
-	return result
+func pe(a ...interface{}) {
+	fmt.Fprintln(os.Stderr, a...)
 }
 
 func main() {
-	const k = 1000000
-	
-	t := time.Now()
-	it1 := newIterator1(k)
-	i := 0
-	for it1.hasNext() {
-		i += it1.next()
+	pe("start")
+	rand.Seed( time.Now().UnixNano() )
+
+	// Read fasta
+	fa, err := fasta.FastaFromFile("../aligners/fasta/Yeast.fa")
+	if err != nil {
+		pe("error: " + err.Error())
+		return
 	}
-	fmt.Println(time.Now().Sub(t))
-	
-	t = time.Now()
-	it2 := newIterator2(k)
-	i = 0
-	for n := range it2 {
-		i += n
+
+	// Take only chromosome 1
+	//fa = fa[0:1]
+
+	pe("fasta length:", len(fa))
+
+	//distFunc := strdist.BigramDistance
+	const ssl = 70
+	const measurements = 10000
+
+	h := make([]int, ssl + 1)
+	e := make([]int, ssl + 1)
+
+	n := fa.NumberOfSubsequences(ssl)
+	for i := 0; i < measurements; i++ {
+		seq1,_,_ := fa.Subsequence(ssl, rand.Intn(n))
+		seq2,_,_ := fa.Subsequence(ssl, rand.Intn(n))
+
+		dists[distFunc(seq1, seq2)]++
 	}
-	fmt.Println(time.Now().Sub(t))
+	
+	for i := range dists {
+		fmt.Println(dists[i])
+	}
+
+	pe("end")
 }
+
+
+
+
+
+
+
+
+
+
