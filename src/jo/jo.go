@@ -98,6 +98,7 @@ func main() {
 	idx, err := myindex.New(fa, 12, 1)
 	if err != nil {
 		pe("error building index:", err.Error())
+		return
 	}
 	pe("took", tools.Toc())
 	
