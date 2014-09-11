@@ -28,7 +28,7 @@ func TestQual(t *testing.T) {
 		counts2[i] = make([]int, len(counts[i]))
 	}
 	
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 100000; i++ {
 		for j := range counts2 {
 			counts2[j][model.Qual(j)]++
 		}
@@ -55,6 +55,27 @@ func TestQual(t *testing.T) {
 						i, j, ratio1, ratio2)
 			}
 		}
+	}
+}
+
+func TestMarshal(t *testing.T) {
+	// Create a model
+	counts := [][]int {
+		[]int {0, 0, 4, 0, 0},
+		[]int {10, 0, 0, 0, 10},
+		[]int {0, 2, 4, 0, 0},
+		[]int {0, 0, 4, 2, 0},
+	}
+	
+	model := NewWithComment(counts, "Hello\nWorld")
+	bytes, _ := model.MarshalText()
+	str := string(bytes)
+	
+	expected := "# Hello\n# World\n4\n5 0 0 4 0 0\n5 10 0 0 0 10\n" +
+			"5 0 2 4 0 0\n5 0 0 4 2 0\n"
+			
+	if str != expected {
+		t.Errorf("expected:\n%s\nactual:\n%s", expected, str)
 	}
 }
 
