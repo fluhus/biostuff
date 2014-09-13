@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestQual(t *testing.T) {
+func TestQualGeneration(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Create a model
@@ -68,15 +68,42 @@ func TestMarshal(t *testing.T) {
 	}
 	
 	model := NewWithComment(counts, "Hello\nWorld")
-	bytes, _ := model.MarshalText()
-	str := string(bytes)
 	
-	expected := "# Hello\n# World\n4\n5 0 0 4 0 0\n5 10 0 0 0 10\n" +
-			"5 0 2 4 0 0\n5 0 0 4 2 0\n"
-			
-	if str != expected {
-		t.Errorf("expected:\n%s\nactual:\n%s", expected, str)
+	// Marshal
+	bytes, _ := model.MarshalText()
+	
+	// Unmarshal
+	model2 := &Model{}
+	err := model2.UnmarshalText(bytes)
+	
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	
+	// Compare models
+	if model.comment != model2.comment {
+		t.Error("different comments:", model.comment, ",", model2.comment)
+	}
+	
+	if len(model.counts) != len(model2.counts) {
+	t.Fatal("different counts length:", len(model.counts), ",",
+			len(model2.counts))
+	}
+	
+	for i := range model.counts {
+		if len(model.counts[i]) != len(model2.counts[i]) {
+			t.Errorf("different counts[%d] length: %d , %d",
+				i, len(model.counts[i]), len(model2.counts))
+		} else {
+			for j := range model.counts[i] {
+				if model.counts[i][j] != model2.counts[i][j] {
+					t.Errorf("different values in counts[%d][%d]: %d , %d",
+							i, j, model.counts[i][j], model2.counts[i][j])
+				}
+			}
+		}
 	}
 }
+
 
 

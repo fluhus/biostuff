@@ -8,7 +8,7 @@ import (
 
 // Models quality scores for fastq simulation.
 type Model struct {
-	counts [][]int   // [x][y] x: position along the read, y: quality score
+	counts  [][]int  // [x][y] x: position along the read, y: quality score
 	comment string   // for data documentation
 }
 

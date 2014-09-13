@@ -3,32 +3,32 @@ package qualmodel
 // This file handles marshaling and unmarshaling of quality models.
 
 import (
-	"strings"
-	"fmt"
+	"encoding/json"
 )
 
-func (m *Model) MarshalText() (text []byte, err error) {
-	// Output comment
-	if m.comment != "" {
-		split := strings.Split(m.comment, "\n")
-		for _,line := range split {
-			text = append(text, ("# " + line + "\n")...)
-		}
-	}
-	
-	// Output lines
-	text = append(text, fmt.Sprintf("%d\n", len(m.counts))...)
-	for i := range m.counts {
-		// Output line length
-		text = append(text, fmt.Sprint(len(m.counts[i]))...)
-		
-		// Add counts
-		for j := range m.counts[i] {
-			text = append(text, fmt.Sprintf(" %d", m.counts[i][j])...)
-		}
-		
-		text = append(text, '\n')
-	}
-	
-	return
+// Used for marshaling.
+type modelMarshaler struct {
+	Comment string
+	Counts  [][]int
 }
+
+// Marshals a model into JSON.
+func (m *Model) MarshalText() ([]byte, error) {
+	marshaler := modelMarshaler{m.comment, m.counts}
+	return json.MarshalIndent(marshaler, "", "\t")
+}
+
+// Unmarshals a model from JSON. Will not change if err != nil.
+func (m *Model) UnmarshalText(data []byte) error {
+	marshaler := &modelMarshaler{}
+	err := json.Unmarshal(data, marshaler)
+	
+	if err != nil {
+		return err
+	}
+	
+	m.counts = marshaler.Counts
+	m.comment = marshaler.Comment
+	return nil
+}
+
