@@ -1,4 +1,4 @@
-// Handles fastq quality modeling - learning and creating.
+// Handles fastq quality modeling.
 package qualmodel
 
 import (
@@ -15,7 +15,7 @@ type Model struct {
 // Creates a new model, according to the given counts.
 //
 // counts: 1st index is position along the read, 2nd index is the quality
-// score. 'counts' will be copied, so modifications after calling 'new' will
+// score. 'counts' will be copied, so modifications after calling 'New' will
 // not affect the created model.
 func New(counts [][]int) *Model {
 	// Copy counts
@@ -50,7 +50,7 @@ func (m *Model) Len() int {
 }
 
 // Returns a random quality score at the given position.
-// Panics if position is our of read-length bounds.
+// Panics if position is out of read-length bounds.
 func (m *Model) Qual(position int) int {
 	// Check input
 	if position < 0 || position >= len(m.counts) {
