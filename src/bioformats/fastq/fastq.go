@@ -5,9 +5,12 @@ import (
 	"io"
 	"os"
 	"fmt"
+	"math"
 	"bufio"
 	"bytes"
 	"errors"
+	"seqtools"
+	"math/rand"
 )
 
 // Enables assertions.
@@ -32,29 +35,6 @@ type Fastq struct {
 func (f *Fastq) String() string {
 	return fmt.Sprintf("@%s\n%s\n+\n%s", f.Id, f.Sequence, f.Quals)
 }
-
-// Returns a byte representation of the given score, for the Fastq format.
-func phred(score int) byte {
-	// Score <=> byte offset (see Fastq spec in Wikipedia)
-	// BUG( ) Is this offset valid for all sequencing machines?
-	const offset = 33
-
-	return byte(score + offset)
-}
-
-// Returns a qual string for the given sequence.
-func MakeQuals(sequence []byte) []byte {
-	result := make([]byte, len(sequence))
-
-	// Generate values
-	for i := range result {
-		result[i] = phred(60) // Arbitrary high value, to isolate mapping
-		                      // from quality considerations
-	}
-
-	return result
-}
-// Bug( ) TODO make a more realistic quality generation algorithm.
 
 // Reads the next fastq entry from the reader.
 // Returns a non-nil error if reading fails, or io.EOF if encountered end of
@@ -144,5 +124,43 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 	return &Fastq{ id, seq, quals }, nil
 }
 
+// Used for different phred offsets.
+type PhredOffset byte
+
+const (
+	Illumina18 PhredOffset = 33
+)
+
+// Applies single nucleotide errors according to the quality sequence.
+// 'offset' is a positive value of the phred's offset.
+//
+// Modifies the sequence and cannot be undone!
+func (f *Fastq) ApplyQuals(offset PhredOffset) {
+	// Check offset
+	if offset < 0 {
+		panic(fmt.Sprint("bad offset:", offset))
+	}
+	
+	// Check quality length
+	if len(f.Quals) != len(f.Sequence) {
+		panic(fmt.Sprintf("inconsistent sequence and quals lengths: %d, %d",
+				len(f.Sequence), len(f.Quals)))
+	}
+	
+	// Go over qualities
+	for i := range f.Quals {
+		// Extract real quality
+		phred := f.Quals[i] - byte(offset)
+		qual := math.Pow(10.0, float64(phred) / -10.0)
+		
+		// Mutate randomly
+		if rand.Float64() < qual {
+			originalChar := f.Sequence[i]
+			for f.Sequence[i] == originalChar {
+				f.Sequence[i] = seqtools.RandNuc()
+			}
+		}
+	}
+}
 
 

@@ -20,7 +20,7 @@ func main() {
 	f.Sequence = []byte("AAAAAAAAAA")
 	f.Quals = []byte("**********")
 	
-	f.ApplyQuals(fastq.Illumina33)
+	f.ApplyQuals(fastq.Illumina18)
 	pe(f)
 	
 	pe("end")
