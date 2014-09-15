@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"strings"
 	"os"
+	"fmt"
+	"tools"
+	"bioformats/fastq"
 )
 
 func pe(a ...interface{}) {
@@ -12,9 +13,15 @@ func pe(a ...interface{}) {
 
 func main() {
 	pe("start")
+	tools.Randomize()
 	
-	s := "amit\nlavon"
-	pe(strings.Split(s, ""))
+	f := &fastq.Fastq{}
+	f.Id = []byte("Amit")
+	f.Sequence = []byte("AAAAAAAAAA")
+	f.Quals = []byte("**********")
+	
+	f.ApplyQuals(fastq.Illumina33)
+	pe(f)
 	
 	pe("end")
 }
