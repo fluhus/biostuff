@@ -65,12 +65,12 @@ func main() {
 			pe("read length:", length)
 			
 			for j := range counts {
-				counts[j] = make([]int, 60)
+				counts[j] = make([]int, 100)
 			}
 		}
 		
 		for j := range fq.Quals {
-			qual := int( fq.Quals[j] ) - 33
+			qual := int( fq.Quals[j] )
 			counts[j][qual]++
 		}
 	}
