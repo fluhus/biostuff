@@ -1,4 +1,4 @@
-jo
-==
+biostuff
+========
 
-Alignment tool
+Various tools for bioinformatic work.
