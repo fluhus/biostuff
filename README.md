@@ -7,7 +7,6 @@ TODOs
 -----
 
 * Organize jo's sources in the same package (index, etc).
-* Rename jo to mapper.
 * Move read-simulator and sam-tester to a unified folder.
 * Go over tools and clean it.
 * Write tests for strdist.
