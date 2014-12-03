@@ -3,7 +3,6 @@ package fastq
 
 import (
 	"io"
-	"os"
 	"fmt"
 	"math"
 	"bufio"
@@ -12,16 +11,6 @@ import (
 	"seqtools"
 	"math/rand"
 )
-
-// Enables assertions.
-const assert = false
-
-// Reports if assertions are enabled.
-func init() {
-	if assert {
-		fmt.Fprintln(os.Stderr, "*** package fastq: assertions enabled ***")
-	}
-}
 
 // Represents a single Fastq entry.
 type Fastq struct {
