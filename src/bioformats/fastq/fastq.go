@@ -163,4 +163,13 @@ func (f *Fastq) ApplyQuals(offset PhredOffset) {
 	}
 }
 
+// Creates a FastQ quality sequence for
+// the given nucleotide sequence.
+func MakeQuals(sequence []byte) []byte {
+	// BUG( ) I should replace this mock with a real quality generator.
+	result := make([]byte, len(sequence))
+	for i := range result { result[i] = 'I' }
+	return result
+}
+
 
