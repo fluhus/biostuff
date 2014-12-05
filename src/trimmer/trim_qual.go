@@ -15,34 +15,31 @@ func trimQual(fq *fastq.Fastq, offset fastq.PhredOffset, thresholdQual int) {
 		panic("unexpected nil fastq")
 	}
 	
-	if len(fq.Quals) == 0 {
-		return
-	}
-
 	// Trim from start
 	sum := 0
-	pos := 0
 	minSum := 0
+	minPos := 0
+	maxSum := 0
+	maxPos := 0
 	
 	for i,qual := range fq.Quals {
 		sum += int(qual) - int(offset) - thresholdQual
 		if sum < minSum {
 			minSum = sum
-			pos = i+1
+			minPos = i+1
+		}
+		if sum >= maxSum {
+			maxSum = sum
+			maxPos = i+1
 		}
 	}
 	
-	fq.Sequence = fq.Sequence[pos:]
-	fq.Quals = fq.Quals[pos:]
-	
-	if len(fq.Quals) == 0 {
-		return
+	// Bad quality make max go past min
+	if maxPos <= minPos {
+		fq.Sequence = nil
+		fq.Quals = nil
+	} else {
+		fq.Sequence = fq.Sequence[ minPos : maxPos ]
+		fq.Quals = fq.Quals[ minPos : maxPos ]
 	}
-	
-	// Trim from finish
-	sum = 0
-	pos = len(fq.Quals)
-	minSum = 0
-	
-	finishThisFunction
 }
