@@ -15,7 +15,7 @@ func trimQual(fq *fastq.Fastq, offset fastq.PhredOffset, thresholdQual int) {
 		panic("unexpected nil fastq")
 	}
 	
-	// Trim from start
+	// Find trimming coordinates
 	sum := 0
 	minSum := 0
 	minPos := 0
