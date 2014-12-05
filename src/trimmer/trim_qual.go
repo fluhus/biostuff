@@ -34,7 +34,7 @@ func trimQual(fq *fastq.Fastq, offset fastq.PhredOffset, thresholdQual int) {
 		}
 	}
 	
-	// Bad quality make max go past min
+	// Bad quality makes max go past min
 	if maxPos <= minPos {
 		fq.Sequence = nil
 		fq.Quals = nil
