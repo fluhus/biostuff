@@ -27,16 +27,31 @@ func trimAdapterEnd(fq *fastq.Fastq, adapter []byte) {
 		start = len(sequence) - len(adapter)
 	}
 	
+	trimPos := len(sequence)
+	
 	// For each overlap
 	outerLoop: for si := start; si < len(sequence); si++ {
 		matchLength := len(sequence) - si
-		numberOfMismatches := 0
+		remainingMismatches := matchLength / 5  // mismath tolerance
 		
 		// Compare to adapter starting from this index
-		innerLoop: for ai := 0; ai < matchLength; ai++ {
-			continueHere
+		for ai := 0; ai < matchLength; ai++ {
+			if sequence[ai+si] != adapter[ai] {
+				remainingMismatches--
+				if remainingMismatches < 0 {
+					continue outerLoop
+				}
+			}
 		}
+		
+		// If reached here, then adapter was found
+		trimPos = si
+		break outerLoop
 	}
+	
+	// Trim!
+	fq.Sequence = fq.Sequence[:trimPos]
+	fq.Quals = fq.Quals[:trimPos]
 }
 
 
