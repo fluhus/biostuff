@@ -9,9 +9,9 @@ import (
 
 // Trims the given fastq's end (3') according to the given adapter.
 // It takes the longest overlap that includes the adapter's start and
-// sequence's end, and has at most n/5 mismatches, where n is the length of
-// the overlap. Assumes no indels in the adapter.
-func trimAdapterEnd(fq *fastq.Fastq, adapter []byte) {
+// sequence's end, and has at most n/tol mismatches, where n is the length of
+// the overlap and tol is the tolerance. Assumes no indels in the adapter.
+func trimAdapterEnd(fq *fastq.Fastq, adapter []byte, tolerance int) {
 	// Check input
 	if fq == nil {
 		panic("unexpected nil fastq")
@@ -32,7 +32,7 @@ func trimAdapterEnd(fq *fastq.Fastq, adapter []byte) {
 	// For each overlap
 	outerLoop: for si := start; si < len(sequence); si++ {
 		matchLength := len(sequence) - si
-		remainingMismatches := matchLength / 5  // mismath tolerance
+		remainingMismatches := matchLength / tolerance
 		
 		// Compare to adapter starting from this index
 		for ai := 0; ai < matchLength; ai++ {
@@ -54,5 +54,28 @@ func trimAdapterEnd(fq *fastq.Fastq, adapter []byte) {
 	fq.Quals = fq.Quals[:trimPos]
 }
 
+// Trims the given fastq's start (5') according to the given adapter.
+// It takes the longest overlap that includes the adapter's end and
+// sequence's start, and has at most n/tol mismatches, where n is the length of
+// the overlap and tol is the tolerance. Assumes no indels in the adapter.
+func trimAdapterStart(fq *fastq.Fastq, adapter []byte, tolerance int) {
+	reverse(fq.Sequence)
+	reverse(fq.Quals)
+	reverse(adapter)
+	
+	trimAdapterEnd(fq, adapter, tolerance)
+	
+	reverse(fq.Sequence)
+	reverse(fq.Quals)
+	reverse(adapter)
+}
+
+// Reverses the given byte array.
+func reverse(b []byte) {
+	for i := 0; i < len(b) / 2; i++ {
+		other := len(b) - i - 1
+		b[i], b[other] = b[other], b[i]
+	}
+}
 
 
