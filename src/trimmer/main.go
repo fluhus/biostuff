@@ -127,24 +127,24 @@ trimmer [options] --in <input file> --out <output file>
 
 Options:
 	-h
-	--help
+	-help
 		Print this help message and ignore all other arguments.
 	-i
-	--in
+	-in
 		Input fastq file. Give 'stdin' for standard input.
 	-o
-	--out
+	-out
 		Output fastq file. Give 'stdout' for standard output.
 	-q
-	--qual-threshold
+	-qual-threshold
 		Quality trimmming threshold. Give 0 to avoid quality trimming.
 		Default: 20.
 	-p
-	--phred-offset
+	-phred-offset
 		Phred quality score offset. Default: 33.
 	-as
-	--adapter-start
+	-adapter-start
 		Adapter to trim at the beginning (5') of the read. Default: none.
 	-ae
-	--adapter-end
+	-adapter-end
 		Adapter to trim at the end (3') of the read. Default: none.`
