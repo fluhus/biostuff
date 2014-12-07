@@ -82,7 +82,7 @@ func processReads() {
 		}
 		
 		trimAdapterStart(fq, adapterStart, 5)  // 5 is arbitrary for now
-		trimAdapterEnd(fq, adapterStart, 5)    // 5 is arbitrary for now
+		trimAdapterEnd(fq, adapterEnd, 5)    // 5 is arbitrary for now
 		
 		if len(fq.Sequence) > 0 {
 			outputWriter.WriteString(fq.String())
