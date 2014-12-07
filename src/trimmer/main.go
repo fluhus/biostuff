@@ -66,7 +66,7 @@ func printWorkPlan() {
 				string(adapterEnd))
 	}
 	
-	fmt.Fprintln(os.Stderr, "\n(Run 'trimmer --help' for usage instructions.)")
+	fmt.Fprintln(os.Stderr, "\n(Run 'trimmer -help' for usage instructions.)")
 }
 
 // Does the read processing, exits on error.
@@ -123,7 +123,7 @@ Trims low quality ends and adapter contamination from reads.
 Written by Amit Lavon.
 
 Usage:
-trimmer [options] --in <input file> --out <output file>
+trimmer [options] -in <input file> -out <output file>
 
 Options:
 	-h
