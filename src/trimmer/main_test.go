@@ -11,20 +11,20 @@ func Test_Main(t *testing.T) {
 		// Create input file
 		in, err := ioutil.TempFile(".", "trimmer_test_")
 		if err != nil {
-			t.Fatalf("Could not open input file in test #%d.", i)
+			t.Fatalf("Could not open input file in test #%d.", i+1)
 		}
 		defer os.Remove(in.Name())
 		
 		_, err = in.WriteString(testCases[i].input)
 		if err != nil {
-			t.Fatalf("Could not write to input file in test #%d.", i)
+			t.Fatalf("Could not write to input file in test #%d.", i+1)
 		}
 		in.Close()
 		
 		// Create output file
 		out, err := ioutil.TempFile(".", "trimmer_test_")
 		if err != nil {
-			t.Fatalf("Could not open output file in test #%d.", i)
+			t.Fatalf("Could not open output file in test #%d.", i+1)
 		}
 		defer os.Remove(out.Name())
 		out.Close()
@@ -39,12 +39,13 @@ func Test_Main(t *testing.T) {
 		// Compare output
 		outputText, err := ioutil.ReadFile(out.Name())
 		if err != nil {
-			t.Fatalf("Could not read output file in test #%d.", i)
+			t.Fatalf("Could not read output file in test #%d.", i+1)
 		}
 		
 		if string(outputText) != testCases[i].output {
+			t.Log("adapterEnd:", string(adapterEnd))
 			t.Fatalf("Bad output in test #%d. Expected:\n%s\nActual:\n%s",
-					i, testCases[i].output, string(outputText))
+					i+1, testCases[i].output, string(outputText))
 		}
 	}
 }
@@ -67,6 +68,45 @@ TCTCATCTGGTTGGTTA
 TCATCTGGTTGG
 +
 IIIIIIIIIIII
+`,
+},
+{
+[]string{"trimmer", "-q", "0", "-ae", "GCTTATGAC"},
+`@lalala
+TCTCATCTGGTTGGTTA
++
+**IIIIIIIIIIII***
+`,
+`@lalala
+TCTCATCTGGTT
++
+**IIIIIIIIII
+`,
+},
+{
+[]string{"trimmer", "-q", "0", "-as", "AACCGGCTCA"},
+`@lalala
+TCTCATCTGGTTGGTTA
++
+**IIIIIIIIIIII***
+`,
+`@lalala
+TCTGGTTGGTTA
++
+IIIIIIIII***
+`,
+},
+{
+[]string{"trimmer", "-q", "0", "-as", "AACCGGGTCA"},
+`@lalala
+TCTCATCTGGTTGGTTA
++
+**IIIIIIIIIIII***
+`,
+`@lalala
+TCTCATCTGGTTGGTTA
++
+**IIIIIIIIIIII***
 `,
 },
 }
