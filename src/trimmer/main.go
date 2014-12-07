@@ -8,9 +8,10 @@ import (
 )
 
 func main() {
-	// Check for parsing error
+	// Check for argument parsing error
+	parseArguments()
 	if argumentError != nil {
-		fmt.Fprintln(os.Stderr, "bad arguments:", argumentError.Error())
+		fmt.Fprintln(os.Stderr, "Bad arguments:", argumentError.Error())
 		fmt.Fprintln(os.Stderr, "Run 'trimmer --help' for usage instructions.")
 		os.Exit(1)
 	}

@@ -25,7 +25,7 @@ var (
 )
 
 // Parses command line arguments.
-func init() {
+func parseArguments() {
 	// Get argument values
 	flags := flag.NewFlagSet("trimmer", flag.ContinueOnError)
 	flags.SetOutput(ioutil.Discard)
@@ -61,7 +61,7 @@ func init() {
 	
 	// Check if any action was selected
 	if qualThreshold == 0 && len(adapterStart) > 0 && len(adapterEnd) > 0 {
-		argumentError = errors.New("no trimming action selected.")
+		argumentError = errors.New("No trimming action selected.")
 		return
 	}
 	
@@ -71,12 +71,12 @@ func init() {
 	
 	// Open i/o files
 	if *input == "" {
-		argumentError = errors.New("no input file given.")
+		argumentError = errors.New("No input file given.")
 		return
 	}
 	
 	if *output == "" {
-		argumentError = errors.New("no output file given.")
+		argumentError = errors.New("No output file given.")
 		return
 	}
 	
