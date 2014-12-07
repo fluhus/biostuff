@@ -28,7 +28,6 @@ func main() {
 	// Start working!
 	processReads()
 	
-	
 	fmt.Fprintln(os.Stderr, "Operation successful!")
 }
 
@@ -38,9 +37,9 @@ func printWorkPlan() {
 	fmt.Fprintln(os.Stderr, "~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	
 	if inputFile == os.Stdin {
-		fmt.Fprintln(os.Stderr, "Input: stdin")
+		fmt.Fprintln(os.Stderr, "Input:  stdin")
 	} else {
-		fmt.Fprintln(os.Stderr, "Input:", inputFile.Name())
+		fmt.Fprintln(os.Stderr, "Input: ", inputFile.Name())
 	}
 	
 	if outputFile == os.Stdout {
@@ -65,8 +64,6 @@ func printWorkPlan() {
 		fmt.Fprintln(os.Stderr, "\tTrim adapter from end:",
 				string(adapterEnd))
 	}
-	
-	fmt.Fprintln(os.Stderr, "\n(Run 'trimmer -help' for usage instructions.)")
 }
 
 // Does the read processing, exits on error.
