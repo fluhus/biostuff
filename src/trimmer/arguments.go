@@ -3,38 +3,98 @@ package main
 // Parses command line arguments.
 
 import (
+	"bufio"
 	"flag"
-	"fmt"
-	// "os"
+	"errors"
 	"io/ioutil"
+	"os"
 )
 
+// Parsed arguments.
+var (
+	inputFile     *os.File      // input file
+	outputFile    *os.File      // output file
+	inputReader   *bufio.Reader // read from here
+	outputWriter  *bufio.Writer // write to here
+	adapterStart  []byte        // adapter to trim from start
+	adapterEnd    []byte        // adapter to trim from end
+	phredOffset   int           // phred quality offset
+	qualThreshold int           // quality trimming threshold
+	printHelp     bool          // should I print help message?
+	argumentError error         // not nil if an error occured
+)
+
+// Parses command line arguments.
 func init() {
+	// Get argument values
 	flags := flag.NewFlagSet("trimmer", flag.ContinueOnError)
 	flags.SetOutput(ioutil.Discard)
 	
-	input := flags.String("in", "", "Input fastq file. Default: stdin.")
-	output := flags.String("out", "", "Output fastq file. Default: stdout.")
-	adapterStart := flags.String("adapter-start", "",
-			"Adapter to trim at the beginning (5') of the read. Default: none.")
-	adapterEnd := flags.String("adapter-end", "",
-			"Adapter to trim at the end (3') of the read. Default: none.")
-	phredOffset := flags.Int("phred-offset", 33,
-			"Phred quality score offset. Default: 33.")
-	qualThreshold := flags.Uint("qual-threshold", 20,
-			"Quality trimmming threshold. Give 0 to avoid quality trimming." +
-			" Default: 20")
+	input := flags.String("in", "", "")
+	flags.StringVar(input, "i", "", "")
 	
-	// flags.Parse(os.Args[1:])
-	err := flags.Parse([]string{ "--phred-offset", "12", "-adapter-start", "oolool", "yoink" })
-	fmt.Println("err:", err)
-	fmt.Println(*input, *output, *adapterStart, *adapterEnd, *phredOffset,
-			*qualThreshold, flags.Args())
-	flags.VisitAll(visitor)
+	output := flags.String("out", "", "")
+	flags.StringVar(output, "o", "", "")
+	
+	var adapterStartString string
+	flags.StringVar(&adapterStartString, "adapter-start", "", "")
+	flags.StringVar(&adapterStartString, "as", "", "")
+	
+	var adapterEndString string
+	flags.StringVar(&adapterEndString, "adapter-end", "", "")
+	flags.StringVar(&adapterEndString, "ae", "", "")
+	
+	flags.IntVar(&phredOffset, "phred-offset", 33, "")
+	flags.IntVar(&phredOffset, "p", 33, "")
+	
+	flags.IntVar(&qualThreshold, "qual-threshold", 20, "")
+	flags.IntVar(&qualThreshold, "q", 20, "")
+	
+	flags.BoolVar(&printHelp, "help", false, "")
+	flags.BoolVar(&printHelp, "h", false, "")
+	
+	argumentError = flags.Parse(os.Args[1:])
+	if argumentError != nil { return }
+	
+	// Check if help (no need to do further parsing)
+	if printHelp { return }
+	
+	// Check if any action was selected
+	if qualThreshold == 0 && len(adapterStart) > 0 && len(adapterEnd) > 0 {
+		argumentError = errors.New("no trimming action selected.")
+		return
+	}
+	
+	// Convert adapter strings to byte slices
+	adapterStart = []byte(adapterStartString)
+	adapterEnd = []byte(adapterEndString)
+	
+	// Open i/o files
+	if *input == "" {
+		argumentError = errors.New("no input file given.")
+		return
+	}
+	
+	if *output == "" {
+		argumentError = errors.New("no output file given.")
+		return
+	}
+	
+	if *input == "stdin" {
+		inputFile = os.Stdin
+	} else {
+		inputFile, argumentError = os.Open(*input)
+		if argumentError != nil { return }
+	}
+	
+	if *output == "stdout" {
+		outputFile = os.Stdout
+	} else {
+		outputFile, argumentError = os.Create(*output)
+		if argumentError != nil { return }
+	}
+	
+	// Create buffered i/o
+	inputReader = bufio.NewReader(inputFile)
+	outputWriter = bufio.NewWriter(outputFile)
 }
-
-// Visits flags and prints their usage in a user-friendly format.
-func printUsage(f *flag.Flag) {
-	fmt.Printf("\t--%s\n\t\t%s\n", f.Name, f.Usage)
-}
-

@@ -9,7 +9,7 @@ import (
 // Trims the given fastq according to the given threshold.
 // Algorithm is like Trim Galore's - subtract threshold from all quals, then
 // sum the quals from the beginning, and trim where the sum is minimal.
-func trimQual(fq *fastq.Fastq, offset fastq.PhredOffset, thresholdQual int) {
+func trimQual(fq *fastq.Fastq, offset int, thresholdQual int) {
 	// Check input
 	if fq == nil {
 		panic("unexpected nil fastq")
