@@ -80,8 +80,13 @@ func processReads() {
 			trimQual(fq, phredOffset, qualThreshold)
 		}
 		
-		trimAdapterStart(fq, adapterStart, 5)  // 5 is arbitrary for now
-		trimAdapterEnd(fq, adapterEnd, 5)    // 5 is arbitrary for now
+		if len(adapterStart) > 0 {
+			trimAdapterStart(fq, adapterStart, 5)  // 5 is arbitrary for now
+		}
+
+		if len(adapterEnd) > 0 {
+			trimAdapterEnd(fq, adapterEnd, 5)    // 5 is arbitrary for now
+		}
 		
 		if len(fq.Sequence) > 0 {
 			outputWriter.WriteString(fq.String())
