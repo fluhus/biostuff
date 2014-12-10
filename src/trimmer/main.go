@@ -101,7 +101,7 @@ func processReads() {
 }
 
 // Flushes and closes i/o files.
-// Run this before exiting the program, if files were opened.
+// Run this before exiting the program, if i/o was done.
 func flushAndCloseFiles() {
 	if inputFile != os.Stdin {
 		inputFile.Close()
