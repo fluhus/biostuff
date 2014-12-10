@@ -28,7 +28,7 @@ func main() {
 	// Start working!
 	processReads()
 	
-	fmt.Fprintln(os.Stderr, "Operation successful!")
+	fmt.Fprintln(os.Stderr, "Trimmer: operation successful!")
 }
 
 // Prints details about current run.
@@ -64,6 +64,8 @@ func printWorkPlan() {
 		fmt.Fprintln(os.Stderr, "\tTrim adapter from end:",
 				string(adapterEnd))
 	}
+
+	fmt.Fprintln(os.Stderr)
 }
 
 // Does the read processing, exits on error.
@@ -144,4 +146,5 @@ Options:
 		Adapter to trim at the beginning (5') of the read. Default: none.
 	-ae
 	-adapter-end
-		Adapter to trim at the end (3') of the read. Default: none.`
+		Adapter to trim at the end (3') of the read. Default: none.
+`
