@@ -94,7 +94,7 @@ func processReads() {
 		
 		if len(adapterStart) > 0 {
 			lenBefore := len(fq.Sequence)
-			trimAdapterStart(fq, adapterStart, 5)  // 5 is arbitrary for now
+			trimAdapterStart(fq, adapterStart, 10)  // 10 is arbitrary for now
 			lenAfter := len(fq.Sequence)
 
 			adapterStartCount[lenBefore - lenAfter]++
@@ -102,7 +102,7 @@ func processReads() {
 
 		if len(adapterEnd) > 0 {
 			lenBefore := len(fq.Sequence)
-			trimAdapterEnd(fq, adapterEnd, 5)    // 5 is arbitrary for now
+			trimAdapterEnd(fq, adapterEnd, 10)    // 10 is arbitrary for now
 			lenAfter := len(fq.Sequence)
 
 			adapterEndCount[lenBefore - lenAfter]++
