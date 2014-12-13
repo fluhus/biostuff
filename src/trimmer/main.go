@@ -108,7 +108,10 @@ func processReads() {
 			adapterEndCount[lenBefore - lenAfter]++
 		}
 		
-		if len(fq.Sequence) > 0 {
+		// Print if long enough
+		// TODO: add as command line option
+		// TODO: add to statistics
+		if len(fq.Sequence) >= 20 {
 			outputWriter.WriteString(fq.String())
 			outputWriter.WriteByte('\n')
 		}
