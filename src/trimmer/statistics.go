@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	readCount           int
-	qualCount           int
-	nucleotideCount     int
-	adapterStartCount []int
-	adapterEndCount   []int
+	readCount           int  // How many reads in input file
+	nucleotideCount     int  // How many nucleotides in input file
+	qualCount           int  // How many nucleotides were dropped for low quality
+	adapterStartCount []int  // Histogram of trimmed adapter lengths
+	adapterEndCount   []int  // Histogram of trimmed adapter lengths
 )
 
 // Nicely prints the run statistics.
@@ -23,7 +23,8 @@ func printStatistics() {
 
 	// Quality trimming count
 	if qualThreshold != 0 {
-		fmt.Fprintln(os.Stderr, "Number of low quality nucleotide trimmed:", qualCount)
+		fmt.Fprintln(os.Stderr, "Number of low quality nucleotides trimmed:",
+				qualCount)
 	}
 
 	// Shorten adapter count slices (up to last non-zero)
