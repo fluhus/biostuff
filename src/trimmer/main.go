@@ -22,11 +22,11 @@ func main() {
 		return
 	}
 	
-	// Print work plan
+	// Get to work!
 	printWorkPlan()
-	
-	// Start working!
 	processReads()
+	flushAndCloseFiles()
+	printStatistics()
 	
 	fmt.Fprintln(os.Stderr, "Trimmer: operation successful!")
 }
@@ -70,12 +70,6 @@ func printWorkPlan() {
 
 // Does the read processing, exits on error.
 func processReads() {
-	// Collect statistics
-	readCount := 0
-	qualCount := 0
-	adapterStartCount := make([]int, len(adapterStart) + 1)
-	adapterEndCount   := make([]int, len(adapterEnd) + 1)
-
 	// Read fastq
 	var err error
 	var fq *fastq.Fastq
@@ -83,6 +77,7 @@ func processReads() {
 	for fq, err = fastq.ReadNext(inputReader); err == nil;
 			fq, err = fastq.ReadNext(inputReader) {
 		readCount++
+		nucleotideCount += len(fq.Sequence)
 	
 		if qualThreshold != 0 {
 			lenBefore := len(fq.Sequence)
@@ -121,56 +116,6 @@ func processReads() {
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, "Output file contents are invalid.")
 		os.Exit(1)
-	}
-	
-	flushAndCloseFiles()
-	printStatistics(readCount, qualCount, adapterStartCount, adapterEndCount)
-}
-
-// Nicely prints the run statistics.
-func printStatistics(readCount int, qualCount int, adapterStartCount []int, adapterEndCount []int) {
-	// All reads count
-	fmt.Fprintln(os.Stderr, "Number of reads processed:", readCount)
-
-	// Quality trimming count
-	if qualThreshold != 0 {
-		fmt.Fprintln(os.Stderr, "Number of low quality nucleotide trimmed:", qualCount)
-	}
-
-	// Shorten adapter count slices (up to last non-zero)
-	if len(adapterStartCount) > 0 {
-		trimAt := 0
-		for i,v := range adapterStartCount {
-			if v > 0 {
-				trimAt = i
-			}
-		}
-		adapterStartCount = adapterStartCount[:trimAt+1]
-	}
-
-	if len(adapterEndCount) > 0 {
-		trimAt := 0
-		for i,v := range adapterEndCount {
-			if v > 0 {
-				trimAt = i
-			}
-		}
-		adapterEndCount = adapterEndCount[:trimAt+1]
-	}
-
-	// Adapter trimming counts
-	if len(adapterStart) > 0 {
-		fmt.Fprintln(os.Stderr, "\n5' adapters trimmed:\nlength\tcount")
-		for i := 1; i < len(adapterStartCount); i++ {
-			fmt.Fprintf(os.Stderr, "%d\t%d\n", i, adapterStartCount[i])
-		}
-	}
-
-	if len(adapterEnd) > 0 {
-		fmt.Fprintln(os.Stderr, "\n3' adapters trimmed:\nlength\tcount")
-		for i := 1; i < len(adapterEndCount); i++ {
-			fmt.Fprintf(os.Stderr, "%d\t%d\n", i, adapterEndCount[i])
-		}
 	}
 }
 

@@ -69,6 +69,10 @@ func parseArguments() {
 	adapterStart = []byte(adapterStartString)
 	adapterEnd = []byte(adapterEndString)
 	
+	// Initialize statistic slices
+	adapterStartCount = make([]int, len(adapterStart) + 1)
+	adapterEndCount = make([]int, len(adapterEnd) + 1)
+	
 	// Open i/o files
 	if *input == "" {
 		argumentError = errors.New("No input file given.")
