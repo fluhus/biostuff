@@ -71,7 +71,7 @@ IIIIIIIIIIII
 `,
 },
 {
-[]string{"trimmer", "-q", "0", "-ae", "GCTTATGAC"},
+[]string{"trimmer", "-q", "0", "-ae", "GGTTATGAC"},
 `@lalala
 TCTCATCTGGTTGGTTA
 +
@@ -84,7 +84,7 @@ TCTCATCTGGTT
 `,
 },
 {
-[]string{"trimmer", "-q", "0", "-as", "AACCGGCTCA"},
+[]string{"trimmer", "-q", "0", "-as", "AACCGTCTCA"},
 `@lalala
 TCTCATCTGGTTGGTTA
 +
