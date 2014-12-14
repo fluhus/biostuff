@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"fmt"
 )
 
 // Parsed arguments.
@@ -20,6 +21,7 @@ var (
 	adapterEnd    []byte        // adapter to trim from end
 	phredOffset   int           // phred quality offset
 	qualThreshold int           // quality trimming threshold
+	minReadLength int           // Shorter reads are omitted
 	printHelp     bool          // should I print help message?
 	argumentError error         // not nil if an error occured
 )
@@ -49,6 +51,14 @@ func parseArguments() {
 	
 	flags.IntVar(&qualThreshold, "qual-threshold", 20, "")
 	flags.IntVar(&qualThreshold, "q", 20, "")
+
+	flags.IntVar(&minReadLength, "min-length", 20, "")
+	flags.IntVar(&minReadLength, "l", 20, "")
+	if minReadLength < 1 {
+		argumentError = fmt.Errorf("Bad min length threshold: %d",
+				minReadLength)
+		return
+	}
 	
 	flags.BoolVar(&printHelp, "help", false, "")
 	flags.BoolVar(&printHelp, "h", false, "")

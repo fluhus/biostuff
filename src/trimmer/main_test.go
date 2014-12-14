@@ -58,7 +58,7 @@ type testCase struct {
 
 var testCases = []testCase {
 {
-[]string{"trimmer"},
+[]string{"trimmer", "-l", "1"},
 `@lalala
 TCTCATCTGGTTGGTTA
 +
@@ -71,7 +71,7 @@ IIIIIIIIIIII
 `,
 },
 {
-[]string{"trimmer", "-q", "0", "-ae", "GGTTATGAC"},
+[]string{"trimmer", "-l", "1", "-q", "0", "-ae", "GGTTATGAC"},
 `@lalala
 TCTCATCTGGTTGGTTA
 +
@@ -84,7 +84,7 @@ TCTCATCTGGTT
 `,
 },
 {
-[]string{"trimmer", "-q", "0", "-as", "AACCGTCTCA"},
+[]string{"trimmer", "-l", "1", "-q", "0", "-as", "AACCGTCTCA"},
 `@lalala
 TCTCATCTGGTTGGTTA
 +
@@ -97,7 +97,7 @@ IIIIIIIII***
 `,
 },
 {
-[]string{"trimmer", "-q", "0", "-as", "AACCGGGTCA"},
+[]string{"trimmer", "-l", "1", "-q", "0", "-as", "AACCGGGTCA"},
 `@lalala
 TCTCATCTGGTTGGTTA
 +

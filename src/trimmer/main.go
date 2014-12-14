@@ -65,6 +65,9 @@ func printWorkPlan() {
 				string(adapterEnd))
 	}
 
+	fmt.Fprintln(os.Stderr, "\tOmit reads shorter than:",
+			minReadLength)
+
 	fmt.Fprintln(os.Stderr)
 }
 
@@ -105,7 +108,7 @@ func processReads() {
 		
 		// Print if long enough
 		// TODO: add as command line option
-		if len(fq.Sequence) >= 20 {
+		if len(fq.Sequence) >= minReadLength {
 			outputWriter.WriteString(fq.String())
 			outputWriter.WriteByte('\n')
 		} else {
@@ -167,4 +170,8 @@ Options:
 	-ae
 	-adapter-end
 		Adapter to trim at the end (3') of the read. Default: none.
+	-l
+	-min-length
+		Reads that become shorter than the given value are ommitted.
+		Default: 20.
 `
