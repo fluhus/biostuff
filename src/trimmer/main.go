@@ -12,7 +12,8 @@ func main() {
 	parseArguments()
 	if argumentError != nil {
 		fmt.Fprintln(os.Stderr, "Bad arguments:", argumentError.Error())
-		fmt.Fprintln(os.Stderr, "Run 'trimmer --help' for usage instructions.")
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, usage)
 		os.Exit(1)
 	}
 	
