@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"fmt"
+	"runtime/pprof"
 )
 
 // Parsed arguments.
@@ -17,6 +18,7 @@ var (
 	outputFile    *os.File      // output file
 	inputReader   *bufio.Reader // read from here
 	outputWriter  *bufio.Writer // write to here
+	profileFile   *os.File      // profiling information is written to here
 	adapterStart  []byte        // adapter to trim from start
 	adapterEnd    []byte        // adapter to trim from end
 	phredOffset   int           // phred quality offset
@@ -37,6 +39,8 @@ func parseArguments() {
 	
 	output := flags.String("out", "", "")
 	flags.StringVar(output, "o", "", "")
+	
+	profile := flags.String("profile", "", "")
 	
 	var adapterStartString string
 	flags.StringVar(&adapterStartString, "adapter-start", "", "")
@@ -108,7 +112,60 @@ func parseArguments() {
 		if argumentError != nil { return }
 	}
 	
+	if *profile != "" {
+		profileFile, argumentError = os.Create(*profile)
+		if argumentError != nil { return }
+		argumentError = pprof.StartCPUProfile(profileFile)
+		if argumentError != nil { return }
+	}
+	
 	// Create buffered i/o
 	inputReader = bufio.NewReader(inputFile)
 	outputWriter = bufio.NewWriter(outputFile)
 }
+
+// Printed if arguments are bad.
+const usage =
+`Biostuff Trimmer
+~~~~~~~~~~~~~~~~
+
+Trims low quality ends and adapter contamination from reads.
+
+Written by Amit Lavon.
+
+Usage:
+trimmer [options] -in <input file> -out <output file>
+
+Options:
+	-h
+	-help
+		Print this help message and ignore all other arguments.
+	-i <path>
+	-in <path>
+		Input fastq file. Give 'stdin' for standard input.
+	-o <path>
+	-out <path>
+		Output fastq file. Give 'stdout' for standard output.
+	-q <int>
+	-qual-threshold <int>
+		Quality trimmming threshold. Give 0 to avoid quality trimming.
+		Default: 20.
+	-p <int>
+	-phred-offset <int>
+		Phred quality score offset. Default: 33.
+	-as <string>
+	-adapter-start <string>
+		Adapter to trim at the beginning (5') of the read. Default: none.
+	-ae <string>
+	-adapter-end <string>
+		Adapter to trim at the end (3') of the read. Default: none.
+	-l <int>
+	-min-length <int>
+		Reads that become shorter than the given value are ommitted.
+		Default: 20.
+	-profile <path>
+		Print profiling information to the given file. Default: none.
+		(For development only.)
+`
+
+

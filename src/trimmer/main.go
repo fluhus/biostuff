@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"io"
+	"runtime/pprof"
 )
 
 func main() {
@@ -47,6 +48,10 @@ func printWorkPlan() {
 		fmt.Fprintln(os.Stderr, "Output: stdout")
 	} else {
 		fmt.Fprintln(os.Stderr, "Output:", outputFile.Name())
+	}
+	
+	if profileFile != nil {
+		fmt.Fprintln(os.Stderr, "Profiling info:", profileFile.Name())
 	}
 	
 	fmt.Fprintln(os.Stderr, "Actions:")
@@ -135,44 +140,10 @@ func flushAndCloseFiles() {
 	if outputFile != os.Stdout {
 		outputFile.Close()
 	}
+	
+	if profileFile != nil {
+		pprof.StopCPUProfile()
+		profileFile.Close()
+	}
 }
 
-const usage =
-`Biostuff Trimmer
-~~~~~~~~~~~~~~~~
-
-Trims low quality ends and adapter contamination from reads.
-
-Written by Amit Lavon.
-
-Usage:
-trimmer [options] -in <input file> -out <output file>
-
-Options:
-	-h
-	-help
-		Print this help message and ignore all other arguments.
-	-i
-	-in
-		Input fastq file. Give 'stdin' for standard input.
-	-o
-	-out
-		Output fastq file. Give 'stdout' for standard output.
-	-q
-	-qual-threshold
-		Quality trimmming threshold. Give 0 to avoid quality trimming.
-		Default: 20.
-	-p
-	-phred-offset
-		Phred quality score offset. Default: 33.
-	-as
-	-adapter-start
-		Adapter to trim at the beginning (5') of the read. Default: none.
-	-ae
-	-adapter-end
-		Adapter to trim at the end (3') of the read. Default: none.
-	-l
-	-min-length
-		Reads that become shorter than the given value are ommitted.
-		Default: 20.
-`
