@@ -4,7 +4,6 @@ package main
 
 import (
 	"bioformats/fastq"
-	"bytes"
 )
 
 // Trims the given fastq's end (3') according to the given adapter.
@@ -17,9 +16,7 @@ func trimAdapterEnd(fq *fastq.Fastq, adapter []byte, tolerance int) {
 		panic("unexpected nil fastq")
 	}
 	
-	// Turn sequences to uppercase for case-insensitivity
-	adapter   = bytes.ToUpper(adapter)
-	sequence := bytes.ToUpper(fq.Sequence)
+	sequence := fq.Sequence
 	
 	// Match search start position
 	start := 0
@@ -36,12 +33,15 @@ func trimAdapterEnd(fq *fastq.Fastq, adapter []byte, tolerance int) {
 		
 		// Compare to adapter starting from this index
 		for ai := 0; ai < matchLength; ai++ {
-			if sequence[ai+si] != adapter[ai] {
+		
+			// Convert to uppercase for case insensitivity
+			if upper( sequence[ai+si] ) != upper( adapter[ai] ) {
 				remainingMismatches--
 				if remainingMismatches < 0 {
 					continue outerLoop
 				}
 			}
+			
 		}
 		
 		// If reached here, then adapter was found
@@ -75,6 +75,15 @@ func reverse(b []byte) {
 	for i := 0; i < len(b) / 2; i++ {
 		other := len(b) - i - 1
 		b[i], b[other] = b[other], b[i]
+	}
+}
+
+// Returns the ASCII upper case for the given byte.
+func upper(b byte) byte {
+	if b >= 'a' && b <= 'z' {
+		return b - ('a' - 'A')
+	} else {
+		return b
 	}
 }
 
