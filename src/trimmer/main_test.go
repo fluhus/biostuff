@@ -109,4 +109,17 @@ TCTCATCTGGTTGGTTA
 **IIIIIIIIIIII***
 `,
 },
+{
+[]string{"trimmer", "-l", "1", "-q", "0", "-as", "AACCGTCTCA"},
+`@lalala
+tctcatctggttggtta
++
+**IIIIIIIIIIII***
+`,
+`@lalala
+tctggttggtta
++
+IIIIIIIII***
+`,
+},
 }
