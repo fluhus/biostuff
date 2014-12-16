@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"bufio"
-	"bytes"
 	"errors"
 	"seqtools"
 	"math/rand"
@@ -48,7 +47,7 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 	}
 	
 	// Handle ID
-	id = bytes.Trim(id, "\n\r")
+	id = trimNewLines(id)
 	if len(id) == 0 || id[0] != '@' {
 		return nil, errors.New("fastq read error: expected '@' at beginning of" +
 				" line: \"" + string(id) + "\"")
@@ -70,7 +69,7 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 		}
 	}
 	
-	seq = bytes.Trim(seq, "\n\r")
+	seq = trimNewLines(seq)
 	
 	// Read plus
 	plus, err := reader.ReadBytes('\n')
@@ -86,7 +85,7 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 	}
 	
 	// Handle plus
-	plus = bytes.Trim(plus, "\n\r")
+	plus = trimNewLines(plus)
 	if len(plus) == 0 || plus[0] != '+' {
 		return nil, errors.New("fastq read error: expected '+' at beginning of" +
 				" line: \"" + string(plus) + "\"")
@@ -102,7 +101,7 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 	}
 	
 	// Handle qualities
-	quals = bytes.Trim(quals, "\n\r")
+	quals = trimNewLines(quals)
 	if len(quals) != len(seq) {
 		return nil, errors.New("fastq read error: sequence and qualities have" +
 				" different lengths")
@@ -161,4 +160,23 @@ func MakeQuals(sequence []byte) []byte {
 	return result
 }
 
+// Trims new-line and carriage-return from both ends of the slice.
+func trimNewLines(b []byte) []byte {
+	start := 0
+	end := len(b)
+	for i,v := range b {
+	
+		if v == '\n' || v == '\r' {
+			// If encountered new lines up to here
+			if i == start {
+				start++
+			}
+		} else {
+			end = i + 1  // end will point to the last non-new-line
+		}
+		
+	}
+	
+	return b[start:end]
+}
 
