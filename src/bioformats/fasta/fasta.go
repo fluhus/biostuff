@@ -1,27 +1,54 @@
-// Deals with biological data formats.
+// Deals with fasta parsing and representation.
 package fasta
 
 import (
 	"os"
 	"fmt"
 	"bufio"
-	"tools"
 	"strings"
 )
+
+// Converts number to nucleotide.
+var num2nuc = []byte{'A', 'C', 'G', 'T'}
+var nuc2num = {'A':0, 'C':1, 'G':2, 'T':3}
+
 
 // *** FASTA ENTRY ************************************************************
 
 // A single fasta sequence.
-// Contains a title and a sequence.
 type FastaEntry struct {
-	Title    []byte
-	Sequence []byte
+	name     string            // sequence name (row that starts with '>')
+	sequence []byte            // sequence in 2-bit format
+	length   int               // number of nucleotides
+	isN      map[int]struct{}  // coordinates of 'N' nucleotides
 }
 
-// String representation of an entry.
-// Format: Name[length]
+// Returns the number of nucleotides in this fasta entry.
+func (f *FastaEntry) Length() int {
+	return f.length
+}
+
+// Returns the name of the fasta entry.
+func (f *FastaEntry) Name() string {
+	return f.name
+}
+
+// Returns the nucleotide at the given position.
+func (f *FastaEntry) At(position int) byte {
+	// Check if N
+	if _,n := f.isN[position]; n {
+		return 'N'
+	}
+
+	// Extract nucleotide
+	num := (f.sequence[position / 4] >> (position % 4) & 3)
+	
+	return num2nuc[num]
+}
+
+// String representation of an entry. Format: name[length]
 func (f *FastaEntry) String() string {
-	return fmt.Sprintf("%s[%d]", f.Title, len(f.Sequence))
+	return fmt.Sprintf("%s[%d]", f.name, f.Length())
 }
 
 
@@ -48,7 +75,7 @@ func FastaFromFile(path string) (Fasta, error) {
 	defer file.Close()
 
 	// Create buffer (1M buffer size)
-	reader := bufio.NewReaderSize(file, tools.Mega)
+	reader := bufio.NewReader(file)
 
 	// Start reading
 	result := Fasta(nil)
