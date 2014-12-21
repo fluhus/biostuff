@@ -2,15 +2,17 @@
 package fasta
 
 import (
-	"os"
+	//"os"
 	"fmt"
-	"bufio"
-	"strings"
+	//"bufio"
+	//"strings"
 )
 
 // Converts number to nucleotide.
 var num2nuc = []byte{'A', 'C', 'G', 'T'}
-var nuc2num = {'A':0, 'C':1, 'G':2, 'T':3}
+
+// Converts nucleotide to number.
+var nuc2num = map[byte]uint {'A':0, 'C':1, 'G':2, 'T':3, 'N':4, 'a':0, 'c':1, 'g':2, 't':3, 'n':4}
 
 
 // *** FASTA ENTRY ************************************************************
@@ -19,13 +21,18 @@ var nuc2num = {'A':0, 'C':1, 'G':2, 'T':3}
 type FastaEntry struct {
 	name     string            // sequence name (row that starts with '>')
 	sequence []byte            // sequence in 2-bit format
-	length   int               // number of nucleotides
-	isN      map[int]struct{}  // coordinates of 'N' nucleotides
+	length   uint              // number of nucleotides
+	isN      map[uint]struct{} // coordinates of 'N' nucleotides
+}
+
+// Returns an empty fasta entry.
+func newFastaEntry() *FastaEntry {
+	return &FastaEntry{"", nil, 0, make(map[uint]struct{})}
 }
 
 // Returns the number of nucleotides in this fasta entry.
 func (f *FastaEntry) Length() int {
-	return f.length
+	return int(f.length)
 }
 
 // Returns the name of the fasta entry.
@@ -35,15 +42,43 @@ func (f *FastaEntry) Name() string {
 
 // Returns the nucleotide at the given position.
 func (f *FastaEntry) At(position int) byte {
+	uposition := uint(position)
+
 	// Check if N
-	if _,n := f.isN[position]; n {
+	if _,n := f.isN[uposition]; n {
 		return 'N'
 	}
 
 	// Extract nucleotide
-	num := (f.sequence[position / 4] >> (position % 4) & 3)
+	num := (f.sequence[uposition / 4] >> (uposition % 4 * 2) & 3)
 	
 	return num2nuc[num]
+}
+
+// Appends a nucleotide to the fasta entry.
+func (f *FastaEntry) append(nuc byte) {
+	num, ok := nuc2num[nuc]
+
+	// If unknown nucleotide
+	if !ok {
+		panic("Bad nucleotide: " + string([]byte{nuc}))
+	}
+
+	// If 'N'
+	if num == 4 {
+		num = 0
+		f.isN[f.length] = struct{}{}
+	}
+
+	// Append an extra byte
+	if f.length % 4 == 0 {
+		f.sequence = append(f.sequence, 0)
+	}
+
+	// Set bits
+	f.sequence[f.length / 4] |= byte( num << (f.length % 4 * 2) )
+
+	f.length++
 }
 
 // String representation of an entry. Format: name[length]
@@ -54,6 +89,7 @@ func (f *FastaEntry) String() string {
 
 // *** FASTA ******************************************************************
 
+/*
 // An entire fasta file.
 // Contains an array of fasta sequences.
 type Fasta []FastaEntry
@@ -174,7 +210,7 @@ func (f Fasta) Subsequence(length int, index int) (subseq []byte,
 			" (only ", f.NumberOfSubsequences(length), " exist)"))
 }
 
-
+//*/
 
 
 
