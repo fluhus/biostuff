@@ -35,7 +35,7 @@ func Test_Basic2(t *testing.T) {
 	f := newFastaEntry()
 	f.name = "lavon"
 
-	sequence := "AACCTGGTTCA"
+	sequence := "AACCNGGTTCANN"
 	for i := range sequence {
 		t.Logf("Appending '%c'", sequence[i])
 		f.append(sequence[i])
@@ -52,6 +52,31 @@ func Test_Basic2(t *testing.T) {
 	for i := range sequence {
 		if f.At(i) != sequence[i] {
 			t.Errorf("Bad nucleotide at index %d: %c, expected %c.", i, f.At(i), sequence[i])
+		}
+	}
+}
+
+func Test_Subsequence(t *testing.T) {
+	f := newFastaEntry()
+	f.name = "yoink"
+
+	sequence := "AACCNGGTTCANN"
+	for i := range sequence {
+		t.Logf("Appending '%c'", sequence[i])
+		f.append(sequence[i])
+	}
+
+	if f.Length() != len(sequence) {
+		t.Fatalf("Bad fasta length: %d, expected %d.", f.length, len(sequence))
+	}
+
+	for i := range sequence {
+		for j := i; j <= len(sequence); j++ {
+			subs := string(f.Subsequence(i, j-i))
+			if subs != sequence[i:j] {
+				t.Errorf("Bad subsequence: '%s', expected '%s'.",
+						subs, sequence[i:j])
+			}
 		}
 	}
 }

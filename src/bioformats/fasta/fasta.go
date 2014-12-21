@@ -17,7 +17,7 @@ var nuc2num = map[byte]uint {'A':0, 'C':1, 'G':2, 'T':3, 'N':4, 'a':0, 'c':1, 'g
 
 // *** FASTA ENTRY ************************************************************
 
-// A single fasta sequence.
+// A single fasta sequence, stored in 2-bit representation.
 type FastaEntry struct {
 	name     string            // sequence name (row that starts with '>')
 	sequence []byte            // sequence in 2-bit format
@@ -79,6 +79,29 @@ func (f *FastaEntry) append(nuc byte) {
 	f.sequence[f.length / 4] |= byte( num << (f.length % 4 * 2) )
 
 	f.length++
+}
+
+// Extracts a subsequence from the fasta.
+func (f *FastaEntry) Subsequence(start, length int) []byte {
+	// Check input
+	if length < 0 {
+		panic(fmt.Sprint("Bad subsequence length: %d", length))
+	}
+	if start < 0 {
+		panic(fmt.Sprint("Bad subsequence start: %d", start))
+	}
+	if start + length > f.Length() {
+		panic(fmt.Sprint("Subsequence position exceeds sequence length: " +
+				"start %d, length %d.", start, length))
+	}
+
+	// Generate result
+	result := make([]byte, length)
+	for i := 0; i < length; i++ {
+		result[i] = f.At(start + i)
+	}
+
+	return result
 }
 
 // String representation of an entry. Format: name[length]
