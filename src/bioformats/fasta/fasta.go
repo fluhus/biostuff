@@ -4,6 +4,7 @@ package fasta
 import (
 	//"os"
 	"fmt"
+	"bufio"
 	//"bufio"
 	//"strings"
 )
@@ -17,7 +18,7 @@ var nuc2num = map[byte]uint {'A':0, 'C':1, 'G':2, 'T':3, 'N':4, 'a':0, 'c':1, 'g
 
 // *** FASTA ENTRY ************************************************************
 
-// A single fasta sequence, stored in 2-bit representation.
+// A single immutable fasta sequence, stored in 2-bit representation.
 type FastaEntry struct {
 	name     string            // sequence name (row that starts with '>')
 	sequence []byte            // sequence in 2-bit format
@@ -56,12 +57,12 @@ func (f *FastaEntry) At(position int) byte {
 }
 
 // Appends a nucleotide to the fasta entry.
-func (f *FastaEntry) append(nuc byte) {
+func (f *FastaEntry) append(nuc byte) error {
 	num, ok := nuc2num[nuc]
 
 	// If unknown nucleotide
 	if !ok {
-		panic("Bad nucleotide: " + string([]byte{nuc}))
+		return fmt.Errorf("Bad nucleotide: " + string([]byte{nuc}))
 	}
 
 	// If 'N'
@@ -79,6 +80,8 @@ func (f *FastaEntry) append(nuc byte) {
 	f.sequence[f.length / 4] |= byte( num << (f.length % 4 * 2) )
 
 	f.length++
+	
+	return nil
 }
 
 // Extracts a subsequence from the fasta.
@@ -109,13 +112,48 @@ func (f *FastaEntry) String() string {
 	return fmt.Sprintf("%s[%d]", f.name, f.Length())
 }
 
+// Reads a single fasta entry from a stream.
+func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
+	// States of the reader
+	const (
+		stateNameStart = iota
+		stateName
+		stateNewLine
+		stateNormal
+	)
+	
+	// Result entry
+	var name []byte
+	result := newFastaEntry()
+	
+	// Start reading
+	state := stateNameStart
+	var b byte
+	var err error
+	for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
+		switch state {
+		case stateNameStart:
+			if b == '>' {
+				state = stateName
+			} else {
+				name = []byte("(no name)")
+				fallthrough
+			}
+		case stateNormal:
+			
+		case stateName:
+		case stateNewLine:
+		}
+	}
+}
+
 
 // *** FASTA ******************************************************************
 
 /*
 // An entire fasta file.
 // Contains an array of fasta sequences.
-type Fasta []FastaEntry
+type Fasta []*FastaEntry
 
 // String representation of a fasta file.
 func (f Fasta) String() string {
