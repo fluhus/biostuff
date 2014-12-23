@@ -5,6 +5,7 @@ import (
 	//"os"
 	"fmt"
 	"bufio"
+	"io"
 	//"bufio"
 	//"strings"
 )
@@ -116,10 +117,10 @@ func (f *FastaEntry) String() string {
 func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	// States of the reader
 	const (
-		stateNameStart = iota
-		stateName
-		stateNewLine
-		stateNormal
+		stateStart = iota  // beginning of input
+		stateName          // reading name
+		stateNewLine       // beginning of new line
+		stateSequence      // reading sequence
 	)
 	
 	// Result entry
@@ -127,24 +128,74 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	result := newFastaEntry()
 	
 	// Start reading
-	state := stateNameStart
+	state := stateStart
 	var b byte
 	var err error
-	for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
+	readAnything := false
+	loop: for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
+		readAnything = true
 		switch state {
-		case stateNameStart:
+		case stateStart:
+			// '>' marks the name of the sequence
 			if b == '>' {
 				state = stateName
+				
+			// If no '>' then only sequence without name
 			} else {
-				name = []byte("(no name)")
-				fallthrough
+				state = stateSequence
+				if b == '\n' || b == '\r' {
+					state = stateNewLine
+				} else {
+					err = result.append(b)
+				}
 			}
-		case stateNormal:
+			
+		case stateSequence:
+			if b == '\n' || b == '\r' {
+				state = stateNewLine
+			} else {
+				err = result.append(b)
+			}
 			
 		case stateName:
+			if b == '\n' || b == '\r' {
+				state = stateNewLine
+			} else {
+				name = append(name, b)
+			}
+			
 		case stateNewLine:
+			if b == '\n' || b == '\r' {
+				// Nothing
+			} else if b == '>' {
+				// New sequence => done reading
+				r.UnreadByte()
+				break loop
+			} else {
+				state = stateSequence
+				err = result.append(b)
+			}
 		}
 	}
+	
+	// Return EOF only if encountered before reading anything
+	if !readAnything {
+		return nil, err
+	}
+	
+	// EOF will be returned on the next call to read
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+	
+	// If no name, create one
+	if len(name) == 0 {
+		result.name = "(no name)"
+	} else {
+		result.name = string(name)
+	}
+	
+	return result, nil
 }
 
 

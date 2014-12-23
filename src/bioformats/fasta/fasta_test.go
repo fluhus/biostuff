@@ -2,6 +2,8 @@ package fasta
 
 import (
 	"testing"
+	"strings"
+	"bufio"
 )
 
 func Test_Basic(t *testing.T) {
@@ -81,6 +83,84 @@ func Test_Subsequence(t *testing.T) {
 	}
 }
 
+func Test_ReadSimple(t *testing.T) {
+	sequence := "AATTNGGNTA"
+	name := "hohoho"
+	reader := bufio.NewReader(strings.NewReader(">" + name + "\n" + sequence))
+	
+	f, err := ReadFastaEntry(reader)
+	
+	if err != nil {
+		t.Fatal("Reading failed: " + err.Error())
+	}
+	
+	if f.Name() != name {
+		t.Errorf("Bad name: '%s', expected '%s'.", f.Name(), name)
+	}
+	
+	if f.Length() != len(sequence) {
+		t.Fatalf("Bad length: %d, expected %d.", f.Length(), len(sequence))
+	}
+	
+	for i := range sequence {
+		if f.At(i) != sequence[i] {
+			t.Errorf("Bad nucleotide at %d: %c, expected %c.",
+					i, f.At(i), sequence[i])
+		}
+	}
+}
 
+func Test_ReadNoName(t *testing.T) {
+	sequence := "AATTNGGNTA"
+	reader := bufio.NewReader(strings.NewReader(sequence))
+	
+	f, err := ReadFastaEntry(reader)
+	
+	if err != nil {
+		t.Fatal("Reading failed: " + err.Error())
+	}
+	
+	if f.Name() != "(no name)" {
+		t.Errorf("Bad name: '%s', expected '%s'.", f.Name(), "(no name)")
+	}
+	
+	if f.Length() != len(sequence) {
+		t.Fatalf("Bad length: %d, expected %d.", f.Length(), len(sequence))
+	}
+	
+	for i := range sequence {
+		if f.At(i) != sequence[i] {
+			t.Errorf("Bad nucleotide at %d: %c, expected %c.",
+					i, f.At(i), sequence[i])
+		}
+	}
+}
+
+func Test_ReadAdvanced(t *testing.T) {
+	sequence := "AATTNGGNTA"
+	sequenceWithNewLines := "\nAAT\n\nTNGGNTA\n\r\n>amit"
+	reader := bufio.NewReader(strings.NewReader(sequenceWithNewLines))
+	
+	f, err := ReadFastaEntry(reader)
+	
+	if err != nil {
+		t.Fatal("Reading failed: " + err.Error())
+	}
+	
+	if f.Name() != "(no name)" {
+		t.Errorf("Bad name: '%s', expected '%s'.", f.Name(), "(no name)")
+	}
+	
+	if f.Length() != len(sequence) {
+		t.Fatalf("Bad length: %d, expected %d.", f.Length(), len(sequence))
+	}
+	
+	for i := range sequence {
+		if f.At(i) != sequence[i] {
+			t.Errorf("Bad nucleotide at %d: %c, expected %c.",
+					i, f.At(i), sequence[i])
+		}
+	}
+}
 
 
