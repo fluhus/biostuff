@@ -26,7 +26,9 @@ func main() {
 	
 	fmt.Println(len(idx))
 	
-	b := &bed{"chr18", 75579801, 75579900}
+	//b := &bed{"chr18", 75579801, 75579900}
+	//b := &bed{"chr8", 125689501, 125689600}
+	b := &bed{"chr9", 60900601, 60900700}
 	g, d := idx[b.chr].nearestGenes(b, 2)
 	for i := range g {
 		fmt.Println(g[i].name, g[i].start, g[i].end, d[i])
@@ -200,7 +202,7 @@ func (idx *chromIndex) nearestGenes(tile *bed, n int) (genes []*gene,
 			distUp := distance(tile, idx.byStart[up])
 			distDown := distance(tile, idx.byEnd[down])
 			
-			if distUp > distDown {
+			if distUp < distDown {
 				genes = append(genes, idx.byStart[up])
 				distances = append(distances, distance(tile, idx.byStart[up]))
 				up++
