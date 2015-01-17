@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"sort"
+	"flag"
+	"io/ioutil"
 )
 
 func main() {
@@ -27,11 +29,68 @@ func main() {
 	fmt.Println(len(idx))
 	
 	//b := &bed{"chr18", 75579801, 75579900}
-	//b := &bed{"chr8", 125689501, 125689600}
-	b := &bed{"chr9", 60900601, 60900700}
-	g, d := idx[b.chr].nearestGenes(b, 2)
+	b := &bed{"chr8", 125689501, 125689600}
+	//b := &bed{"chr9", 60900601, 60900700}
+	g, d := idx[b.chr].nearestGenes(b, 5)
 	for i := range g {
 		fmt.Println(g[i].name, g[i].start, g[i].end, d[i])
+	}
+}
+
+// ***** ARGUMENT PARSING *****************************************************
+
+var arguments struct {
+	genesFile string
+	inFile string
+	outFile string
+	n int
+	err error
+}
+
+// Parses input arguments. arguments.err will hold the parsing error,
+// if encountered.
+func parseArguments() {
+	// Create flag set
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(ioutil.Discard)
+	
+	// Register arguments
+	flags.StringVar(&arguments.genesFile, "genes", "", "")
+	flags.StringVar(&arguments.genesFile, "g", "", "")
+	flags.StringVar(&arguments.inFile, "in", "", "")
+	flags.StringVar(&arguments.inFile, "i", "", "")
+	flags.StringVar(&arguments.outFile, "out", "", "")
+	flags.StringVar(&arguments.outFile, "o", "", "")
+	flags.IntVar(&arguments.n, "n", 1, "")
+	
+	// Parse!
+	arguments.err = flags.Parse(os.Args[1:])
+	if arguments.err != nil { return }
+	
+	// Check argument validity
+	if arguments.genesFile == "" {
+		arguments.err = fmt.Errorf("No genes file selected")
+		return
+	}
+	
+	if arguments.inFile == "" {
+		arguments.err = fmt.Errorf("No input file selected")
+		return
+	}
+	
+	if arguments.outFile == "" {
+		arguments.err = fmt.Errorf("No output file selected")
+		return
+	}
+	
+	if arguments.n < 1 {
+		arguments.err = fmt.Errorf("Number of genes must be positive, got %d",
+				arguments.n)
+	}
+	
+	if len(flags.Args()) > 0 {
+		arguments.err = fmt.Errorf("Unknown argument: %s", flag.Args()[0])
+		return
 	}
 }
 
@@ -82,7 +141,7 @@ func loadGenes(path string) (index, error) {
 		// Split line
 		fields := strings.Split(scanner.Text(), "\t")
 		if len(fields) != 4 {
-			return nil, fmt.Errorf("Bad number of fields: %d, expected 4.",
+			return nil, fmt.Errorf("Bad number of fields: %d, expected 4",
 					len(fields))
 		}
 		
@@ -156,6 +215,26 @@ type bed struct {
 	end int
 }
 
+func parseBed(line string) (*bed, error) {
+	// Split
+	fields := strings.Split(line, "\t")
+	if len(fields) < 3 {
+		return nil, fmt.Errorf("Bad number of fields: %d, expected" +
+				" at least 3", len(fields))
+	}
+	
+	result := &bed{}
+	
+	var err error
+	result.chr = fields[0]
+	result.start, err = strconv.Atoi(fields[1])
+	if err != nil { return nil, err }
+	result.end, err = strconv.Atoi(fields[2])
+	if err != nil { return nil, err }
+	
+	return result, nil
+}
+
 
 // ***** NEAREST GENE EXTRACTION **********************************************
 
@@ -227,6 +306,12 @@ func distance(b *bed, g *gene) int {
 		return 0
 	}
 }
+
+
+// ***** BED FILE HANDLING ****************************************************
+
+
+
 
 
 
