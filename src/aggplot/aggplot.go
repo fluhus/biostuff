@@ -21,7 +21,7 @@ func main() {
 	// Parse arguments
 	if len(os.Args) == 1 {
 		fmt.Println(usage)
-		os.Exit(1)
+		os.Exit(0)
 	}
 	
 	parseArguments()
@@ -313,6 +313,24 @@ func plotWithPython(filesData [][]float64, outFile string) {
 	// Create imports
 	src := []byte("import matplotlib.pyplot as plt\n")
 	
+	// Find min and max for axes
+	minValue := math.MaxFloat64
+	maxValue := -math.MaxFloat64
+	for i := range filesData {
+		for _,v := range filesData[i] {
+			if v < minValue { minValue = v }
+			if v > maxValue { maxValue = v }
+		}
+	}
+	
+	axesXMin := float64(-arguments.dist)
+	axesXMax := float64(arguments.dist)
+	axesYMin := minValue - 0.1*(maxValue-minValue)
+	axesYMax := maxValue + 0.3*(maxValue-minValue)
+	
+	// Add x=0 marker
+	src = append(src, fmt.Sprintf("plt.plot([0,0],[%f,%f],'--k')\n", axesYMin, axesYMax)...)
+	
 	// Add plot for each file
 	for i,values := range filesData {
 		src = append(src, fmt.Sprintf("plt.plot(range(%d,%d),[",
@@ -324,28 +342,16 @@ func plotWithPython(filesData [][]float64, outFile string) {
 				"')\n")...)
 	}
 	
-	// Find min and max for axes
-	minValue := math.MaxFloat64
-	maxValue := -math.MaxFloat64
-	for i := range filesData {
-		for _,v := range filesData[i] {
-			if v < minValue { minValue = v }
-			if v > maxValue { maxValue = v }
-		}
-	}
-	
 	// Add figure settings
 	src = append(src, fmt.Sprintf("plt.title('Aggregation plot')\n")...)
 	src = append(src, fmt.Sprintf("plt.xlabel('Distance from region center')\n")...)
 	src = append(src, fmt.Sprintf("plt.ylabel('Average signal')\n")...)
-	src = append(src, fmt.Sprintf("plt.axis([%d,%d,%f,%f])\n",
-			-arguments.dist, arguments.dist,
-			minValue - 0.1*(maxValue-minValue),
-			maxValue + 0.3*(maxValue-minValue))...)
+	src = append(src, fmt.Sprintf("plt.axis([%f,%f,%f,%f])\n",
+			axesXMin, axesXMax, axesYMin, axesYMax)...)
 	src = append(src, fmt.Sprintf("plt.legend(loc='upper right')\n")...)
 	
 	// Save to file command
-	src = append(src, fmt.Sprintf("plt.savefig('%s',dpi=100)", outFile)...)
+	src = append(src, fmt.Sprintf("plt.savefig('%s',dpi=150)", outFile)...)
 	
 	cmd := exec.Command("python")
 	cmd.Stdin = bytes.NewReader(src)
@@ -396,6 +402,7 @@ Options:
 	-r <integer>
 	-range <integer>
 		Range around tiles to search. Will affect the width of the plot.
+		Default: 5000.
 `
 
 
