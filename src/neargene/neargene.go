@@ -12,28 +12,32 @@ import (
 )
 
 func main() {
-	// Check arguments
-	if len(os.Args) != 2 {
-		fmt.Println("Error: Bad number of arguments.")
+	// Parse arguments
+	if len(os.Args) == 1 {
+		fmt.Println(usage)
+		return
+	}
+	
+	parseArguments()
+	if arguments.err != nil {
+		fmt.Println("Error parsing arguments:", arguments.err)
 		os.Exit(1)
 	}
 	
 	// Load genes
-	fmt.Println("Loading genes from:", os.Args[1])
-	idx, err := loadGenes(os.Args[1])
+	fmt.Println("Loading genes from:", arguments.genesFile)
+	idx, err := loadGenes(arguments.genesFile)
 	if err != nil {
 		fmt.Println("Error loading genes:", err)
 		os.Exit(2)
 	}
 	
-	fmt.Println(len(idx))
-	
-	//b := &bed{"chr18", 75579801, 75579900}
-	b := &bed{"chr8", 125689501, 125689600}
-	//b := &bed{"chr9", 60900601, 60900700}
-	g, d := idx[b.chr].nearestGenes(b, 5)
-	for i := range g {
-		fmt.Println(g[i].name, g[i].start, g[i].end, d[i])
+	// Attach to input file
+	fmt.Println("Attaching nearest genes to:", arguments.inFile)
+	err = attachGenes(arguments.inFile, arguments.outFile, idx, arguments.n)
+	if err != nil {
+		fmt.Println("Error attaching genes to file:", err)
+		os.Exit(2)
 	}
 }
 
@@ -239,6 +243,18 @@ func parseBed(line string) (*bed, error) {
 // ***** NEAREST GENE EXTRACTION **********************************************
 
 // Returns the n nearest genes (if exist).
+func (idx index) nearestGenes(tile *bed, n int) (genes []*gene,
+		distances []int) {
+	chrom, ok := idx[tile.chr];
+	
+	if !ok {
+		return nil, nil
+	} else {
+		return chrom.nearestGenes(tile, n)
+	}
+}
+
+// Returns the n nearest genes (if exist).
 func (idx *chromIndex) nearestGenes(tile *bed, n int) (genes []*gene,
 		distances []int) {
 	// Set pointers - one going up and one going down
@@ -310,6 +326,82 @@ func distance(b *bed, g *gene) int {
 
 // ***** BED FILE HANDLING ****************************************************
 
+// Reads the given input bed file and spills the modified into the output
+// file. Returns an error if encountered.
+func attachGenes(in string, out string, idx index, n int) error {
+	// Open input file
+	fin, err := os.Open(in)
+	if err != nil { return err }
+	defer fin.Close()
+	scanner := bufio.NewScanner(fin)
+	
+	// Open output file
+	fout, err := os.Create(out)
+	if err != nil { return err }
+	defer fout.Close()
+	bout := bufio.NewWriter(fout)
+	defer bout.Flush()
+	
+	// Add header
+	scanner.Scan()
+	fmt.Fprint(bout, scanner.Text())
+	for i := 1; i <= n; i++ {
+		fmt.Fprintf(bout, "\tgene_%d\tdistance_%d", i, i)
+	}
+	fmt.Fprint(bout, "\n")
+	
+	// Iterate over lines
+	for scanner.Scan() {
+		// Parse bed tile
+		tile, err := parseBed(scanner.Text())
+		if err != nil { return err }
+		
+		// Scan genes
+		genes, dists := idx.nearestGenes(tile, n)
+		
+		// Print
+		fmt.Fprint(bout, scanner.Text())
+		for i := 0; i < n; i++ {
+			if i < len(genes) {
+				fmt.Fprintf(bout, "\t%s\t%d", genes[i].name, dists[i])
+			} else {
+				fmt.Fprint(bout, "\t\t")
+			}
+		}
+		
+		fmt.Fprint(bout, "\n")
+	}
+	
+	return nil
+}
+
+const usage =
+`Attaches nearest genes to a bed file.
+
+Written by Amit Lavon (amitlavon1@gmail.com).
+
+Usage:
+neargene [options]
+
+Accepted options:
+	-g <path>
+	-genes <path>
+		Backround gene file. Should include 4 columns - chromosome, start,
+		end and gene name. First line should be a header.
+
+	-i <path>
+	-in <path>
+		Input bed file. Should include at least 3 columns - chromosome, start
+		and end. First line should be a header.
+
+	-o <path>
+	-out <path>
+		Output file. Will be identical to the input, but each line will have
+		its nearest genes attached.
+
+	-n <int>
+		Maximal number of genes to report. Default: 1.
+`
 
 
 
