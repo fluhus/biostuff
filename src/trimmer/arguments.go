@@ -126,12 +126,9 @@ func parseArguments() {
 
 // Printed if arguments are bad.
 const usage =
-`Biostuff Trimmer
-~~~~~~~~~~~~~~~~
+`Trims low quality ends and adapter contamination from reads.
 
-Trims low quality ends and adapter contamination from reads.
-
-Written by Amit Lavon.
+Written by Amit Lavon (amitlavon1@gmail.com).
 
 Usage:
 trimmer [options] -in <input file> -out <output file>
@@ -140,29 +137,37 @@ Options:
 	-h
 	-help
 		Print this help message and ignore all other arguments.
+
 	-i <path>
 	-in <path>
 		Input fastq file. Give 'stdin' for standard input.
+
 	-o <path>
 	-out <path>
 		Output fastq file. Give 'stdout' for standard output.
-	-q <int>
-	-qual-threshold <int>
+
+	-q <integer>
+	-qual-threshold <integer>
 		Quality trimmming threshold. Give 0 to avoid quality trimming.
 		Default: 20.
-	-p <int>
-	-phred-offset <int>
+
+	-p <integer>
+	-phred-offset <integer>
 		Phred quality score offset. Default: 33.
+
 	-as <string>
 	-adapter-start <string>
 		Adapter to trim at the beginning (5') of the read. Default: none.
+
 	-ae <string>
 	-adapter-end <string>
 		Adapter to trim at the end (3') of the read. Default: none.
-	-l <int>
-	-min-length <int>
+
+	-l <integer>
+	-min-length <integer>
 		Reads that become shorter than the given value are ommitted.
 		Default: 20.
+
 	-profile <path>
 		Print profiling information to the given file. Default: none.
 		(For development only.)
