@@ -7,12 +7,25 @@ import (
 	"strings"
 	"strconv"
 	"sort"
+	"flag"
+	"io/ioutil"
 )
 
 func main() {
+	// Parse arguments
+	if len(os.Args) == 1 {
+		fmt.Println(usage)
+		return
+	}
+	parseArguments()
+	if arguments.err != nil {
+		fmt.Println("Error parsing arguments:", arguments.err)
+		os.Exit(1)
+	}
+
 	// Load genes
 	fmt.Println("Loading genes...")
-	genes, err := loadGenes("ens_genes_raw.txt")
+	genes, err := loadGenes(arguments.genesFile)
 	if err != nil {
 		fmt.Println("Error loading genes:", err)
 		os.Exit(2)
@@ -26,7 +39,13 @@ func main() {
 		os.Exit(2)
 	}
 	
-	fmt.Println(len(idx))
+	// Attach region types to input file
+	fmt.Println("Attaching region types...")
+	err = attachRegions(arguments.inFile, arguments.outFile, idx)
+	if err != nil {
+		fmt.Println("Error attaching region types:", err)
+		os.Exit(2)
+	}
 }
 
 
@@ -75,9 +94,9 @@ func parseGene(line string) (*gene, error) {
 	
 	// Parse numeric fields
 	result.start, err = strconv.Atoi(fields[1])
-	if err != nil { return nil, fmt.Errorf("Bad start position: %s", err.Error()) }
+	if err != nil { return nil, fmt.Errorf("Bad gene start position: %s", err.Error()) }
 	result.end, err = strconv.Atoi(fields[2])
-	if err != nil { return nil, fmt.Errorf("Bad end position: %s", err.Error()) }
+	if err != nil { return nil, fmt.Errorf("Bad gene end position: %s", err.Error()) }
 	
 	starts := strings.Split(fields[3], ",")
 	starts = starts[: len(starts) - 1]  // last field is empty
@@ -222,17 +241,192 @@ const (
 	exon
 )
 
+func (g genomicRegion) String() string {
+	switch g {
+	case intergenic: return "intergenic"
+	case intron: return "intron"
+	case exon: return "exon"
+	default: panic("Unexpected region type")
+	}
+}
+
+func maxRegion(r1, r2 genomicRegion) genomicRegion {
+	if r1 > r2 {
+		return r1
+	} else {
+		return r2
+	}
+}
+
 // Fetches the highest region type that overlaps the given region.
-func (idx eventIndex) regionType(chr string, start int, end int) genomicRegion {
-	chromEvents := idx[chr]
+func (idx eventIndex) regionType(b *bed) genomicRegion {
+	chromEvents := idx[b.chr]
 	
 	// Find event at start
-	startEvent := sort.Search(len(chromEvents), func(i int) bool {
-		return chromEvents[i].pos > start
+	i := sort.Search(len(chromEvents), func(i int) bool {
+		return chromEvents[i].pos > b.start
 	}) - 1
 	
+	// Can reach -1 if search returns 0
+	if i == -1 {
+		i = 0
+	}
 	
+	result := intergenic
+	
+	for chromEvents[i].pos <= b.end {
+		switch chromEvents[i].typ {
+		case geneStart, exonEnd:
+			result = maxRegion(result, intron)
+		case geneEnd:
+			result = maxRegion(result, intergenic)
+		case exonStart:
+			result = maxRegion(result, exon)
+		}
+		
+		i++
+	}
+	
+	return result
 }
+
+
+// ***** BED FILE INPUT *******************************************************
+
+type bed struct {
+	chr string
+	start int
+	end int
+}
+
+func parseBed(line string) (*bed, error) {
+	// Split
+	fields := strings.Split(line, "\t")
+	if len(fields) < 3 {
+		return nil, fmt.Errorf("Bad number of fields: %d, expected" +
+				" at least 3", len(fields))
+	}
+	
+	result := &bed{}
+	
+	var err error
+	result.chr = fields[0]
+	result.start, err = strconv.Atoi(fields[1])
+	if err != nil { return nil, err }
+	result.end, err = strconv.Atoi(fields[2])
+	if err != nil { return nil, err }
+	
+	return result, nil
+}
+
+func attachRegions(in string, out string, idx eventIndex) error {
+	// Open input file
+	fin, err := os.Open(in)
+	if err != nil { return err }
+	defer fin.Close()
+	scanner := bufio.NewScanner(fin)
+	
+	// Open output file
+	fout, err := os.Create(out)
+	if err != nil { return err }
+	defer fout.Close()
+	bout := bufio.NewWriter(fout)
+	defer bout.Flush()
+	
+	// Add header
+	scanner.Scan()
+	fmt.Fprintf(bout, "%s\tregion_type\n", scanner.Text())
+	
+	// Iterate over lines
+	for scanner.Scan() {
+		// Parse bed tile
+		tile, err := parseBed(scanner.Text())
+		if err != nil { return err }
+		
+		// Find region type
+		regType := idx.regionType(tile)
+		
+		// Print
+		fmt.Fprintf(bout, "%s\t%v\n", scanner.Text(), regType)
+	}
+	
+	return nil
+}
+
+
+// ***** ARGUMENTS ************************************************************
+
+var arguments struct {
+	genesFile string
+	inFile string
+	outFile string
+	err error
+}
+
+func parseArguments() {
+	// Create flag set
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(ioutil.Discard)
+	
+	// Register arguments
+	flags.StringVar(&arguments.genesFile, "genes", "", "")
+	flags.StringVar(&arguments.genesFile, "g", "", "")
+	flags.StringVar(&arguments.inFile, "in", "", "")
+	flags.StringVar(&arguments.inFile, "i", "", "")
+	flags.StringVar(&arguments.outFile, "out", "", "")
+	flags.StringVar(&arguments.outFile, "o", "", "")
+	
+	// Parse!
+	arguments.err = flags.Parse(os.Args[1:])
+	if arguments.err != nil { return }
+	
+	// Check argument validity
+	if arguments.genesFile == "" {
+		arguments.err = fmt.Errorf("No genes file selected")
+		return
+	}
+	
+	if arguments.inFile == "" {
+		arguments.err = fmt.Errorf("No input file selected")
+		return
+	}
+	
+	if arguments.outFile == "" {
+		arguments.err = fmt.Errorf("No output file selected")
+		return
+	}
+	
+	if len(flags.Args()) > 0 {
+		arguments.err = fmt.Errorf("Unknown argument: %s", flag.Args()[0])
+		return
+	}
+}
+
+const usage =
+`Attaches genomic region type (intro/exon/intergenic) to a bed file.
+
+Written by Amit Lavon (amitlavon1@gmail.com).
+
+Usage:
+intex [options]
+
+Accepted options:
+	-g <path>
+	-genes <path>
+		Backround gene file. Should include at least 5 columns - chromosome,
+		start, end, exon starts, exon ends. First line should be a header.
+		Exon starts and ends should be comma separated.
+
+	-i <path>
+	-in <path>
+		Input bed file. Should include at least 3 columns - chromosome, start
+		and end. First line should be a header.
+
+	-o <path>
+	-out <path>
+		Output file. Will be identical to the input, but each line will have
+		its region type attached.
+`
 
 
 
