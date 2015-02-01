@@ -10,7 +10,7 @@ import (
 // Scans bed entries from a stream. Ignores header if exists.
 type Scanner struct {
 	scanner *bufio.Scanner
-	current *Bed
+	bed *Bed
 	err error
 	text string      // The parsed line as is
 	fields []string  // Rest of the bed line (extra fields)
@@ -24,8 +24,8 @@ func NewScanner(r io.Reader) *Scanner {
 }
 
 // Returns the last entry parsed by Scan().
-func (s *Scanner) Current() *Bed {
-	return s.current
+func (s *Scanner) Bed() *Bed {
+	return s.bed
 }
 
 func (s *Scanner) Fields() []string {
@@ -58,7 +58,7 @@ func (s *Scanner) Scan() bool {
 	}
 	
 	s.text = s.scanner.Text()
-	s.current, s.fields, s.err = Parse(s.scanner.Text())
+	s.bed, s.fields, s.err = Parse(s.scanner.Text())
 	
 	// Parsing error
 	if s.err != nil {

@@ -16,16 +16,16 @@ func TestScannerNoHeader(t *testing.T) {
 		t.Fatal("Scanning failed. Error:", scanner.Err())
 	}
 	
-	if !compare(scanner.Current(), exp1) {
-		t.Fatal("Bad bed scanned:", scanner.Current(), "expected:", exp1)
+	if !compare(scanner.Bed(), exp1) {
+		t.Fatal("Bad bed scanned:", scanner.Bed(), "expected:", exp1)
 	}
 	
 	if !scanner.Scan() {
 		t.Fatal("Scanning failed. Error:", scanner.Err())
 	}
 	
-	if !compare(scanner.Current(), exp2) {
-		t.Fatal("Bad bed scanned:", scanner.Current(), "expected:", exp2)
+	if !compare(scanner.Bed(), exp2) {
+		t.Fatal("Bad bed scanned:", scanner.Bed(), "expected:", exp2)
 	}
 }
 
@@ -40,16 +40,16 @@ func TestScannerWithHeader(t *testing.T) {
 		t.Fatal("Scanning failed. Error:", scanner.Err())
 	}
 	
-	if !compare(scanner.Current(), exp1) {
-		t.Fatal("Bad bed scanned:", scanner.Current(), "expected:", exp1)
+	if !compare(scanner.Bed(), exp1) {
+		t.Fatal("Bad bed scanned:", scanner.Bed(), "expected:", exp1)
 	}
 	
 	if !scanner.Scan() {
 		t.Fatal("Scanning failed. Error:", scanner.Err())
 	}
 	
-	if !compare(scanner.Current(), exp2) {
-		t.Fatal("Bad bed scanned:", scanner.Current(), "expected:", exp2)
+	if !compare(scanner.Bed(), exp2) {
+		t.Fatal("Bad bed scanned:", scanner.Bed(), "expected:", exp2)
 	}
 }
 
