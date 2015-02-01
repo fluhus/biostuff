@@ -12,6 +12,7 @@ type Scanner struct {
 	scanner *bufio.Scanner
 	current *Bed
 	err error
+	text string      // The parsed line as is
 	fields []string  // Rest of the bed line (extra fields)
 	first bool       // Is next line the first line
 	stopped bool     // Did we stop scanning
@@ -19,7 +20,7 @@ type Scanner struct {
 
 // Returns a new scanner that reads from the given stream.
 func NewScanner(r io.Reader) *Scanner {
-	return &Scanner{ bufio.NewScanner(r), nil, nil, nil, true, false }
+	return &Scanner{ bufio.NewScanner(r), nil, nil, "", nil, true, false }
 }
 
 // Returns the last entry parsed by Scan().
@@ -29,6 +30,10 @@ func (s *Scanner) Current() *Bed {
 
 func (s *Scanner) Fields() []string {
 	return s.fields
+}
+
+func (s *Scanner) Text() string {
+	return s.text
 }
 
 func (s *Scanner) Err() error {
@@ -52,6 +57,7 @@ func (s *Scanner) Scan() bool {
 		return false
 	}
 	
+	s.text = s.scanner.Text()
 	s.current, s.fields, s.err = Parse(s.scanner.Text())
 	
 	// Parsing error
