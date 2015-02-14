@@ -6,12 +6,29 @@ import (
 	"bioformats/bed"
 	"sort"
 	"bufio"
+	"strings"
 )
 
 func main() {
+	// Parse arguments
+	if len(os.Args) != 4 && len(os.Args) != 5 {
+		fmt.Println("Usage:")
+		fmt.Println("regions <events> <regions in> <regions out> [priorities]")
+		fmt.Println("\nPriorities for intron/exon:")
+		fmt.Println("exon,intron,promoter,cpg_island")
+		os.Exit(1)
+	}
+	
+	// Parse priorities
+	var prior []string
+	if len(os.Args) == 5 {
+		prior = strings.Split(os.Args[4], "\t")
+	}
+
 	fmt.Println("Reading events...")
 	//e, err := eventsFromFile("/cs/icore/amitlavon/data/internet/gene_symbols/genes_intex_cpg.txt")
-	e, err := eventsFromFile("/cs/icore/amitlavon/data/internet/repeat_masker/repeat_masker_cut.txt")
+	//e, err := eventsFromFile("/cs/icore/amitlavon/data/internet/repeat_masker/repeat_masker_cut.txt")
+	e, err := eventsFromFile(os.Args[1])
 	
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -22,8 +39,7 @@ func main() {
 	idx := e.index()
 	
 	fmt.Println("Reading regions...")
-	err = processFile("wt_Sp_VS_DKO_Sp_50_tmp.txt", "wt_Sp_VS_DKO_Sp_50_tmp2.txt",
-			idx, []string{"exon", "intron", "promoter", "cpg_island"})
+	err = processFile(os.Args[2], os.Args[3], idx, prior)
 	
 	if err != nil {
 		fmt.Println("Error:", err)
