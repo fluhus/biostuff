@@ -17,6 +17,10 @@ func init() {
 	flags = flag.NewFlagSet("", flag.ContinueOnError)
 }
 
+func String() string {
+	return flagsHelp.String()
+}
+
 // Registers a new int flag.
 func Int(name string, shortName string, typ string, description string,
 		dflt int) *int {
@@ -28,12 +32,18 @@ func Int(name string, shortName string, typ string, description string,
 		flags.IntVar(result, shortName, dflt, "")
 	}
 	
+	// Modify type to fit printing
+	if typ != "" {
+		typ = " <" + typ + ">"
+	}
+	
 	// Add help message
 	if shortName != "" {
-		fmt.Fprintf(flagsHelp, "\t-%s <%s>\n", shortName, typ)
+		fmt.Fprintf(flagsHelp, "\t-%s%s\n", shortName, typ)
 	}
-	fmt.Fprintf(flagsHelp, "\t-%s <%s>\n", name, typ)
-	fmt.Fprintf(flagsHelp, "\t\t%s (default: %d)\n", description, dflt)
+	fmt.Fprintf(flagsHelp, "\t-%s%s\n", name, typ)
+	fmt.Fprintf(flagsHelp, "\t\t%s\n\n", description)
 	
 	return result
 }
+
