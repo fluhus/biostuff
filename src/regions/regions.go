@@ -12,10 +12,19 @@ import (
 func main() {
 	// Parse arguments
 	if len(os.Args) != 4 && len(os.Args) != 5 {
+		fmt.Println("Crosses region files with 'events' such as introns, " +
+				"exons, LINEs etc.")
+		fmt.Println("\nWritten by Amit Lavon (amitlavon1@gmail.com).\n")
 		fmt.Println("Usage:")
-		fmt.Println("regions <events> <regions in> <regions out> [priorities]")
-		fmt.Println("\nPriorities for intron/exon:")
-		fmt.Println("exon,intron,promoter,cpg_island")
+		fmt.Println("regions <events file> <regions in file> <regions out " +
+				"file> [priorities]")
+		fmt.Println("\nFile structures:")
+		fmt.Println("* events file: 4 columns - chromosome, start, end, name.")
+		fmt.Println("* regions file: 3 columns - chromosome, start, end.")
+		fmt.Println("\nPriorities are comma-separated event names, in case " +
+				"several overlap.")
+		fmt.Println("Priorities for intron/exon: exon,intron,promoter," +
+				"cpg_island")
 		os.Exit(1)
 	}
 	
