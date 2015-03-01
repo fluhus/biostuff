@@ -28,14 +28,17 @@ func (s *Scanner) Bed() *Bed {
 	return s.bed
 }
 
+// Returns the rest of the fields after the mandatory bed fields.
 func (s *Scanner) Fields() []string {
 	return s.fields
 }
 
+// Returns the parsed line as is.
 func (s *Scanner) Text() string {
 	return s.text
 }
 
+// Last error that was encountered.
 func (s *Scanner) Err() error {
 	return s.err
 }
