@@ -123,8 +123,7 @@ type tile struct {
 	value float64
 }
 
-// Index type.
-// Key is chromosome, value is a sorted list of tiles.
+// Index type. Key is chromosome, value is a sorted list of tiles.
 type index map[string][]*tile
 
 // Creates an index from the given background file.
@@ -156,7 +155,8 @@ func makeIndex(path string) (index, error) {
 		
 		for i := range chr {
 			if i != 0 && chr[i].start <= chr[i-1].end {
-				return nil, fmt.Errorf("Overlapping tiles: %v, %v", *chr[i-1], *chr[i])
+				return nil, fmt.Errorf("Overlapping tiles: %v, %v", *chr[i-1],
+						*chr[i])
 			}
 		}
 	}
