@@ -30,6 +30,11 @@ func ParseStrings(args []string) error {
 	return flags.Parse(args)
 }
 
+// Returns non-flag arguments.
+func Args() []string {
+	return flags.Args()
+}
+
 
 // ***** FLAG REGISTERING *****************************************************
 
