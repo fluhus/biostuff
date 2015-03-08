@@ -23,7 +23,7 @@ func main() {
 		fmt.Println("Error parsing arguments:", arguments.err)
 		os.Exit(1)
 	} else if !myflag.HasAny() {
-		fmt.Println(usage)
+		fmt.Print(usage + myflag.HelpString())
 		os.Exit(1)
 	}
 	
@@ -36,21 +36,23 @@ func main() {
 		labels = arguments.beds
 		
 		// Create index.
+		fmt.Printf("Reading bed-graph '%s'...\n", arguments.bedgraphs[0])
 		idx, err := makeIndex(arguments.bedgraphs[0])
 		if err != nil {
-			fmt.Println("Error reading bedgraph:", err)
+			fmt.Println("Error reading bed-graph:", err)
 			os.Exit(2)
 		}
 		
 		// Go over bed files.
 		for _, file := range arguments.beds {
-			values, err := aggregate(file, idx, arguments.dist)
+			fmt.Printf("Reading bed '%s'...\n", file)
+			values, err := aggregate(file, []index{idx}, arguments.dist)
 			if err != nil {
-				fmt.Println("Error reading regions file " + file + ":", err)
+				fmt.Println("Error reading bed:", err)
 				os.Exit(2)
 			}
 			
-			data = append(data, values)
+			data = append(data, values[0])
 		}
 		
 	} else {
@@ -58,10 +60,34 @@ func main() {
 		if len(arguments.beds) != 1 {
 			panic("Must have either 1 bed or 1 bed-graph.")
 		}
+		
+		labels = arguments.bedgraphs
+		
+		// Create indexes.
+		var idxs []index
+		for _, file := range arguments.bedgraphs {
+			fmt.Printf("Reading bed-graph '%s'...\n", file)
+			idx, err := makeIndex(file)
+			if err != nil {
+				fmt.Println("Error reading bed-graph:", err)
+				os.Exit(2)
+			}
+			
+			idxs = append(idxs, idx)
+		}
+		
+		// Process bed file.
+		fmt.Printf("Reading bed '%s'...\n", arguments.beds[0])
+		var err error
+		data, err = aggregate(arguments.beds[0], idxs, arguments.dist)
+		if err != nil {
+			fmt.Println("Error reading bed:", err)
+			os.Exit(2)
+		}
 	}
 	
 	// Plot using python
-	fmt.Println("Printing image to file...")
+	fmt.Println("Generating image...")
 	plotWithPython(data, labels, arguments.img)
 	
 	fmt.Println("Done!")
@@ -98,6 +124,7 @@ func parseArguments() {
 	// Parse!
 	arguments.err = myflag.Parse()
 	if arguments.err != nil { return }
+	if !myflag.HasAny() { return }
 	
 	// Check argument validity
 	if *bedgraphFile != "" && *bedFile != "" {
@@ -223,6 +250,17 @@ func (idx index) collect(chr string, pos int, values []float64) {
 	}
 }
 
+// Counts how many tiles there are in the index.
+func (idx index) size() int {
+	result := 0
+	
+	for _, chr := range idx {
+		result += len(chr)
+	}
+	
+	return result
+}
+
 // Functions for sorting tiles.
 type tileSorter []*tile
 func (s tileSorter) Len() int {return len(s)}
@@ -233,25 +271,33 @@ func (s tileSorter) Swap(i, j int) {s[i], s[j] = s[j], s[i]}
 // ***** AGGREGATION **********************************************************
 
 // Creates an aggregation value slice for the given bed file.
-func aggregate(path string, idx index, dist int) ([]float64, error) {
+func aggregate(path string, idx []index, dist int) ([][]float64, error) {
 	f, err := os.Open(path)
 	if err != nil { return nil, err }
 	scanner := bed.NewScanner(f)
-	result := make([]float64, dist*2 + 1)
 	
-	lineNum := 1
+	result := make([][]float64, len(idx))
+	for i := range result {
+		result[i] = make([]float64, dist*2 + 1)
+	}
+	
+	lineCount := 0
 	
 	for scanner.Scan() {
-		lineNum++
+		lineCount++
 		b := scanner.Bed()
 		pos := (b.Start + b.End) / 2
 		
-		idx.collect(b.Chr, pos, result)
+		for i := range idx {
+			idx[i].collect(b.Chr, pos, result[i])
+		}
 	}
 	
-	// Normalize by number of lines (average signal)
+	// Normalize by number of lines (average signal).
 	for i := range result {
-		result[i] /= float64(lineNum-1)
+		for j := range result[i] {
+			result[i][j] /= float64(lineCount)
+		}
 	}
 	
 	return result, nil
@@ -271,12 +317,15 @@ func valuesToText(values []float64) []byte {
 	return result
 }
 
+// Plots the given data using python. An empty output file name will result in
+// only showing the plot.
 func plotWithPython(filesData [][]float64, labels []string, outFile string) {
-	panic("check outfile for empty!")
-	// Create imports
-	src := []byte("import matplotlib.pyplot as plt\n")
+	src := bytes.NewBuffer(nil)
 	
-	// Find min and max for axes
+	// Create imports.
+	fmt.Fprintf(src, "import matplotlib.pyplot as plt\n")
+	
+	// Find min and max for axes.
 	minValue := math.MaxFloat64
 	maxValue := -math.MaxFloat64
 	for i := range filesData {
@@ -292,32 +341,36 @@ func plotWithPython(filesData [][]float64, labels []string, outFile string) {
 	axesYMax := maxValue + 0.3*(maxValue-minValue)
 	
 	// Add x=0 marker
-	src = append(src, fmt.Sprintf("plt.plot([0,0],[%f,%f],'--k')\n", axesYMin, axesYMax)...)
+	fmt.Fprintf(src, "plt.plot([0,0],[%f,%f],'--k')\n", axesYMin, axesYMax)
 	
-	// Add plot for each file
+	// Add plot for each file.
 	for i,values := range filesData {
-		src = append(src, fmt.Sprintf("plt.plot(range(%d,%d),[",
-				-arguments.dist, arguments.dist+1)...)
+		fmt.Fprintf(src, "plt.plot(range(%d,%d),[",
+				-arguments.dist, arguments.dist+1)
 		for _,v := range values {
-			src = append(src, fmt.Sprintf("%f,", v)...)
+			fmt.Fprintf(src, "%f,", v)
 		}
-		src = append(src, ("],linewidth=2, label='" + labels[i] +
-				"')\n")...)
+		fmt.Fprintf(src, "],linewidth=2, label='" + labels[i] +
+				"')\n")
 	}
 	
-	// Add figure settings
-	src = append(src, fmt.Sprintf("plt.title('Aggregation plot')\n")...)
-	src = append(src, fmt.Sprintf("plt.xlabel('Distance from region center')\n")...)
-	src = append(src, fmt.Sprintf("plt.ylabel('Average signal')\n")...)
-	src = append(src, fmt.Sprintf("plt.axis([%f,%f,%f,%f])\n",
-			axesXMin, axesXMax, axesYMin, axesYMax)...)
-	src = append(src, fmt.Sprintf("plt.legend(loc='upper right')\n")...)
+	// Add figure settings.
+	fmt.Fprintf(src, "plt.title('Aggregation plot')\n")
+	fmt.Fprintf(src, "plt.xlabel('Distance from region center')\n")
+	fmt.Fprintf(src, "plt.ylabel('Average signal')\n")
+	fmt.Fprintf(src, "plt.axis([%f,%f,%f,%f])\n",
+			axesXMin, axesXMax, axesYMin, axesYMax)
+	fmt.Fprintf(src, "plt.legend(loc='upper right')\n")
 	
-	// Save to file command
-	src = append(src, fmt.Sprintf("plt.savefig('%s',dpi=150)", outFile)...)
+	// Save to file command.
+	if outFile == "" {
+		fmt.Fprintf(src, "plt.show()")
+	} else {
+		fmt.Fprintf(src, "plt.savefig('%s',dpi=150)", outFile)
+	}
 	
 	cmd := exec.Command("python")
-	cmd.Stdin = bytes.NewReader(src)
+	cmd.Stdin = src
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
@@ -354,18 +407,6 @@ Each region file should include a header and at least 3 columns - chromosome,
 start and end. These columns should be the first ones.
 
 Options:
-	-b <path>
-	-bg <path>
-		Background signal file. Should be in bed-graph format, with a header.
-
-	-i <path>
-	-img <path>
-		Output image file.
-
-	-r <integer>
-	-range <integer>
-		Range around tiles to search. Will affect the width of the plot.
-		Default: 5000.
 `
 
 
