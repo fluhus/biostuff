@@ -1,17 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"bufio"
-	"strings"
-	"strconv"
-	"sort"
-	"os/exec"
-	"bytes"
+	"fmt"
 	"flag"
-	"io/ioutil"
 	"math"
+	"sort"
+	"bytes"
+	"os/exec"
+	"io/ioutil"
+	"bioformats/bed"
+	"bioformats/bed/bedgraph"
 )
 
 
@@ -130,26 +129,25 @@ type index map[string][]*tile
 func makeIndex(path string) (index, error) {
 	f, err := os.Open(path)
 	if err != nil { return nil, err }
-	scanner := bufio.NewScanner(f)
+	scanner := bedgraph.NewScanner(f)
 
-	scanner.Scan()
 	result := make(map[string][]*tile)
 	
+	// Scan bed graph background.
 	for scanner.Scan() {
+		// Parse line.
+		b := scanner.Bed()
+		b.End--   // To avoid overlapping tiles.
 		
-		// Parse line
-		b, err := parseBedGraphLine(scanner.Text(), 0)
-		if err != nil { return nil, err }
-		b.end--   // to avoid overlapping tiles
-		
-		// Add chromosome
-		if _,ok := result[b.chr]; !ok {
-			result[b.chr] = nil
+		// Add chromosome.
+		if _,ok := result[b.Chr]; !ok {
+			result[b.Chr] = nil
 		}
 		
-		result[b.chr] = append(result[b.chr], &tile{b.start, b.end, b.value})
+		result[b.Chr] = append(result[b.Chr], &tile{b.Start, b.End, b.Value})
 	}
 	
+	// Sort index.
 	for _,chr := range result {
 		sort.Sort(tileSorter(chr))
 		
@@ -201,90 +199,23 @@ func (s tileSorter) Less(i, j int) bool {return s[i].start < s[j].start}
 func (s tileSorter) Swap(i, j int) {s[i], s[j] = s[j], s[i]}
 
 
-// ***** BED PARSING **********************************************************
-
-// A single bed line.
-type bed struct {
-	chr string
-	start int
-	end int
-}
-
-// Creates a bed object from a bed line.
-func parseBedLine(line string, offset int) (*bed, error) {
-	fields := strings.Split(line, "\t")
-	if len(fields) < offset + 3 {
-		return nil, fmt.Errorf("Bad number of fields in bed: %d, expected %d",
-				len(fields), offset + 3)
-	}
-	
-	result := &bed{}
-	
-	result.chr = fields[0 + offset]
-	
-	var err error
-	result.start, err = strconv.Atoi(fields[1 + offset])
-	if err != nil { return nil, err }
-	
-	result.end, err = strconv.Atoi(fields[2 + offset])
-	if err != nil { return nil, err }
-	
-	return result, nil
-}
-
-// A single bed-graph line.
-type bedGraph struct {
-	chr string
-	start int
-	end int
-	value float64
-}
-
-// Creates a bed-graph object from a bed line.
-func parseBedGraphLine(line string, offset int) (*bedGraph, error) {
-	fields := strings.Split(line, "\t")
-	if len(fields) < offset + 4 {
-		return nil, fmt.Errorf("Bad number of fields in bed: %d, expected %d",
-				len(fields), offset + 4)
-	}
-	
-	result := &bedGraph{}
-	
-	result.chr = fields[0 + offset]
-	
-	var err error
-	result.start, err = strconv.Atoi(fields[1 + offset])
-	if err != nil { return nil, err }
-	
-	result.end, err = strconv.Atoi(fields[2 + offset])
-	if err != nil { return nil, err }
-	
-	result.value, err = strconv.ParseFloat(fields[3 + offset], 64)
-	if err != nil { return nil, err }
-	
-	return result, nil
-}
-
-
 // ***** AGGREGATION **********************************************************
 
 // Creates an aggregation value slice for the given bed file.
 func aggregate(path string, idx index, dist int) ([]float64, error) {
 	f, err := os.Open(path)
 	if err != nil { return nil, err }
-	scanner := bufio.NewScanner(f)
+	scanner := bed.NewScanner(f)
 	result := make([]float64, dist*2 + 1)
 	
-	scanner.Scan()
 	lineNum := 1
 	
 	for scanner.Scan() {
 		lineNum++
-		b, err := parseBedLine(scanner.Text(), 0)
-		if err != nil { return nil, fmt.Errorf("In line %d: %v", lineNum, err) }
-		pos := (b.start + b.end) / 2
+		b := scanner.Bed()
+		pos := (b.Start + b.End) / 2
 		
-		idx.collect(b.chr, pos, result)
+		idx.collect(b.Chr, pos, result)
 	}
 	
 	// Normalize by number of lines (average signal)
