@@ -3,12 +3,12 @@ package main
 import (
 	"os"
 	"fmt"
-	"flag"
 	"math"
 	"sort"
 	"bytes"
+	"myflag"
 	"os/exec"
-	"io/ioutil"
+	//"io/ioutil"
 	"bioformats/bed"
 	"bioformats/bed/bedgraph"
 )
@@ -17,42 +17,52 @@ import (
 // ***** MAIN *****************************************************************
 
 func main() {
-	// Parse arguments
-	if len(os.Args) == 1 {
-		fmt.Println(usage)
-		os.Exit(0)
-	}
-	
+	// Parse arguments.
 	parseArguments()
 	if arguments.err != nil {
 		fmt.Println("Error parsing arguments:", arguments.err)
 		os.Exit(1)
+	} else if !myflag.HasAny() {
+		fmt.Println(usage)
+		os.Exit(1)
 	}
 	
-	// Index signals
-	fmt.Println("Reading background...")
-	idx, err := makeIndex(arguments.bgFile)
-	if err != nil {
-		fmt.Println("Error reading background:", err)
-		os.Exit(2)
-	}
+	var data [][]float64  // Numbers to plot.
+	var labels []string   // Labels for plot legend.
 	
-	// Aggregate bed results
-	fmt.Println("Reading region data...")
-	var filesData [][]float64
-	
-	for _,file := range arguments.regionFiles {
-		values, err := aggregate(file, idx, arguments.dist)
+	// Choose strategy.
+	if len(arguments.bedgraphs) == 1 {
+		// Compare 1 bedgraph to many beds.
+		labels = arguments.beds
+		
+		// Create index.
+		idx, err := makeIndex(arguments.bedgraphs[0])
 		if err != nil {
-			fmt.Println("Error reading regions file " + file + ":", err)
+			fmt.Println("Error reading bedgraph:", err)
 			os.Exit(2)
 		}
-		filesData = append(filesData, values)
+		
+		// Go over bed files.
+		for _, file := range arguments.beds {
+			values, err := aggregate(file, idx, arguments.dist)
+			if err != nil {
+				fmt.Println("Error reading regions file " + file + ":", err)
+				os.Exit(2)
+			}
+			
+			data = append(data, values)
+		}
+		
+	} else {
+		// Compare 1 bed to many bedgraphs.
+		if len(arguments.beds) != 1 {
+			panic("Must have either 1 bed or 1 bed-graph.")
+		}
 	}
 	
 	// Plot using python
 	fmt.Println("Printing image to file...")
-	plotWithPython(filesData, arguments.imgFile)
+	plotWithPython(data, labels, arguments.img)
 	
 	fmt.Println("Done!")
 }
@@ -60,55 +70,76 @@ func main() {
 
 // ***** ARGUMENT PARSING *****************************************************
 
-// Holds parsed arguments
+// Holds parsed arguments.
 var arguments struct {
-	bgFile string
-	imgFile string
-	regionFiles []string
-	dist int
-	err error
+	bedgraphs []string
+	beds      []string
+	img       string
+	dist      int
+	bin       int
+	err       error
 }
 
 // Parses input arguments. arguments.err will hold the parsing error,
-// if encountered.
+// if encountered. Caller should check for myflag.HasAny().
 func parseArguments() {
-	// Create flag set
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(ioutil.Discard)
-	
-	// Register arguments
-	flags.StringVar(&arguments.bgFile, "bg", "", "")
-	flags.StringVar(&arguments.bgFile, "b", "", "")
-	flags.StringVar(&arguments.imgFile, "img", "", "")
-	flags.StringVar(&arguments.imgFile, "i", "", "")
-	flags.IntVar(&arguments.dist, "range", 5000, "")
-	flags.IntVar(&arguments.dist, "r", 5000, "")
+	// Register arguments.
+	bedgraphFile := myflag.String("bed-graph", "bg", "path",
+			"Bed graph file for 1 bed-graph to many beds plot.", "")
+	bedFile := myflag.String("bed", "b", "path",
+			"Bed file for 1 bed to many bed-graphs plot.", "")
+	img := myflag.String("img", "i", "path",
+			"Output image file. If not given, image will be opened.", "")
+	dist := myflag.Int("range", "r", "integer",
+			"Range around tile center to plot. Default is 5000.", 5000)
+	bin := myflag.Int("bin", "", "integer",
+			"Size of each bin in the histogram. Default is 1.", 1)
 	
 	// Parse!
-	arguments.err = flags.Parse(os.Args[1:])
+	arguments.err = myflag.Parse()
 	if arguments.err != nil { return }
-	arguments.regionFiles = flags.Args()
 	
 	// Check argument validity
-	if arguments.bgFile == "" {
-		arguments.err = fmt.Errorf("No background file selected")
+	if *bedgraphFile != "" && *bedFile != "" {
+		arguments.err = fmt.Errorf("Only one common file may be set." +
+				"Please choose either bed or bedgraph.")
 		return
 	}
 	
-	if arguments.imgFile == "" {
-		arguments.err = fmt.Errorf("No output image file selected")
+	if *bedgraphFile == "" && *bedFile == "" {
+		arguments.err = fmt.Errorf("No common file was set." +
+				"Please choose either bed or bedgraph.")
 		return
 	}
 	
-	if len(arguments.regionFiles) == 0 {
-		arguments.err = fmt.Errorf("No region files selected")
+	if len(myflag.Args()) == 0 {
+		arguments.err = fmt.Errorf("No query files.")
 		return
 	}
 	
-	if arguments.dist < 0 {
-		arguments.err = fmt.Errorf("Bad range: %d, should be non-negative",
-				arguments.dist)
+	if *dist < 0 {
+		arguments.err = fmt.Errorf("Bad range: %d, should be non-negative.",
+				*dist)
 		return
+	}
+	
+	if *bin < 0 {
+		arguments.err = fmt.Errorf("Bad bin size: %d, should be non-negative.",
+				*bin)
+		return
+	}
+	
+	// Assign to arguments.
+	arguments.dist = *dist
+	arguments.bin = *bin
+	arguments.img = *img
+	
+	if *bedFile != "" {
+		arguments.beds = []string{ *bedFile }
+		arguments.bedgraphs = myflag.Args()
+	} else {
+		arguments.bedgraphs = []string{ *bedgraphFile }
+		arguments.beds = myflag.Args()
 	}
 }
 
@@ -240,7 +271,8 @@ func valuesToText(values []float64) []byte {
 	return result
 }
 
-func plotWithPython(filesData [][]float64, outFile string) {
+func plotWithPython(filesData [][]float64, labels []string, outFile string) {
+	panic("check outfile for empty!")
 	// Create imports
 	src := []byte("import matplotlib.pyplot as plt\n")
 	
@@ -269,7 +301,7 @@ func plotWithPython(filesData [][]float64, outFile string) {
 		for _,v := range values {
 			src = append(src, fmt.Sprintf("%f,", v)...)
 		}
-		src = append(src, ("],linewidth=2, label='" + arguments.regionFiles[i] +
+		src = append(src, ("],linewidth=2, label='" + labels[i] +
 				"')\n")...)
 	}
 	
