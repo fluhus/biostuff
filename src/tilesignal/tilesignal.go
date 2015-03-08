@@ -29,7 +29,7 @@ func main() {
 		fmt.Println("Averages signal value along tiles.")
 		fmt.Println("\nWritten by Amit Lavon (amitlavon1@gmail.com).")
 		fmt.Println("\nUsage:")
-		fmt.Println("tilesignal <bedgraph signals> <in bed> <out bed>")
+		fmt.Println("tilesignal <signals bedgraph> <in bed> <out bed>")
 		os.Exit(1)
 	}
 	
