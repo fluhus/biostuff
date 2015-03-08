@@ -22,17 +22,32 @@ func init() {
 
 // Parses the program's input arguments.
 func Parse() error {
-	return flags.Parse(os.Args[1:])
+	return Parse(os.Args[1:])
 }
 
 // Parses the given slice of strings.
 func ParseStrings(args []string) error {
+	if len(args) == 0 {
+		hasAny = false
+	} else {
+		hasAny = true
+	}
+	
 	return flags.Parse(args)
 }
 
 // Returns non-flag arguments.
 func Args() []string {
 	return flags.Args()
+}
+
+// Determines if ANY flags were given to the parse function.
+var hasAny bool
+
+// Determines if ANY flags were given to the parse function.
+// Useful for help message printing.
+func HasAny() bool {
+	return hasAny
 }
 
 
