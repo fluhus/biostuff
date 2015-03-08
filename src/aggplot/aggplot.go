@@ -83,7 +83,7 @@ func main() {
 		
 		// Signals from different bed-graphs should be normalized.
 		fmt.Println("Normalizing...")
-		//normalize(data)
+		normalize(data)
 	}
 	
 	// Generate bins.
@@ -215,7 +215,7 @@ func max(a, b int) int {
 	}
 }
 
-// Normalize such that the medians are all 1.
+// Normalize such that the mins are all 1.
 func normalize(data [][]float64) {
 	for i := range data {
 		med := minFloat(data[i])
