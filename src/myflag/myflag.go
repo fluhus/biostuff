@@ -8,16 +8,16 @@ import (
 	"bytes"
 )
 
+func init() {
+	Reset()
+}
+
 // Holds flags.
 var flags *flag.FlagSet
 
 // Instanciates the flag set.
 func Reset() {
 	flags = flag.NewFlagSet("", flag.ContinueOnError)
-}
-
-func init() {
-	Reset()
 }
 
 // Parses the program's input arguments.
