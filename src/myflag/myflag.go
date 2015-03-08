@@ -22,7 +22,7 @@ func Reset() {
 
 // Parses the program's input arguments.
 func Parse() error {
-	return Parse(os.Args[1:])
+	return ParseStrings(os.Args[1:])
 }
 
 // Parses the given slice of strings.
