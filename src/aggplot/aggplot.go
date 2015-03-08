@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"bufio"
 	"bytes"
 	"myflag"
 	"os/exec"
@@ -84,11 +85,29 @@ func main() {
 			fmt.Println("Error reading bed:", err)
 			os.Exit(2)
 		}
+		
+		// Signals from different bed-graphs should be normalized.
+		fmt.Println("Normalizing...")
+		//normalize(data)
+	}
+	
+	// Generate bins.
+	xvals := make([]int, 2 * arguments.dist + 1)
+	for i := range xvals {
+		xvals[i] = i - arguments.dist
+	}
+	
+	// Output text file.
+	if arguments.txt != "" {
+		fmt.Println("Printing to text file...")
+		printData(data, xvals, labels, arguments.txt)
 	}
 	
 	// Plot using python
-	fmt.Println("Generating image...")
-	plotWithPython(data, labels, arguments.img)
+	if arguments.img != "" {
+		fmt.Println("Generating image...")
+		plotWithPython(data, xvals, labels, arguments.img)
+	}
 	
 	fmt.Println("Done!")
 }
@@ -98,24 +117,29 @@ func main() {
 
 // Holds parsed arguments.
 var arguments struct {
-	bedgraphs []string
-	beds      []string
-	img       string
-	dist      int
-	bin       int
-	err       error
+	bedgraphs []string   // Input bed-graph files.
+	beds      []string   // Input bed files.
+	img       string     // Output image file.
+	txt       string     // Output text file.
+	dist      int        // Distance around tile center.
+	bin       int        // Bin size.
+	err       error      // Parsing error.
 }
 
 // Parses input arguments. arguments.err will hold the parsing error,
 // if encountered. Caller should check for myflag.HasAny().
 func parseArguments() {
 	// Register arguments.
-	bedgraphFile := myflag.String("bed-graph", "bg", "path",
+	bedgraphFile := myflag.String("bedgraph", "bg", "path",
 			"Bed graph file for 1 bed-graph to many beds plot.", "")
 	bedFile := myflag.String("bed", "b", "path",
 			"Bed file for 1 bed to many bed-graphs plot.", "")
 	img := myflag.String("img", "i", "path",
-			"Output image file. If not given, image will be opened.", "")
+			"Output image file. Give 'show' to show the image without saving " +
+			"it.", "")
+	txt := myflag.String("text", "t", "path",
+			"Output text file. If not given, no text output will be " +
+			"generated.", "")
 	dist := myflag.Int("range", "r", "integer",
 			"Range around tile center to plot. Default is 5000.", 5000)
 	bin := myflag.Int("bin", "", "integer",
@@ -160,6 +184,7 @@ func parseArguments() {
 	arguments.dist = *dist
 	arguments.bin = *bin
 	arguments.img = *img
+	arguments.txt = *txt
 	
 	if *bedFile != "" {
 		arguments.beds = []string{ *bedFile }
@@ -240,7 +265,7 @@ func (idx index) collect(chr string, pos int, values []float64) {
 	}
 	
 	// Update values
-	for _,t := range tiles {
+	for _, t := range tiles {
 		from := max(pos - dist, t.start)
 		to := min(pos + dist, t.end)
 		
@@ -306,11 +331,22 @@ func aggregate(path string, idx []index, dist int) ([][]float64, error) {
 
 // ***** PYTHON INTERFACE *****************************************************
 
-// Converts a value slice to a python list literal.
-func valuesToText(values []float64) []byte {
+// Converts a float slice to a python list literal.
+func floatsToText(values []float64) []byte {
 	result := []byte("[")
 	for _,v := range values {
-		result = append(result, fmt.Sprintf("%f,", v)...)
+		result = append(result, fmt.Sprintf("%v,", v)...)
+	}
+	result = append(result, "]"...)
+	
+	return result
+}
+
+// Converts an int slice to a python list literal.
+func intsToText(values []int) []byte {
+	result := []byte("[")
+	for _,v := range values {
+		result = append(result, fmt.Sprintf("%v,", v)...)
 	}
 	result = append(result, "]"...)
 	
@@ -319,7 +355,8 @@ func valuesToText(values []float64) []byte {
 
 // Plots the given data using python. An empty output file name will result in
 // only showing the plot.
-func plotWithPython(filesData [][]float64, labels []string, outFile string) {
+func plotWithPython(filesData [][]float64, xvals []int, labels []string,
+		outFile string) {
 	src := bytes.NewBuffer(nil)
 	
 	// Create imports.
@@ -345,13 +382,8 @@ func plotWithPython(filesData [][]float64, labels []string, outFile string) {
 	
 	// Add plot for each file.
 	for i,values := range filesData {
-		fmt.Fprintf(src, "plt.plot(range(%d,%d),[",
-				-arguments.dist, arguments.dist+1)
-		for _,v := range values {
-			fmt.Fprintf(src, "%f,", v)
-		}
-		fmt.Fprintf(src, "],linewidth=2, label='" + labels[i] +
-				"')\n")
+		fmt.Fprintf(src, "plt.plot(%s,%s,linewidth=2,label='%s')\n",
+				intsToText(xvals), floatsToText(values), labels[i])
 	}
 	
 	// Add figure settings.
@@ -363,7 +395,7 @@ func plotWithPython(filesData [][]float64, labels []string, outFile string) {
 	fmt.Fprintf(src, "plt.legend(loc='upper right')\n")
 	
 	// Save to file command.
-	if outFile == "" {
+	if outFile == "show" {
 		fmt.Fprintf(src, "plt.show()")
 	} else {
 		fmt.Fprintf(src, "plt.savefig('%s',dpi=150)", outFile)
@@ -374,6 +406,59 @@ func plotWithPython(filesData [][]float64, labels []string, outFile string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Run()
+}
+
+
+// ***** TEXT OUTPUT **********************************************************
+
+func printData(data [][]float64, xvals []int, labels []string,
+		file string) error {
+	// Input assertions.
+	if len(labels) == 0 {
+		panic("Empty label set is invalid.")
+	}
+	if len(xvals) == 0 {
+		panic("Empty x-value set is invalid.")
+	}
+	if len(data) == 0 {
+		panic("Empty data is invalid.")
+	}
+	if len(data) != len(labels) {
+		panic("Data and labels are of different lengths.")
+	}
+	if len(data[0]) != len(xvals) {
+		panic(fmt.Sprintf("Data and x-values are of different lengths: %v, %v",
+				len(data[0]), len(xvals)))
+	}
+
+	// Open output file.
+	fout, err := os.Create(file)
+	if err != nil { return err }
+	defer fout.Close()
+	
+	bout := bufio.NewWriter(fout)
+	defer bout.Flush()
+	
+	// Print labels.
+	fmt.Fprint(bout, "distance")
+	for i := range labels {
+		fmt.Fprintf(bout, "\t%s", labels[i])
+	}
+	
+	fmt.Fprint(bout, "\n")
+	
+	// Print data.
+	for i := range data[0] {
+		fmt.Fprintf(bout, "%v", xvals[i])
+		
+		for j := range data {
+			fmt.Fprintf(bout, "\t%v", data[j][i])
+		}
+		
+		fmt.Fprint(bout, "\n")
+	}
+	
+	return nil
 }
 
 
@@ -395,16 +480,46 @@ func max(a, b int) int {
 	}
 }
 
+// Normalize such that the medians are all 1.
+func normalize(data [][]float64) {
+	for i := range data {
+		med := minFloat(data[i])
+		if med == 0 { continue }
+		
+		for j := range data[i] {
+			data[i][j] /= med
+		}
+	}
+}
+
+// Returns the minimal value.
+func minFloat(values []float64) float64 {
+	result := values[0]
+	for _, v := range values {
+		if v < result { result = v }
+	}
+	return result
+}
+
+// Returns the median value.
+func median(values []float64) float64 {
+	sorted := make([]float64, len(values))
+	copy(sorted, values)
+	sort.Sort(sort.Float64Slice(sorted))
+	
+	return sorted[len(sorted) / 2]
+}
+
 const usage =
 `Creates aggregation plots of average signals around tiles.
 
 Written by Amit Lavon (amitlavon1@gmail.com).
 
 Usage:
-aggplot [options] <regions file 1> <region file 2> <region file 3>...
+aggplot [options] <bed/graph file 1> <bed/graph file 2> <bed/graph file 3>...
 
-Each region file should include a header and at least 3 columns - chromosome,
-start and end. These columns should be the first ones.
+Choose either 1 bed-graph to many beds using '-bedgraph', or 1 bed to many
+bedgraphs using '-bed'.
 
 Options:
 `
