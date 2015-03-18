@@ -7,11 +7,11 @@ import (
 	"math"
 )
 
-const assert = true
+// Enables assertions for debugging.
+const assert = false
 
 // Performs an exact (2-sided) binomial test for the difference between the 2
-// given samples. Percision issues occur for large n's. In that case, use
-// a z-test instead.
+// given samples.
 func bindiff(n1, k1, n2, k2 int) (pvalue float64) {
 	// Check input.
 	if assert && (n1 < k1 || k1 < 0) {
@@ -20,6 +20,11 @@ func bindiff(n1, k1, n2, k2 int) (pvalue float64) {
 	
 	if assert && (n2 < k2 || k2 < 0) {
 		panic(fmt.Sprintf("Bad n2, k2: %d, %d", n2, k2))
+	}
+
+	// n=0 or both k=0 mean probability of 1.
+	if n1 == 0 || n2 == 0 || (k1 == 0 && k2 == 0) {
+		return 1
 	}
 
 	// Calculate probabilities.
@@ -77,12 +82,33 @@ func bindiff(n1, k1, n2, k2 int) (pvalue float64) {
 
 		pvalue += cdf * binoPdf(n1, k1, p)
 	}
+
+	if assert && math.IsNaN(pvalue) {
+		panic(fmt.Sprintf("NaN p-value for n1=%d k1=%d n2=%d k2=%d.",
+				n1, k1, n2, k2))
+	}
 	
 	return
 }
 
 // Returns P(k | n,p).
 func binoPdf(n, k int, p float64) float64 {
+	// Edge cases, to prevent NaN.
+	if p == 0 {
+		if k == 0 {
+			return 1
+		} else {
+			return 0
+		}
+	}
+	if p == 1 {
+		if k == n {
+			return 1
+		} else {
+			return 0
+		}
+	}
+	
 	result := math.Exp( logChoose(n, k) + float64(k) * math.Log(p) +
 			float64(n - k) * math.Log(1 - p) )
 	
