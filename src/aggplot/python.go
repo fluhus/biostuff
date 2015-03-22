@@ -13,7 +13,7 @@ import (
 // Converts a float slice to a python list literal.
 func floatsToText(values []float64) []byte {
 	result := []byte("[")
-	for _,v := range values {
+	for _, v := range values {
 		result = append(result, fmt.Sprintf("%v,", v)...)
 	}
 	result = append(result, "]"...)

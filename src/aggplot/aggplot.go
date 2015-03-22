@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"fmt"
+	"math"
 	"sort"
 	"bufio"
 	"myflag"
@@ -131,6 +132,11 @@ func aggregate(path string, idx []index, dist int) ([][]float64, error) {
 		for i := range idx {
 			idx[i].collect(b.Chr, pos, result[i])
 		}
+	}
+
+	// Ensure EOF.
+	if scanner.Err() != nil {
+		return nil, scanner.Err()
 	}
 	
 	// Normalize by number of lines (average signal).
