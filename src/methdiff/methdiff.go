@@ -90,9 +90,13 @@ func main() {
 			
 			r1 := float64(tile1.methd) / float64(tile1.total)
 			r2 := float64(tile2.methd) / float64(tile2.total)
-			
-			fmt.Fprintf(bout, "%s\t%d\t%f\t%f\t%f\n", chr, pos, r1, r2,
-					tilediff(tile1, tile2))
+
+			pvalue := tilediff(tile1, tile2)
+
+			if arguments.threshold == 1 || pvalue <= arguments.threshold {
+				fmt.Fprintf(bout, "%s\t%d\t%f\t%f\t%f\n", chr, pos, r1, r2,
+						pvalue)
+			}
 		}
 	}
 }
@@ -214,6 +218,7 @@ var arguments struct {
 	inputs1 []string
 	inputs2 []string
 	output string
+	threshold float64
 	err error
 }
 
@@ -227,6 +232,9 @@ func parseArguments() {
 	in2 := myflag.String("in2", "2", "paths",
 			"Comma separated meth files of the second group.", "")
 	out := myflag.String("out", "o", "path", "Output file.", "")
+	filter := myflag.Float("filter", "f", "p-value",
+			"Omit results with p-value greater than the given one." +
+			" Default: No filtering.", 1)
 
 	arguments.err = myflag.Parse()
 	if arguments.err != nil { return }
@@ -273,6 +281,14 @@ func parseArguments() {
 			return
 		}
 	}
+
+	// Handle threshold.
+	if *filter < 0 || *filter > 1 {
+		arguments.err = fmt.Errorf("Invalid filtering threshold: %f." +
+				" Should be between 0 and 1.", *filter)
+		return
+	}
+	arguments.threshold = *filter
 }
 
 var usage =
