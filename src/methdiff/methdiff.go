@@ -12,6 +12,10 @@ import (
 	"runtime/pprof"
 )
 
+// Length of a tile in bases.
+// TODO(amit): Make this user configurable.
+const tileSize = 100
+
 func main() {
 	// Parse arguments.
 	parseArguments()
@@ -48,21 +52,6 @@ func main() {
 			os.Exit(2)
 		}
 	}
-
-	// Open output file.
-	fmt.Println("Diffing...")
-	fout, err := os.Create(arguments.output)
-	if err != nil {
-		fmt.Println("Error opening output file:", err)
-		os.Exit(2)
-	}
-	defer fout.Close()
-	
-	bout := bufio.NewWriter(fout)
-	defer bout.Flush()
-
-	fmt.Fprintf(bout, "chromosome\tposition\tmeth_ratio_%s\tmeth_ratio_%s\t" +
-			"p_value\n", arguments.label1, arguments.label2)
 	
 	// Sort chromosomes, for sorted output.
 	chrs := make([]string, 0, len(t1))
@@ -71,7 +60,12 @@ func main() {
 	}
 	sort.Sort(chrSorter(chrs))
 
-	// Compare methylation rates.
+	// Compare methylation rates and collect p-values.
+	fmt.Println("Diffing...")
+	var lines []string  // Text to be printed before p-value and q-value.
+	var pvals []float64
+	var qvals []float64
+	
 	for _, chr := range chrs {
 		if t2[chr] == nil { continue }
 
@@ -91,12 +85,36 @@ func main() {
 			r1 := float64(tile1.methd) / float64(tile1.total)
 			r2 := float64(tile2.methd) / float64(tile2.total)
 
-			pvalue := tilediff(tile1, tile2)
+			pvals = append(pvals, tilediff(tile1, tile2))
+			
+			lines = append(lines, fmt.Sprintf("%s\t%d\t%d\t%f\t%f",
+					chr, pos, pos + tileSize - 1, r1, r2))
+		}
+	}
+	
+	// Calculate FDR.
+	qvals = fdr(pvals)
+	
+	// Open output file.
+	fout, err := os.Create(arguments.output)
+	if err != nil {
+		fmt.Println("Error opening output file:", err)
+		os.Exit(2)
+	}
+	defer fout.Close()
+	
+	bout := bufio.NewWriter(fout)
+	defer bout.Flush()
 
-			if arguments.threshold == 1 || pvalue <= arguments.threshold {
-				fmt.Fprintf(bout, "%s\t%d\t%f\t%f\t%f\n", chr, pos, r1, r2,
-						pvalue)
-			}
+	fmt.Fprintf(bout, "chromosome\ttile_start\ttile_end\tmeth_ratio_%s\t" +
+			"meth_ratio_%s\tp_value\tq_value\n", arguments.label1,
+			arguments.label2)
+	
+	// Print output.
+	fmt.Println("Printing...")
+	for i := range lines {
+		if arguments.threshold == 1 || qvals[i] <= arguments.threshold {
+			fmt.Fprintf(bout, "%s\t%f\t%f\n", lines[i], pvals[i], qvals[i])
 		}
 	}
 }
@@ -146,7 +164,7 @@ func tileFile(file string, out map[string]tiles) error {
 		}
 		
 		// Round position to tile.
-		pos = pos / 100 * 100
+		pos = pos / tileSize * tileSize
 		
 		// Create tile.
 		if out[chr][pos] == nil {
@@ -233,7 +251,7 @@ func parseArguments() {
 			"Comma separated meth files of the second group.", "")
 	out := myflag.String("out", "o", "path", "Output file.", "")
 	filter := myflag.Float("filter", "f", "p-value",
-			"Omit results with p-value greater than the given one." +
+			"Omit results with q-value greater than the given one." +
 			" Default: No filtering.", 1)
 
 	arguments.err = myflag.Parse()
