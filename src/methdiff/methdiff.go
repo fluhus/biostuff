@@ -21,7 +21,7 @@ func main() {
 	parseArguments()
 	if !myflag.HasAny() {
 		fmt.Println(usage)
-		fmt.Println(myflag.HelpString())
+		fmt.Print(myflag.HelpString())
 		os.Exit(1)
 	}
 
@@ -106,11 +106,11 @@ func main() {
 	bout := bufio.NewWriter(fout)
 	defer bout.Flush()
 
+	// Print output.
 	fmt.Fprintf(bout, "chromosome\ttile_start\ttile_end\tmeth_ratio_%s\t" +
 			"meth_ratio_%s\tp_value\tq_value\n", arguments.label1,
 			arguments.label2)
 	
-	// Print output.
 	fmt.Println("Printing...")
 	for i := range lines {
 		if arguments.threshold == 1 || qvals[i] <= arguments.threshold {
