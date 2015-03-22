@@ -22,7 +22,7 @@ var arguments struct {
 func parseArguments() {
 	// Register arguments.
 	bedgraphFile := myflag.String("bedgraph", "bg", "path",
-			"Bed graph file for 1 bed-graph to many beds plot.", "")
+			"Bed-graph file for 1 bed-graph to many beds plot.", "")
 	bedFile := myflag.String("bed", "b", "path",
 			"Bed file for 1 bed to many bed-graphs plot.", "")
 	img := myflag.String("img", "i", "path",
@@ -84,12 +84,13 @@ const usage =
 Written by Amit Lavon (amitlavon1@gmail.com).
 
 Usage:
-aggplot [options] <bed/graph file 1> <bed/graph file 2> <bed/graph file 3>...
+aggplot [options] -bg <bedgraph> <bed 1> <bed 2> <bed 3>...
+or
+aggplot [options] -b <bed> <bedgraph 1> <bedgraph 2> <bedgraph 3>...
 
-Choose either 1 bed-graph to many beds using '-bedgraph', or 1 bed to many
-bedgraphs using '-bed'.
+Choose either 1 bed-graph to many beds using '-bg', or 1 bed to many
+bedgraphs using '-b'.
 
 Options:
 `
-
 
