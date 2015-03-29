@@ -72,6 +72,7 @@ func plotWithPython(filesData [][]float64, xvals []int, labels []string,
 	fmt.Fprintf(src, "plt.axis([%f,%f,%f,%f])\n",
 			axesXMin, axesXMax, axesYMin, axesYMax)
 	fmt.Fprintf(src, "plt.legend(loc='upper right')\n")
+	fmt.Fprintf(src, "plt.gcf().set_size_inches(20, 10)\n")
 	
 	// Save to file command.
 	if outFile == "show" {
