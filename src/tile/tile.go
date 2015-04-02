@@ -26,15 +26,21 @@ func main() {
 	// Read input files.
 	fmt.Fprintln(os.Stderr, "Reading input files...")
 	var files []*fileTiles
-	for _, file := range args.inFiles {
-		fmt.Fprintf(os.Stderr, "\t%s\n", file)
+	for i, group := range args.inFiles {
+		fmt.Fprintf(os.Stderr, "Reading group_%d...\n", i)
 		
-		t, err := tileFile(file, args.tileSize)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(2)
+		current := &fileTiles{ fmt.Sprintf("group_%d", i), make(map[string]tiles) }
+		files = append(files, current)
+		
+		for _, file := range group {
+			fmt.Fprintf(os.Stderr, "\t%s\n", file)
+		
+			err := tileFile(file, args.tileSize, current)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(2)
+			}
 		}
-		files = append(files, t)
 	}
 	
 	// Print output.
@@ -64,12 +70,10 @@ type fileTiles struct {
 }
 
 // Reads tiles from the given file.
-func tileFile(file string, tileSize int) (*fileTiles, error) {
+func tileFile(file string, tileSize int, t *fileTiles) error {
 	f, err := os.Open(file)
-	if err != nil { return nil, err }
+	if err != nil { return err }
 	defer f.Close()
-	
-	out := make(map[string]tiles)
 	
 	scanner := bufio.NewScanner(f)
 	scanner.Scan() // Skip header line.
@@ -78,43 +82,43 @@ func tileFile(file string, tileSize int) (*fileTiles, error) {
 		// Split to fields.
 		fields := strings.Split(scanner.Text(), "\t")
 		if len(fields) != 12 {
-			return nil, fmt.Errorf("Bad number of fields: %d", len(fields))
+			return fmt.Errorf("Bad number of fields: %d", len(fields))
 		}
 		
 		// Extract numbers from line.
 		chr := fields[0]
 		pos, err := strconv.Atoi(fields[1])
-		if err != nil { return nil, err }
+		if err != nil { return err }
 		total, err := strconv.ParseFloat(fields[5], 64)
-		if err != nil { return nil, err }
+		if err != nil { return err }
 		if total == 0 { continue }  // Avoid parsing 'NA'.
 		ratio, err := strconv.ParseFloat(fields[4], 64)
-		if err != nil { return nil, err }
+		if err != nil { return err }
 		
 		methd := int( total * ratio )
 		
 		// Create chromosome.
-		if out[chr] == nil {
-			out[chr] = make(map[int]*tile)
+		if t.tiles[chr] == nil {
+			t.tiles[chr] = make(map[int]*tile)
 		}
 		
 		// Round position to tile.
 		pos = pos / tileSize * tileSize
 		
 		// Create tile.
-		if out[chr][pos] == nil {
-			out[chr][pos] = &tile{}
+		if t.tiles[chr][pos] == nil {
+			t.tiles[chr][pos] = &tile{}
 		}
 		
-		out[chr][pos].total += int(total)
-		out[chr][pos].methd += methd
+		t.tiles[chr][pos].total += int(total)
+		t.tiles[chr][pos].methd += methd
 	}
 	
 	if scanner.Err() != nil {
-		return nil, scanner.Err()
+		return scanner.Err()
 	}
 	
-	return &fileTiles{file, out}, nil
+	return nil
 }
 
 
@@ -211,7 +215,7 @@ func collectPoss(t []*fileTiles, chr string) []int {
 // ***** ARGUMENTS ************************************************************
 
 var args struct {
-	inFiles []string
+	inFiles [][]string
 	outFile string
 	tileSize int
 	err error
@@ -226,7 +230,18 @@ func parseArguments() {
 	args.err = myflag.Parse()
 	if args.err != nil { return }
 	
-	args.inFiles = myflag.Args()
+	// Split input files into groups.
+	for _, list := range myflag.Args() {
+		split := strings.Split(list, ",")
+		for _, file := range split {
+			if file == "" {
+				args.err = fmt.Errorf("Empty file name in: %s", list)
+				return
+			}
+		}
+		args.inFiles = append(args.inFiles, split)
+	}
+	
 	if len(args.inFiles) == 0 {
 		args.err = fmt.Errorf("No input files given.")
 		return
