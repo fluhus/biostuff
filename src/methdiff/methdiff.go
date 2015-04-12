@@ -87,8 +87,8 @@ func main() {
 
 			pvals = append(pvals, tilediff(tile1, tile2))
 			
-			lines = append(lines, fmt.Sprintf("%s\t%d\t%d\t%f\t%f",
-					chr, pos, pos + tileSize - 1, r1, r2))
+			lines = append(lines, fmt.Sprintf("%s\t%d\t%d\t%f\t%f\t%f",
+					chr, pos, pos + tileSize, r1, r2, r2 - r1))
 		}
 	}
 	
@@ -107,8 +107,8 @@ func main() {
 	defer bout.Flush()
 
 	// Print output.
-	fmt.Fprintf(bout, "chromosome\ttile_start\ttile_end\tmeth_ratio_%s\t" +
-			"meth_ratio_%s\tp_value\tq_value\n", arguments.label1,
+	fmt.Fprintf(bout, "chromosome\tstart\tend\tratio_%s\t" +
+			"ratio_%s\tdiff\tp_value\tq_value\n", arguments.label1,
 			arguments.label2)
 	
 	fmt.Println("Printing...")
@@ -250,7 +250,7 @@ func parseArguments() {
 	in2 := myflag.String("in2", "2", "paths",
 			"Comma separated meth files of the second group.", "")
 	out := myflag.String("out", "o", "path", "Output file.", "")
-	filter := myflag.Float("filter", "f", "p-value",
+	filter := myflag.Float("filter", "f", "q-value",
 			"Omit results with q-value greater than the given one." +
 			" Default: No filtering.", 1)
 
