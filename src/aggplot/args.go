@@ -14,6 +14,7 @@ var arguments struct {
 	img       string     // Output image file.
 	txt       string     // Output text file.
 	dist      int        // Distance around tile center.
+	bin       int        // Bin size.
 	err       error      // Parsing error.
 }
 
@@ -33,6 +34,8 @@ func parseArguments() {
 			"generated.", "")
 	dist := myflag.Int("range", "r", "integer",
 			"Range around tile center to plot. Default is 5000.", 5000)
+	bin := myflag.Int("bin", "", "integer",
+			"Size of bins on the x-axis. Default is 1.", 1)
 	
 	// Parse!
 	arguments.err = myflag.Parse()
@@ -63,10 +66,17 @@ func parseArguments() {
 		return
 	}
 	
+	if *bin < 0 {
+		arguments.err = fmt.Errorf("Bad bin size: %d, should be positive.",
+				*bin)
+		return
+	}
+	
 	// Assign to arguments.
 	arguments.dist = *dist
 	arguments.img = *img
 	arguments.txt = *txt
+	arguments.bin = *bin
 	
 	if *bedFile != "" {
 		arguments.beds = []string{ *bedFile }

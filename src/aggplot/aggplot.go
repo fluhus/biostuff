@@ -101,7 +101,7 @@ func main() {
 	// Plot using python
 	if arguments.img != "" {
 		fmt.Println("Generating image...")
-		plotWithPython(data, xvals, labels, arguments.img)
+		plotWithPython(data, xvals, arguments.bin, labels, arguments.img)
 	}
 	
 	fmt.Println("Done!")

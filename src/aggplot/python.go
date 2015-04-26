@@ -34,8 +34,8 @@ func intsToText(values []int) []byte {
 
 // Plots the given data using python. An empty output file name will result in
 // only showing the plot.
-func plotWithPython(filesData [][]float64, xvals []int, labels []string,
-		outFile string) {
+func plotWithPython(filesData [][]float64, xvals []int, binSize int,
+		labels []string, outFile string) {
 	src := bytes.NewBuffer(nil)
 	
 	// Create imports.
@@ -61,8 +61,9 @@ func plotWithPython(filesData [][]float64, xvals []int, labels []string,
 	
 	// Add plot for each file.
 	for i,values := range filesData {
-		fmt.Fprintf(src, "plt.plot(%s,%s,linewidth=2,label='%s')\n",
-				intsToText(xvals), floatsToText(values), labels[i])
+		fmt.Fprintf(src, "plt.plot(%s[::%d],%s[::%d],linewidth=2,label='%s')\n",
+				intsToText(xvals), binSize, floatsToText(values), binSize,
+				labels[i])
 	}
 	
 	// Add figure settings.
