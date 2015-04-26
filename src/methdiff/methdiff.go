@@ -82,6 +82,9 @@ func main() {
 			
 			if tile2 == nil { continue }
 			
+			// Omit low coverage tiles. 5 is what Adam used.
+			if tile1.total < 5 || tile2.total < 5 { continue }
+			
 			r1 := float64(tile1.methd) / float64(tile1.total)
 			r2 := float64(tile2.methd) / float64(tile2.total)
 
@@ -182,10 +185,17 @@ func tileFile(file string, out map[string]tiles) error {
 	return nil
 }
 
+// If true, will use Fisher's exact test instead of binomial.
+const useFisher = false
+
 // Returns the p-value for the null hypothesis, that the 2 tiles come from the
 // same distribution.
 func tilediff(tile1, tile2 *tile) float64 {
-	return bindiff(tile1.total, tile1.methd, tile2.total, tile2.methd)
+	if useFisher {
+		return fisher(tile1.total, tile1.methd, tile2.total, tile2.methd)
+	} else {
+		return bindiff(tile1.total, tile1.methd, tile2.total, tile2.methd)
+	}
 }
 
 
