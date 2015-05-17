@@ -110,7 +110,8 @@ func (f *FastaEntry) String() string {
 	return fmt.Sprintf("%s[%d]", f.name, f.Length())
 }
 
-// Reads a single fasta entry from a stream.
+// Reads a single fasta entry from a stream. Returns EOF only if nothing was
+// read.
 func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	// States of the reader.
 	const (
