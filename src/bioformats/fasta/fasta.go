@@ -55,12 +55,12 @@ func (f *FastaEntry) At(position int) byte {
 }
 
 // Appends a nucleotide to the fasta entry.
-func (f *FastaEntry) append(nuc byte) {
+func (f *FastaEntry) append(nuc byte) error {
 	num, ok := nuc2num[nuc]
 
 	// If unknown nucleotide.
 	if !ok {
-		panic("Bad nucleotide: " + string([]byte{nuc}))
+		return fmt.Errorf("Bad nucleotide: " + string([]byte{nuc}))
 	}
 
 	// If 'N'.
@@ -78,6 +78,8 @@ func (f *FastaEntry) append(nuc byte) {
 	f.sequence[f.length / 4] |= byte( num << (f.length % 4 * 2) )
 
 	f.length++
+
+	return nil
 }
 
 // Extracts a subsequence from the fasta.
@@ -127,6 +129,7 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	var b byte
 	var err error
 	readAnything := false
+	
 	loop: for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
 		readAnything = true
 		switch state {
@@ -141,7 +144,8 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 				if b == '\n' || b == '\r' {
 					state = stateNewLine
 				} else {
-					result.append(b)
+					err = result.append(b)
+					if err != nil { break loop }
 				}
 			}
 			
@@ -149,7 +153,8 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 			if b == '\n' || b == '\r' {
 				state = stateNewLine
 			} else {
-				result.append(b)
+				err = result.append(b)
+				if err != nil { break loop }
 			}
 			
 		case stateName:
@@ -169,7 +174,8 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 			} else {
 				// Just more sequence.
 				state = stateSequence
-				result.append(b)
+				err = result.append(b)
+				if err != nil { break loop }
 			}
 		}
 	}
@@ -185,7 +191,32 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	}
 	
 	result.name = string(name)
+
+	// Reallocate sequence to take less memory.
+	newSequence := make([]byte, len(result.sequence))
+	copy(newSequence, result.sequence)
+	result.sequence = newSequence
 	
 	return result, nil
 }
 
+// Reads all fasta entries from the given stream, until EOF. Stream will be
+// buffered inside the function.
+func ReadFasta(r io.Reader) ([]*FastaEntry, error) {
+	buf := bufio.NewReader(r)
+	
+	var result []*FastaEntry
+	var fa *FastaEntry
+	var err error
+
+	for fa, err = ReadFastaEntry(buf); err == nil; fa, err =
+			ReadFastaEntry(buf) {
+		result = append(result, fa)
+	}
+
+	if err != io.EOF {
+		return nil, err
+	}
+
+	return result, nil
+}
