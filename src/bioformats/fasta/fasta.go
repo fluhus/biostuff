@@ -6,13 +6,11 @@ import (
 	"bufio"
 	"io"
 	"sort"
+	"runtime/debug"
 )
 
 // Converts number to nucleotide.
 var num2nuc = []byte{'A', 'C', 'G', 'T'}
-
-// Converts nucleotide to number.
-var nuc2num = map[byte]uint {'A':0, 'C':1, 'G':2, 'T':3, 'N':4, 'a':0, 'c':1, 'g':2, 't':3, 'n':4}
 
 
 // *** FASTA ENTRY ************************************************************
@@ -72,10 +70,18 @@ func (f *FastaEntry) isN(pos uint) bool {
 
 // Appends a nucleotide to the fasta entry.
 func (f *FastaEntry) append(nuc byte) error {
-	num, ok := nuc2num[nuc]
+	var num uint
+	switch nuc {
+		case 'a', 'A': num = 0
+		case 'c', 'C': num = 1
+		case 'g', 'G': num = 2
+		case 't', 'T': num = 3
+		case 'n', 'N': num = 4
+		default: num = 5
+	}
 
 	// If unknown nucleotide.
-	if !ok {
+	if num == 5 {
 		return fmt.Errorf("Bad nucleotide: " + string([]byte{nuc}))
 	}
 
@@ -246,6 +252,10 @@ func ReadFasta(r io.Reader) ([]*FastaEntry, error) {
 	for fa, err = ReadFastaEntry(buf); err == nil; fa, err =
 			ReadFastaEntry(buf) {
 		result = append(result, fa)
+		
+		// Release unused memory, so that the program doesn't
+		// consume twice the memory it really needs.
+		debug.FreeOSMemory()
 	}
 
 	if err != io.EOF {
