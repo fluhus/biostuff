@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"bufio"
 	"io"
+	"sort"
 )
 
 // Converts number to nucleotide.
@@ -18,15 +19,16 @@ var nuc2num = map[byte]uint {'A':0, 'C':1, 'G':2, 'T':3, 'N':4, 'a':0, 'c':1, 'g
 
 // A single immutable fasta sequence, stored in 2-bit representation.
 type FastaEntry struct {
-	name     string            // sequence name (row that starts with '>')
-	sequence []byte            // sequence in 2-bit format
-	length   uint              // number of nucleotides
-	isN      map[uint]struct{} // coordinates of 'N' nucleotides
+	name     string // sequence name (row that starts with '>')
+	sequence []byte // sequence in 2-bit format
+	length   uint   // number of nucleotides
+	nStarts  []uint // coordinates of starts of 'N' chunks
+	nEnds    []uint // coordinates of ends of 'N' chunks (exclusive)
 }
 
 // Returns an empty fasta entry.
 func newFastaEntry() *FastaEntry {
-	return &FastaEntry{"", nil, 0, make(map[uint]struct{})}
+	return &FastaEntry{"", nil, 0, nil, nil}
 }
 
 // Returns the number of nucleotides in this fasta entry.
@@ -44,7 +46,7 @@ func (f *FastaEntry) At(position int) byte {
 	uposition := uint(position)
 
 	// Check if N.
-	if _,n := f.isN[uposition]; n {
+	if f.isN(uposition) {
 		return 'N'
 	}
 
@@ -52,6 +54,20 @@ func (f *FastaEntry) At(position int) byte {
 	num := (f.sequence[uposition / 4] >> (uposition % 4 * 2) & 3)
 	
 	return num2nuc[num]
+}
+
+// Checks whether the given pos holds an 'N'.
+func (f *FastaEntry) isN(pos uint) bool {
+	if len(f.nStarts) == 0 {
+		return false
+	}
+
+	i := sort.Search(len(f.nStarts), func(j int) bool {
+		return f.nStarts[j] > pos
+	}) -	1
+	
+	if i == -1 { i = 0 }
+	return pos >= f.nStarts[i] && pos < f.nEnds[i]
 }
 
 // Appends a nucleotide to the fasta entry.
@@ -66,7 +82,16 @@ func (f *FastaEntry) append(nuc byte) error {
 	// If 'N'.
 	if num == 4 {
 		num = 0
-		f.isN[f.length] = struct{}{}
+		
+		// Start a new chunk?
+		if len(f.nEnds) == 0 || f.nEnds[len(f.nEnds) - 1] < f.length {
+			// Yes.
+			f.nStarts = append(f.nStarts, f.length)
+			f.nEnds = append(f.nEnds, f.length + 1)
+		} else {
+			// No.
+			f.nEnds[len(f.nEnds) - 1] = f.length + 1
+		}
 	}
 
 	// Append an extra byte.
@@ -197,6 +222,14 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	newSequence := make([]byte, len(result.sequence))
 	copy(newSequence, result.sequence)
 	result.sequence = newSequence
+	
+	newStarts := make([]uint, len(result.nStarts))
+	copy(newStarts, result.nStarts)
+	result.nStarts = newStarts
+	
+	newEnds := make([]uint, len(result.nEnds))
+	copy(newEnds, result.nEnds)
+	result.nEnds = newEnds
 	
 	return result, nil
 }

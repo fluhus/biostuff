@@ -10,12 +10,13 @@ import (
 func TestReadFastaEntry_simple(t *testing.T) {
 	assert := assert.New(t)
 	
-	input := ">foo\nAaTtGngcCaN"
+	input := ">foo\nAaTtGnNngcCaN"
 
 	fa, err := ReadFastaEntry( bufio.NewReader( strings.NewReader(input) ) )
 	assert.Nil(err, "Error reading fasta: %v", err)
 
-	assertFasta(assert, fa, "foo", "AaTtGngcCaN")
+	assertFasta(assert, fa, "foo", "AaTtGnNngcCaN")
+	assert.Equal(2, len(fa.nEnds))
 }
 
 func TestReadFastaEntry_noName(t *testing.T) {
