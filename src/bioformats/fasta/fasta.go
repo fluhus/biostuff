@@ -264,3 +264,29 @@ func ReadFasta(r io.Reader) ([]*FastaEntry, error) {
 
 	return result, nil
 }
+
+
+// ***** SERIALIZABLE ENTRY ****************************************************
+
+// A fasta entry with exported fields for serialization.
+type SerializableEntry struct {
+	Name     string
+	Sequence []byte
+	Length   uint
+	NStarts  []uint
+	NEnds    []uint
+}
+
+// Converts a fasta entry to a serializable one.
+func toSerializable(f *FastaEntry) *SerializableEntry {
+	return &SerializableEntry { f.name, f.sequence, f.length, f.nStarts,
+			f.nEnds }
+}
+
+// Converts a serializable fasta entry to a regular one.
+func fromSerializable(f *SerializableEntry) *FastaEntry {
+	return &FastaEntry { f.Name, f.Sequence, f.Length, f.NStarts,
+			f.NEnds }
+}
+
+
