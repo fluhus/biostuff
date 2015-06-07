@@ -14,6 +14,7 @@ import (
 	"gobz"
 	"strings"
 	"time"
+	"runtime/debug"
 )
 
 func main() {
@@ -128,6 +129,10 @@ func readFastaFile(file string) ([]*fasta.Entry, error) {
 		for i := range fas {
 			fa[i] = fasta.FromSerializable(fas[i])
 		}
+		
+		// Release unused memory.
+		debug.FreeOSMemory()
+		
 		return fa, nil
 	} else {
 		// No! Read textual fasta.
