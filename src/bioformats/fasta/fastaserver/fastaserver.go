@@ -113,7 +113,7 @@ func parseArguments() {
 }
 
 // Returns a fasta object from the given file.
-func readFastaFile(file string) ([]*fasta.FastaEntry, error) {
+func readFastaFile(file string) ([]*fasta.Entry, error) {
 	f, err := os.Open(file)
 	if err != nil { return nil, err }
 	
@@ -127,7 +127,7 @@ func readFastaFile(file string) ([]*fasta.FastaEntry, error) {
 		}
 		
 		// Convert to regular fasta.
-		fa := make([]*fasta.FastaEntry, len(fas))
+		fa := make([]*fasta.Entry, len(fas))
 		for i := range fas {
 			fa[i] = fasta.FromSerializable(fas[i])
 		}
@@ -139,7 +139,7 @@ func readFastaFile(file string) ([]*fasta.FastaEntry, error) {
 }
 
 // All fasta data will be here.
-var fa []*fasta.FastaEntry
+var fa []*fasta.Entry
 
 // Handles a single request from a fasta client.
 func handleConnection(c net.Conn) {
@@ -190,7 +190,7 @@ func handleConnection(c net.Conn) {
 	}
 	
 	// Find fasta entry.
-	var entry *fasta.FastaEntry
+	var entry *fasta.Entry
 	for _, e := range fa {
 		if e.Name() == string(chr) {
 			entry = e

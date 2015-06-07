@@ -16,7 +16,7 @@ var num2nuc = []byte{'A', 'C', 'G', 'T'}
 // *** FASTA ENTRY ************************************************************
 
 // A single immutable fasta sequence, stored in 2-bit representation.
-type FastaEntry struct {
+type Entry struct {
 	name     string // sequence name (row that starts with '>')
 	sequence []byte // sequence in 2-bit format
 	length   uint   // number of nucleotides
@@ -25,22 +25,22 @@ type FastaEntry struct {
 }
 
 // Returns an empty fasta entry.
-func newFastaEntry() *FastaEntry {
-	return &FastaEntry{"", nil, 0, nil, nil}
+func newEntry() *Entry {
+	return &Entry{"", nil, 0, nil, nil}
 }
 
 // Returns the number of nucleotides in this fasta entry.
-func (f *FastaEntry) Length() int {
+func (f *Entry) Length() int {
 	return int(f.length)
 }
 
 // Returns the name of the fasta entry.
-func (f *FastaEntry) Name() string {
+func (f *Entry) Name() string {
 	return f.name
 }
 
 // Returns the nucleotide at the given position.
-func (f *FastaEntry) At(position int) byte {
+func (f *Entry) At(position int) byte {
 	uposition := uint(position)
 
 	// Check if N.
@@ -55,7 +55,7 @@ func (f *FastaEntry) At(position int) byte {
 }
 
 // Checks whether the given pos holds an 'N'.
-func (f *FastaEntry) isN(pos uint) bool {
+func (f *Entry) isN(pos uint) bool {
 	if len(f.nStarts) == 0 {
 		return false
 	}
@@ -69,7 +69,7 @@ func (f *FastaEntry) isN(pos uint) bool {
 }
 
 // Appends a nucleotide to the fasta entry.
-func (f *FastaEntry) append(nuc byte) error {
+func (f *Entry) append(nuc byte) error {
 	var num uint
 	switch nuc {
 		case 'a', 'A': num = 0
@@ -114,7 +114,7 @@ func (f *FastaEntry) append(nuc byte) error {
 }
 
 // Extracts a subsequence from the fasta.
-func (f *FastaEntry) Subsequence(start, length int) []byte {
+func (f *Entry) Subsequence(start, length int) []byte {
 	// Check input.
 	if length < 0 {
 		panic(fmt.Sprint("Bad subsequence length: %d", length))
@@ -137,13 +137,13 @@ func (f *FastaEntry) Subsequence(start, length int) []byte {
 }
 
 // String representation of an entry. Format: name[length]
-func (f *FastaEntry) String() string {
+func (f *Entry) String() string {
 	return fmt.Sprintf("%s[%d]", f.name, f.Length())
 }
 
 // Reads a single fasta entry from a stream. Returns EOF only if nothing was
 // read.
-func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
+func ReadEntry(r *bufio.Reader) (*Entry, error) {
 	// States of the reader.
 	const (
 		stateStart = iota  // beginning of input
@@ -154,7 +154,7 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 	
 	// Result entry.
 	var name []byte
-	result := newFastaEntry()
+	result := newEntry()
 	
 	// Start reading.
 	state := stateStart
@@ -242,15 +242,15 @@ func ReadFastaEntry(r *bufio.Reader) (*FastaEntry, error) {
 
 // Reads all fasta entries from the given stream, until EOF. Stream will be
 // buffered inside the function.
-func ReadFasta(r io.Reader) ([]*FastaEntry, error) {
+func ReadFasta(r io.Reader) ([]*Entry, error) {
 	buf := bufio.NewReader(r)
 	
-	var result []*FastaEntry
-	var fa *FastaEntry
+	var result []*Entry
+	var fa *Entry
 	var err error
 
-	for fa, err = ReadFastaEntry(buf); err == nil; fa, err =
-			ReadFastaEntry(buf) {
+	for fa, err = ReadEntry(buf); err == nil; fa, err =
+			ReadEntry(buf) {
 		result = append(result, fa)
 		
 		// Release unused memory, so that the program doesn't
@@ -278,14 +278,14 @@ type SerializableEntry struct {
 }
 
 // Converts a fasta entry to a serializable one.
-func ToSerializable(f *FastaEntry) *SerializableEntry {
+func ToSerializable(f *Entry) *SerializableEntry {
 	return &SerializableEntry { f.name, f.sequence, f.length, f.nStarts,
 			f.nEnds }
 }
 
 // Converts a serializable fasta entry to a regular one.
-func FromSerializable(f *SerializableEntry) *FastaEntry {
-	return &FastaEntry { f.Name, f.Sequence, f.Length, f.NStarts,
+func FromSerializable(f *SerializableEntry) *Entry {
+	return &Entry { f.Name, f.Sequence, f.Length, f.NStarts,
 			f.NEnds }
 }
 
