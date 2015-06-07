@@ -11,9 +11,7 @@ import (
 	"fmt"
 	"bioformats/fasta"
 	"os"
-	"bytes"
 	"gobz"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -53,7 +51,7 @@ func main() {
 			os.Exit(2)
 		} else {
 			reportf("Took %v.\n", time.Now().Sub(now))
-			fmt.Printf("Serialization successful! New file is %s.\n", newFile)
+			fmt.Printf("Serialization successful! New file is: %s\n", newFile)
 			return
 		}
 	}
@@ -67,7 +65,6 @@ func main() {
 	
 	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to" +
 			" exit.\n")
-	
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -140,78 +137,6 @@ func readFastaFile(file string) ([]*fasta.Entry, error) {
 
 // All fasta data will be here.
 var fa []*fasta.Entry
-
-// Handles a single request from a fasta client.
-func handleConnection(c net.Conn) {
-	report("Got connection.")
-	defer c.Close()
-
-	// Read until uncountering ';'.
-	msg := bytes.NewBuffer(nil)
-	b := []byte{0}
-	for {
-		_, err := c.Read(b)
-		if err != nil {
-			fmt.Fprintf(c, "1Error reading message: %s", err)
-			return
-		}
-		
-		// Break upon ';'.
-		if b[0] == ';' { break }
-		msg.Write(b)
-		
-		// Too long means error.
-		if msg.Len() > 1000 {
-			fmt.Fprintf(c, "1Message is too long. Max is 1000.")
-			return
-		}
-	}
-	report("Message is:", msg.String())
-	
-	// Parse message fields.
-	words := bytes.Split(msg.Bytes(), []byte(","))
-	if len(words) != 3 {
-		fmt.Fprintf(c, "1Bad message format. Expected 3 fields and got %d.",
-				len(words))
-		return
-	}
-	
-	// Parse message fields.
-	chr := words[0]
-	start, err := strconv.Atoi(string(words[1]))
-	if err != nil || start < 0 {
-		fmt.Fprintf(c, "1Bad start position: %s.", words[1])
-		return
-	}
-	length, err := strconv.Atoi(string(words[2]))
-	if err != nil || length < 1 {
-		fmt.Fprintf(c, "1Bad length: %s.", words[2])
-		return
-	}
-	
-	// Find fasta entry.
-	var entry *fasta.Entry
-	for _, e := range fa {
-		if e.Name() == string(chr) {
-			entry = e
-		}
-	}
-	
-	if entry == nil {
-		fmt.Fprintf(c, "1No such chromosome: '%s'.", chr)
-		return
-	}
-	
-	if start + length > entry.Length() {
-		fmt.Fprintf(c, "1Position exceeds chromosome length (max %d).",
-				entry.Length())
-		return
-	}
-	
-	reportf("chr=%s start=%d len=%d\n", chr, start, length)
-	seq := entry.Subsequence(start, length)
-	fmt.Fprintf(c, "0%s", seq)
-}
 
 // Print if verbose.
 func report(a ...interface{}) {

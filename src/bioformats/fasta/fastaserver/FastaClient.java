@@ -1,70 +1,110 @@
 import java.net.Socket;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+
+import org.json.simple.*;
+import org.json.simple.parser.*;
 
 /**
  * Communicates with a fasta server, for retrieval of genetic sequences.
  */
-class FastaClient {
-	/** Port on which the server listens. */
-	private int port;
-	
-	/** Creates a client on the server's default port 1912. */
-	public Client() {
-		this(1912);
-	}
-	
-	/** Creates a client on the given port. */
-	public Client(int port) {
-		this.port = port;
-	}
-	
+public class FastaClient {
 	/**
-	 * Returns the subsequence for the given parameters. Throws an exception
-	 * if the chromosome name doesn't exist or the position is out of bounds.
+	 * Returns the subsequence for the given parameters.
+	 * @param port Port number of the listening server.
 	 * @param chr Chromosome name. Must match the name in the fasta file.
 	 * @param start 0-based start position.
 	 * @param length Length of the subsequence to fetch.
 	 * @return The required subsequence, or null if an unexpected error
 	 * occurred.
 	 */
-	public String getSequence(String chr, int start, int length) {
-		try (
-			Socket socket = new Socket("localhost", port)
-		) {
+	public static String getSequence(int port, String chr, int start,
+			int length) {
+		try (Socket socket = new Socket("localhost", port)) {
 			OutputStream out = socket.getOutputStream();
 			InputStream in = socket.getInputStream();
 			
-			// Send message to server.
-			out.write((chr + "," + start + "," + length + ";").getBytes());
+			// Send request.
+			out.write(String.format("{\"type\":\"sequence\",\"sequence\":" +
+					"{\"chr\":\"%s\",\"start\":%d,\"length\":%d}}",
+					chr, start, length).getBytes());
 			
 			// Read response.
-			List<Byte> responseList = new ArrayList<Byte>();
-			for (int b = in.read(); b != -1; b = in.read()) {
-				responseList.add((byte)b);
+			JSONObject res = (JSONObject)JSONValue
+					.parse(new InputStreamReader(in));
+			
+			// Check for error.
+			if (res.containsKey("error")) {
+				throw new FastaClientException((String)res.get("error"));
 			}
 			
-			// Convert to string.
-			byte[] bytes = new byte[responseList.size()];
-			for (int i = 0; i < bytes.length; i++) {
-				bytes[i] = responseList.get(i);
-			}
-			
-			String response = new String(bytes);
-			
-			// 1  signifies error.
-			if (response.charAt(0) == '1') {
-				throw new FastaClientException(response.substring(1));
-			}
-			
-			return response.substring(1);
-		} catch (FastaClientException e) {
-			throw e;
+			return (String) res.get("sequence");
 		} catch (Exception e) {
 			return null;
 		}
+	}
+	
+	/**
+	 * Returns the subsequence for the given parameters. Using the server's
+	 * default port.
+	 * @param chr Chromosome name. Must match the name in the fasta file.
+	 * @param start 0-based start position.
+	 * @param length Length of the subsequence to fetch.
+	 * @return The required subsequence, or null if an unexpected error
+	 * occurred.
+	 */
+	public static String getSequence(String chr, int start, int length) {
+		return getSequence(1912, chr, start, length);
+	}
+	
+	/**
+	 * Returns a map of available chromosomes and their lengths.
+	 * @param port Port number of the listening server.
+	 * @return A map where each key is a chromosome name and each value is
+	 * the corresponding length.
+	 */
+	public static Map<String, Long> getChromosomes(int port) {
+		try (Socket socket = new Socket("localhost", port)) {
+			OutputStream out = socket.getOutputStream();
+			InputStream in = socket.getInputStream();
+			
+			// Send request.
+			out.write("{\"type\":\"meta\"}".getBytes());
+			
+			// Read response.
+			JSONObject res = (JSONObject)JSONValue
+					.parse(new InputStreamReader(in));
+			
+			// Check for error.
+			if (res.containsKey("error")) {
+				throw new FastaClientException((String)res.get("error"));
+			}
+			
+			// Convert to map.
+			Map<String, Long> result = new HashMap<>();
+			for (Object key : res.keySet()) {
+				result.put((String)key, (Long)res.get(key));
+			}
+			
+			return result;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	/**
+	 * Returns a map of available chromosomes and their lengths. Contacts the
+	 * default port.
+	 * @return A map where each key is a chromosome name and each value is
+	 * the corresponding length.
+	 */
+	public static Map<String, Long> getChromosomes() {
+		return getChromosomes(1912);
 	}
 	
 	/** Indicates errors returned by the fasta server. */
@@ -75,5 +115,10 @@ class FastaClient {
 		public FastaClientException(String message) {
 			super(message);
 		}
+	}
+	
+	public static void main(String[] args) {
+		System.out.println("s=" + getSequence("chrI", 100, 10));
+		System.out.println(getChromosomes(1912));
 	}
 }
