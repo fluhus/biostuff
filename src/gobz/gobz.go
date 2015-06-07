@@ -61,7 +61,7 @@ func Save(file string, obj interface{}) error {
 	b := bufio.NewWriter(f)
 	defer b.Flush()
 	
-	return writeGobz(b, obj)
+	return Write(b, obj)
 }
 
 // Reads a value from the given file.
@@ -75,6 +75,6 @@ func Load(file string, obj interface{}) error {
 	
 	b := bufio.NewReader(f)
 	
-	return readGobz(b, obj)
+	return Read(b, obj)
 }
 
