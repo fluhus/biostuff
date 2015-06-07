@@ -278,13 +278,13 @@ type SerializableEntry struct {
 }
 
 // Converts a fasta entry to a serializable one.
-func toSerializable(f *FastaEntry) *SerializableEntry {
+func ToSerializable(f *FastaEntry) *SerializableEntry {
 	return &SerializableEntry { f.name, f.sequence, f.length, f.nStarts,
 			f.nEnds }
 }
 
 // Converts a serializable fasta entry to a regular one.
-func fromSerializable(f *SerializableEntry) *FastaEntry {
+func FromSerializable(f *SerializableEntry) *FastaEntry {
 	return &FastaEntry { f.Name, f.Sequence, f.Length, f.NStarts,
 			f.NEnds }
 }

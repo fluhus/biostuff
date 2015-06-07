@@ -12,7 +12,10 @@ import (
 	"bioformats/fasta"
 	"os"
 	"bytes"
+	"gobz"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -32,21 +35,37 @@ func main() {
 	
 	// Read fasta file.
 	fmt.Println("Reading fasta...")
+	now := time.Now()
 	var err error
 	fa, err = readFastaFile(args.file)
 	if err != nil {
 		fmt.Println("Error reading fasta:", err)
 		os.Exit(2)
 	}
+	reportf("Took %v.\n", time.Now().Sub(now))
+	
+	if *args.serialize {
+		fmt.Println("Serializing fasta...")
+		now = time.Now()
+		newFile, err := serializeFasta()
+		if err != nil {
+			fmt.Println("Error serializing fasta:", err)
+			os.Exit(2)
+		} else {
+			reportf("Took %v.\n", time.Now().Sub(now))
+			fmt.Printf("Serialization successful! New file is %s.\n", newFile)
+			return
+		}
+	}
 	
 	// Listen on port.
-	ln, err := net.Listen("tcp", ":" + args.port)
+	ln, err := net.Listen("tcp", ":" + *args.port)
 	if err != nil {
 		fmt.Println("Error opening port:", err)
 		os.Exit(2)
 	}
 	
-	fmt.Print("Ready! Listening on port ", args.port, ". Hit ctrl+C to" +
+	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to" +
 			" exit.\n")
 	
 	for {
@@ -61,24 +80,25 @@ func main() {
 }
 
 var args struct {
-	port string
-	verbose bool
-	file string
-	err error
+	port      *string
+	verbose   *bool
+	serialize *bool
+	file      string
+	err       error
 }
 
 // Parses command-line arguments and places everything in args.
 // args.err will be non-nil if a parsing error occurred.
 func parseArguments() {
-	port := myflag.String("port", "p", "number",
+	args.port = myflag.String("port", "p", "number",
 			"Port number to listen on. Default: 1912.", "1912")
-	verbose := myflag.Bool("verbose", "v", "Print lots of stuff.", false)
+	args.verbose = myflag.Bool("verbose", "v", "Print lots of stuff.", false)
+	args.serialize = myflag.Bool("serialize", "s",
+			"Serialize a fasta file for fast loading. Generates a file with " +
+			"the same name with a '.serialized' suffix.", false)
 	
 	args.err = myflag.Parse()
 	if args.err != nil { return }
-	
-	args.port = *port
-	args.verbose = *verbose
 	
 	if len(myflag.Args()) == 0 {
 		args.err = fmt.Errorf("No fasta input given.")
@@ -97,7 +117,25 @@ func readFastaFile(file string) ([]*fasta.FastaEntry, error) {
 	f, err := os.Open(file)
 	if err != nil { return nil, err }
 	
-	return fasta.ReadFasta(f)
+	// Is input file serialized?
+	if strings.HasSuffix(args.file, ".serialized") {
+		// Yes! Deserialize.
+		var fas []*fasta.SerializableEntry
+		err := gobz.Load(args.file, &fas)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Convert to regular fasta.
+		fa := make([]*fasta.FastaEntry, len(fas))
+		for i := range fas {
+			fa[i] = fasta.FromSerializable(fas[i])
+		}
+		return fa, nil
+	} else {
+		// No! Read textual fasta.
+		return fasta.ReadFasta(f)
+	}
 }
 
 // All fasta data will be here.
@@ -177,14 +215,29 @@ func handleConnection(c net.Conn) {
 
 // Print if verbose.
 func report(a ...interface{}) {
-	if args.verbose {
+	if *args.verbose {
 		fmt.Println(a...)
 	}
 }
 
 // Printf if verbose.
 func reportf(s string, a ...interface{}) {
-	if args.verbose {
+	if *args.verbose {
 		fmt.Printf(s, a...)
 	}
 }
+
+// Serializes the input fasta file.
+func serializeFasta() (string, error) {
+	// Convert to serializable.
+	fas := make([]*fasta.SerializableEntry, len(fa))
+	for i := range fas {
+		fas[i] = fasta.ToSerializable(fa[i])
+	}
+	
+	newFile := args.file + ".serialized"
+	err := gobz.Save(newFile, fas)
+	
+	return newFile, err
+}
+
