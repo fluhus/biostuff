@@ -5,6 +5,7 @@ package bed
 import (
 	"sort"
 	"strconv"
+	"fmt"
 )
 
 
@@ -65,7 +66,7 @@ func eventSet(counts eventCounter) (map[string]struct{}, float64) {
 	value := 0.0
 
 	for evt := range counts {
-		if counts < 1 {
+		if counts[evt] < 1 {
 			panic("Got non-positive count at '" + evt + "'")
 		}
 		
@@ -73,7 +74,7 @@ func eventSet(counts eventCounter) (map[string]struct{}, float64) {
 		set[evt] = struct{}{}
 		
 		// Add value.
-		v, err := strconv.ParseFloat(evt)
+		v, err := strconv.ParseFloat(evt, 64)
 		if err == nil {
 			value += float64(counts[evt]) * v
 		}
@@ -89,7 +90,20 @@ func eventSet(counts eventCounter) (map[string]struct{}, float64) {
 type tile struct {
 	pos   int                  // Start position (0-based).
 	value float64              // Value for bed-graph.
-	evts  map[string]struct{}  // Set of overlapping event names.
+	names map[string]struct{}  // Set of overlapping event names.
+}
+
+// Compares a tile's values to another's. Returns true iff all fields except pos
+// have equal values. Deep-checks event sets.
+func (t *tile) valuesEqual(t2 *tile) bool {
+	if t.value != t2.value { return false }
+	if len(t.names) != len(t2.names) { return false }
+
+	for e := range t.names {
+		if _, ok := t2.names[e]; !ok { return false }
+	}
+	
+	return true
 }
 
 // A slice of tiles, duh.
@@ -101,27 +115,146 @@ type tiles []*tile
 // To create an index, use the IndexBuilder type.
 type Index map[string]tiles
 
+// Appends a tile at the given chromosome name, only if it has different values
+// from the last tile in that chromosome. Tile position must be greater than
+// last tile's position.
+func (idx Index) add(chr string, t *tile) {
+	ichr := idx[chr]
+	if len(ichr) > 0 && ichr[len(ichr) - 1].pos >= t.pos {
+		panic("Input tile position must be greater than last tile's.")
+	}
+	
+	if len(ichr) == 0 || !ichr[len(ichr) - 1].valuesEqual(t) {
+		idx[chr] = append(idx[chr], t)
+	}
+}
+
+// Returns the value at the given position. Returns 0 if no value is registered.
+func (idx Index) Value(chr string, pos int) float64 {
+	ichr := idx[chr]
+	
+	// If no data, return empty.
+	if len(ichr) == 0 {
+		return 0
+	}
+	
+	// Search for containing tile.
+	i := sort.Search(len(ichr), func(j int) bool {
+		return ichr[j].pos > pos
+	}) - 1
+	
+	// Not found.
+	if i == -1 {
+		return 0
+	}
+	
+	return ichr[i].value
+}
+
+// Returns a set of overlapping names at the given position. Modifying the set
+// does not affect the index. Always returns non-nil.
+func (idx Index) Names(chr string, pos int) map[string]struct{} {
+	result := map[string]struct{}{}
+	ichr := idx[chr]
+	
+	// If no data, return empty.
+	if len(ichr) == 0 {
+		return result
+	}
+	
+	// Search for containing tile.
+	i := sort.Search(len(ichr), func(j int) bool {
+		return ichr[j].pos > pos
+	}) - 1
+	
+	// Not found.
+	if i == -1 {
+		return result
+	}
+	
+	for name := range ichr[i].names {
+		result[name] = struct{}{}
+	}
+	
+	return result
+}
+
+// Returns the name at the given position. If several overlap, returns one
+// arbitrarily. If non found, returns an empty string.
+func (idx Index) Name(chr string, pos int) string {
+	for name := range idx.Names(chr, pos) {
+		return name
+	}
+	return ""
+}
+
+// A string representation, for debugging.
+func (idx Index) str() string {
+	result := ""
+	for chr := range idx {
+		result += chr + "\n"
+		for _, t := range idx[chr] {
+			result += fmt.Sprintf("\t%d\t%f\t[", t.pos, t.value)
+			for name := range t.names {
+				result += name + ", "
+			}
+			result += "]\n"
+		}
+	}
+	return result
+}
+
 
 // ----- INDEX BUILDER ---------------------------------------------------------
 
 // Creates indexes from given bed entries.
 type IndexBuilder map[string]events  // Maps chromosome to list of events.
 
-// Adds a bed entry to the builder.
-func (b IndexBuilder) Add(chr string, start, end int, name string) {
-	b[name] = append(b[name], &event{start, name, true},
-			&events{end, name, false})
+// Returns a new index builder.
+func NewIndexBuilder() IndexBuilder {
+	return IndexBuilder{}
 }
 
-func (b IndexBuilder) Build() Index {
-	result := map[string]tiles{}
+// Adds a bed entry to the builder.
+func (b IndexBuilder) Add(chr string, start, end int, name string) {
+	b[chr] = append(b[chr], &event{start, name, true},
+			&event{end, name, false})
+}
 
-	for chr := range b {
+// Builds an index out of the builder. Builder keeps its state and can be used
+// with more entries, keeping what it had before.
+func (b IndexBuilder) Build() Index {
+	result := Index{}
+
+	for chr, bchr := range b {
 		// Sort events.
-		sort.Sort(b[chr])
+		sort.Sort(bchr)
 		
 		// Create tiles.
 		result[chr] = tiles{}
+		counts := eventCounter{}
+		for i := range bchr {
+			// Create new tile if needed.
+			if i > 0 && bchr[i].pos != bchr[i-1].pos {
+				set, val := eventSet(counts)
+				t := &tile{bchr[i-1].pos, val, set}
+				result.add(chr, t)
+			}
+			
+			// Update counter.
+			if bchr[i].start {
+				counts.inc(bchr[i].name)
+			} else {
+				counts.dec(bchr[i].name)
+			}
+		}
+		
+		// Create tile for last events (doesn't happen in the above loop).
+		if len(bchr) > 0 {
+			set, val := eventSet(counts)
+			t := &tile{bchr[len(bchr) - 1].pos, val, set}
+			result.add(chr, t)
+		}
 	}
 	
 	return result
