@@ -99,9 +99,7 @@ type tiles []*tile
 // and values from bed-graph files.
 //
 // To create an index, use the IndexBuilder type.
-type Index struct {
-	evts map[string]tiles
-}
+type Index map[string]tiles
 
 
 // ----- INDEX BUILDER ---------------------------------------------------------
@@ -115,11 +113,18 @@ func (b IndexBuilder) Add(chr string, start, end int, name string) {
 			&events{end, name, false})
 }
 
-func (b IndexBuilder) Build() *Index {
+func (b IndexBuilder) Build() Index {
+	result := map[string]tiles{}
+
 	for chr := range b {
 		// Sort events.
 		sort.Sort(b[chr])
+		
+		// Create tiles.
+		result[chr] = tiles{}
 	}
+	
+	return result
 }
 
 
