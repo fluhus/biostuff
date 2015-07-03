@@ -71,6 +71,19 @@ func TestIndex_complex(t *testing.T) {
 	assert.Equal(0.0, idx.Value("chr3", 0))
 }
 
+func TestIndex_range(t *testing.T) {
+	assert := assert.New(t)
+	
+	builder := NewIndexBuilder()
+	builder.Add("chr1", 5, 15, "1")
+	builder.Add("chr1", 8, 20, "2")
+	idx := builder.Build()
+
+	assert.Equal([]float64{0, 1, 1}, idx.ValueRange("chr1", 4, 7))
+	assert.Equal([]float64{0,0,0,0,0,1,1,1,3,3,3,3,3,3,3,2,2,2,2,2,0,0,0},
+			idx.ValueRange("chr1", 0, 23))
+}
+
 func names(n ...string) map[string]struct{} {
 	result := map[string]struct{}{}
 	for _, name := range n {

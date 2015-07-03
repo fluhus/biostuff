@@ -151,6 +151,41 @@ func (idx Index) Value(chr string, pos int) float64 {
 	return ichr[i].value
 }
 
+func (idx Index) ValueRange(chr string, start, end int) []float64 {
+	ichr := idx[chr]
+	result := make([]float64, end - start)
+	
+	// If no data, return zeros.
+	if len(ichr) == 0 {
+		return result
+	}
+	
+	// Search for containing tiles.
+	i := sort.Search(len(ichr), func(j int) bool {
+		return ichr[j].pos > start
+	}) - 1
+	
+	if i == -1 { i = 0 }
+	
+	// Go over 
+	for i < len(ichr) && ichr[i].pos < end {
+		from := ichr[i].pos - start
+		to := len(result)
+		if i < len(ichr) - 1 {
+			to2 := ichr[i + 1].pos - start
+			if to2 < to { to = to2 }
+		}
+		
+		for j := from; j < to; j++ {
+			result[j] = ichr[i].value
+		}
+
+		i++
+	}
+	
+	return result
+}
+
 // Returns a set of overlapping names at the given position. Modifying the set
 // does not affect the index. Always returns non-nil.
 func (idx Index) Names(chr string, pos int) map[string]struct{} {
