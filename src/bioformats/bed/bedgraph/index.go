@@ -112,6 +112,8 @@ func (idx Index) ValueRange(chr string, start, end int) []float64 {
 	// Go over 
 	for i < len(ichr) && ichr[i].pos < end {
 		from := ichr[i].pos - start
+		if from < 0 { from = 0 }
+		
 		to := len(result)
 		if i < len(ichr) - 1 {
 			to2 := ichr[i + 1].pos - start
