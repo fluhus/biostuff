@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"myflag"
 	"bioformats/bed"
+	"bioformats/bed/bedgraph"
 )
 
 
@@ -42,7 +43,8 @@ func main() {
 		// Go over bed files.
 		for _, file := range arguments.beds {
 			fmt.Printf("Reading bed '%s'...\n", file)
-			values, err := aggregate(file, []index{idx}, arguments.dist)
+			values, err := aggregate(file,
+					[]bedgraph.Index{idx}, arguments.dist)
 			if err != nil {
 				fmt.Println("Error reading bed:", err)
 				os.Exit(2)
@@ -60,7 +62,7 @@ func main() {
 		labels = arguments.bedgraphs
 		
 		// Create indexes.
-		var idxs []index
+		var idxs []bedgraph.Index
 		for _, file := range arguments.bedgraphs {
 			fmt.Printf("Reading bed-graph '%s'...\n", file)
 			idx, err := makeIndex(file)
@@ -111,7 +113,8 @@ func main() {
 // ***** AGGREGATION **********************************************************
 
 // Creates an aggregation value slice for the given bed file.
-func aggregate(path string, idx []index, dist int) ([][]float64, error) {
+func aggregate(path string, idx []bedgraph.Index,
+		dist int) ([][]float64, error) {
 	f, err := os.Open(path)
 	if err != nil { return nil, err }
 	scanner := bed.NewScanner(f)
@@ -129,7 +132,7 @@ func aggregate(path string, idx []index, dist int) ([][]float64, error) {
 		pos := (b.Start + b.End) / 2
 		
 		for i := range idx {
-			idx[i].collect(b.Chr, pos, result[i])
+			collect(idx[i], b.Chr, pos, result[i])
 		}
 	}
 
