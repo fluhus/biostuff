@@ -4,7 +4,6 @@ package bed
 
 import (
 	"sort"
-	"strconv"
 	"fmt"
 )
 
@@ -15,7 +14,7 @@ import (
 // start and one for end.
 type event struct {
 	pos   int     // Position along chromosome.
-	name  string  // Name / value of the event (4'th column).
+	name  string  // Name of the event (4'th column).
 	start bool    // True is event is starting, of false if not.
 }
 
@@ -59,11 +58,10 @@ func (e eventCounter) dec(name string) {
 	}
 }
 
-// Makes an event set and a value from the given count-map. All counts are
-// assumed to be at least 1. Panics if not.
-func eventSet(counts eventCounter) (map[string]struct{}, float64) {
+// Makes an event set from the given count-map. All counts are assumed to be
+// at least 1. Panics if not.
+func eventSet(counts eventCounter) map[string]struct{} {
 	set := map[string]struct{}{}
-	value := 0.0
 
 	for evt := range counts {
 		if counts[evt] < 1 {
@@ -72,15 +70,9 @@ func eventSet(counts eventCounter) (map[string]struct{}, float64) {
 		
 		// Add to set.
 		set[evt] = struct{}{}
-		
-		// Add value.
-		v, err := strconv.ParseFloat(evt, 64)
-		if err == nil {
-			value += float64(counts[evt]) * v
-		}
 	}
 	
-	return set, value
+	return set
 }
 
 
@@ -89,14 +81,12 @@ func eventSet(counts eventCounter) (map[string]struct{}, float64) {
 // A single tile in the index.
 type tile struct {
 	pos   int                  // Start position (0-based).
-	value float64              // Value for bed-graph.
 	names map[string]struct{}  // Set of overlapping event names.
 }
 
 // Compares a tile's values to another's. Returns true iff all fields except pos
 // have equal values. Deep-checks event sets.
 func (t *tile) valuesEqual(t2 *tile) bool {
-	if t.value != t2.value { return false }
 	if len(t.names) != len(t2.names) { return false }
 
 	for e := range t.names {
@@ -109,8 +99,8 @@ func (t *tile) valuesEqual(t2 *tile) bool {
 // A slice of tiles, duh.
 type tiles []*tile
 
-// A bed index. Used to retrieve names of overlapping regions (genes, exons...)
-// and values from bed-graph files.
+// A bed index. Used to retrieve names of overlapping regions
+// (genes, exons...).
 //
 // To create an index, use the IndexBuilder type.
 type Index map[string]tiles
@@ -127,63 +117,6 @@ func (idx Index) add(chr string, t *tile) {
 	if len(ichr) == 0 || !ichr[len(ichr) - 1].valuesEqual(t) {
 		idx[chr] = append(idx[chr], t)
 	}
-}
-
-// Returns the value at the given position. Returns 0 if no value is registered.
-func (idx Index) Value(chr string, pos int) float64 {
-	ichr := idx[chr]
-	
-	// If no data, return empty.
-	if len(ichr) == 0 {
-		return 0
-	}
-	
-	// Search for containing tile.
-	i := sort.Search(len(ichr), func(j int) bool {
-		return ichr[j].pos > pos
-	}) - 1
-	
-	// Not found.
-	if i == -1 {
-		return 0
-	}
-	
-	return ichr[i].value
-}
-
-func (idx Index) ValueRange(chr string, start, end int) []float64 {
-	ichr := idx[chr]
-	result := make([]float64, end - start)
-	
-	// If no data, return zeros.
-	if len(ichr) == 0 {
-		return result
-	}
-	
-	// Search for containing tiles.
-	i := sort.Search(len(ichr), func(j int) bool {
-		return ichr[j].pos > start
-	}) - 1
-	
-	if i == -1 { i = 0 }
-	
-	// Go over 
-	for i < len(ichr) && ichr[i].pos < end {
-		from := ichr[i].pos - start
-		to := len(result)
-		if i < len(ichr) - 1 {
-			to2 := ichr[i + 1].pos - start
-			if to2 < to { to = to2 }
-		}
-		
-		for j := from; j < to; j++ {
-			result[j] = ichr[i].value
-		}
-
-		i++
-	}
-	
-	return result
 }
 
 // Returns a set of overlapping names at the given position. Modifying the set
@@ -229,7 +162,7 @@ func (idx Index) str() string {
 	for chr := range idx {
 		result += chr + "\n"
 		for _, t := range idx[chr] {
-			result += fmt.Sprintf("\t%d\t%f\t[", t.pos, t.value)
+			result += fmt.Sprintf("\t%d\t[", t.pos)
 			for name := range t.names {
 				result += name + ", "
 			}
@@ -257,7 +190,7 @@ func (b IndexBuilder) Add(chr string, start, end int, name string) {
 }
 
 // Builds an index out of the builder. Builder keeps its state and can be used
-// with more entries, keeping what it had before.
+// again with more entries, keeping what it had before.
 func (b IndexBuilder) Build() Index {
 	result := Index{}
 
@@ -271,8 +204,8 @@ func (b IndexBuilder) Build() Index {
 		for i := range bchr {
 			// Create new tile if needed.
 			if i > 0 && bchr[i].pos != bchr[i-1].pos {
-				set, val := eventSet(counts)
-				t := &tile{bchr[i-1].pos, val, set}
+				set := eventSet(counts)
+				t := &tile{bchr[i-1].pos, set}
 				result.add(chr, t)
 			}
 			
@@ -286,17 +219,14 @@ func (b IndexBuilder) Build() Index {
 		
 		// Create tile for last events (doesn't happen in the above loop).
 		if len(bchr) > 0 {
-			set, val := eventSet(counts)
-			t := &tile{bchr[len(bchr) - 1].pos, val, set}
+			set := eventSet(counts)
+			t := &tile{bchr[len(bchr) - 1].pos, set}
 			result.add(chr, t)
 		}
 	}
 	
 	return result
 }
-
-
-
 
 
 
