@@ -1,8 +1,4 @@
 // A server that serves fasta sequences.
-//
-// Request format: chr,start,length; where start is 0-based.
-//
-// Response format: 0sequence or 1error-message
 package main
 
 import (
