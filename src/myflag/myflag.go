@@ -53,17 +53,17 @@ func HasAny() bool {
 }
 
 
-// ***** FLAG REGISTERING *****************************************************
+// ----- FLAG REGISTERING ------------------------------------------------------
 
 // Registers a new int flag.
 func Int(name string, shortName string, typ string, description string,
-		dflt int) *int {
+		value int) *int {
 	// Register long name
-	result := flags.Int(name, dflt, "")
+	result := flags.Int(name, value, "")
 	
 	// Register short name
 	if shortName != "" {
-		flags.IntVar(result, shortName, dflt, "")
+		flags.IntVar(result, shortName, value, "")
 	}
 	
 	// Add help message
@@ -74,13 +74,13 @@ func Int(name string, shortName string, typ string, description string,
 
 // Registers a new float flag.
 func Float(name string, shortName string, typ string, description string,
-		dflt float64) *float64 {
+		value float64) *float64 {
 	// Register long name
-	result := flags.Float64(name, dflt, "")
+	result := flags.Float64(name, value, "")
 	
 	// Register short name
 	if shortName != "" {
-		flags.Float64Var(result, shortName, dflt, "")
+		flags.Float64Var(result, shortName, value, "")
 	}
 	
 	// Add help message
@@ -91,13 +91,13 @@ func Float(name string, shortName string, typ string, description string,
 
 // Registers a new string flag.
 func String(name string, shortName string, typ string, description string,
-		dflt string) *string {
+		value string) *string {
 	// Register long name
-	result := flags.String(name, dflt, "")
+	result := flags.String(name, value, "")
 	
 	// Register short name
 	if shortName != "" {
-		flags.StringVar(result, shortName, dflt, "")
+		flags.StringVar(result, shortName, value, "")
 	}
 	
 	// Add help message
@@ -108,13 +108,13 @@ func String(name string, shortName string, typ string, description string,
 
 // Registers a new boolean flag.
 func Bool(name string, shortName string, description string,
-		dflt bool) *bool {
+		value bool) *bool {
 	// Register long name
-	result := flags.Bool(name, dflt, "")
+	result := flags.Bool(name, value, "")
 	
 	// Register short name
 	if shortName != "" {
-		flags.BoolVar(result, shortName, dflt, "")
+		flags.BoolVar(result, shortName, value, "")
 	}
 	
 	// Add help message
@@ -124,7 +124,7 @@ func Bool(name string, shortName string, description string,
 }
 
 
-// ***** HELP STRING **********************************************************
+// ----- HELP STRING -----------------------------------------------------------
 
 // Help message for the flags. Accumulates help messages as flags are set.
 var flagsHelp = bytes.NewBuffer(nil)
