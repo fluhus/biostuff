@@ -5,7 +5,6 @@ import (
 	"runtime/pprof"
 	"os"
 	"bufio"
-	"fmt"
 )
 
 var fout *os.File
