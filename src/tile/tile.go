@@ -27,9 +27,9 @@ func main() {
 	fmt.Fprintln(os.Stderr, "Reading input files...")
 	var files []*fileTiles
 	for i, group := range args.inFiles {
-		fmt.Fprintf(os.Stderr, "Reading group_%d...\n", i)
+		fmt.Fprintf(os.Stderr, "Reading %s...\n", args.labels[i])
 		
-		current := &fileTiles{ fmt.Sprintf("group_%d", i), make(map[string]tiles) }
+		current := &fileTiles{ args.labels[i], make(map[string]tiles) }
 		files = append(files, current)
 		
 		for _, file := range group {
@@ -138,6 +138,13 @@ func printTiles(outFile string, t []*fileTiles, tileSize int) error {
 	
 	defer bout.Flush()
 	
+	// Print header.
+	fmt.Fprintf(bout, "chr\tstart\tend")
+	for _, file := range t {
+		fmt.Fprintf(bout, "\t%s", file.name)
+	}
+	fmt.Fprintf(bout, "\n")
+	
 	// Go over tiles.
 	for _, chr := range collectChroms(t) {
 		for _, pos := range collectPoss(t, chr) {
@@ -216,6 +223,7 @@ func collectPoss(t []*fileTiles, chr string) []int {
 
 var args struct {
 	inFiles [][]string
+	labels []string
 	outFile string
 	tileSize int
 	err error
@@ -224,6 +232,8 @@ var args struct {
 func parseArguments() {
 	out := myflag.String("out", "o", "path", "Output file. Default is" +
 			" standard output.", "stdout")
+	labels := myflag.String("labels", "L", "", "Comma-separated labels of " +
+			"columns. Default is file-names.", "")
 	size := myflag.Int("size", "s", "integer", "Length of tile. Default is "+
 			"100.", 100)
 	
@@ -245,6 +255,39 @@ func parseArguments() {
 	if len(args.inFiles) == 0 {
 		args.err = fmt.Errorf("No input files given.")
 		return
+	}
+	
+	// Handle labels.
+	if *labels == "" {
+		// Create default labels.
+		for _, group := range args.inFiles {
+			label := ""
+			for _, file := range group {
+				if label == "" {
+					label = file
+				} else {
+					label += "," + file
+				}
+			}
+			
+			args.labels = append(args.labels, label)
+		}
+	} else {
+		// Use user-defined labels.
+		split := strings.Split(*labels, ",")
+		if len(split) != len(args.inFiles) {
+			args.err = fmt.Errorf("Expected %d labels, but got %d.",
+					len(args.inFiles), len(split))
+			return
+		}
+		for _, label := range split {
+			if label == "" {
+				args.err = fmt.Errorf("Empty labels are not allowed.")
+				return
+			}
+		}
+		
+		args.labels = split
 	}
 	
 	args.tileSize = *size
