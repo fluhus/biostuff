@@ -159,44 +159,80 @@ func (b IndexBuilder) Add(chr string, start, end int, value float64) {
 			&event{end, value, false})
 }
 
-// Builds an index out of the builder. Builder keeps its state and can be used
-// with more entries, keeping what it had before.
-func (b IndexBuilder) Build() Index {
+// Builds an index out of the builder, using the given number of threads.
+// Builder keeps its state and can be used with more entries, keeping what it
+// had before.
+func (b IndexBuilder) build(numThreads int) Index {
 	result := Index{}
-
-	for chr, bchr := range b {
-		// Sort events.
-		sort.Sort(bchr)
-		
-		// Create tiles.
-		result[chr] = tiles{}
-		value := 0.0
-		for i := range bchr {
-			// Create new tile if needed.
-			if i > 0 && bchr[i].pos != bchr[i-1].pos {
-				t := &tile{bchr[i-1].pos, value}
-				result.add(chr, t)
-			}
-
-			// Update value.
-			if bchr[i].start {
-				value += bchr[i].value
-			} else {
-				value -= bchr[i].value
-			}
+	
+	chrChan := make(chan string, numThreads)
+	go func() {
+		// First build the map, to keep later access thread-safe.
+		for chr := range b {
+			result[chr] = tiles{}
 		}
-		
-		// Create tile for last events (doesn't happen in the above loop).
-		if len(bchr) > 0 {
-			t := &tile{bchr[len(bchr) - 1].pos, value}
-			result.add(chr, t)
+		for chr := range b {
+			chrChan <- chr
 		}
+		close(chrChan)
+	}()
+
+	done := make(chan int, numThreads)
+	for th := 0; th < numThreads; th++ {
+		go func() {
+			for chr := range chrChan {
+				bchr := b[chr]
+				
+				// Sort events.
+				sort.Sort(bchr)
+				
+				// Create tiles.
+				value := 0.0
+				for i := range bchr {
+					// Create new tile if needed.
+					if i > 0 && bchr[i].pos != bchr[i-1].pos {
+						t := &tile{bchr[i-1].pos, value}
+						result.add(chr, t)
+					}
+		
+					// Update value.
+					if bchr[i].start {
+						value += bchr[i].value
+					} else {
+						value -= bchr[i].value
+					}
+				}
+				
+				// Create tile for last events (doesn't happen in the above loop).
+				if len(bchr) > 0 {
+					t := &tile{bchr[len(bchr) - 1].pos, value}
+					result.add(chr, t)
+				}
+			}
+			done <- 1
+		}()
 	}
+	
+	for th := 0; th < numThreads; th++ {
+		<-done
+	}
+	close(done)
 	
 	return result
 }
 
+// Builds an index out of the builder. Builder keeps its state and can be used
+// with more entries, keeping what it had before.
+func (b IndexBuilder) Build() Index {
+	return b.build(1)
+}
 
+// Builds an index out of the builder, using the given number of threads.
+// Builder keeps its state and can be used with more entries, keeping what it
+// had before.
+func (b IndexBuilder) BuildThreads(numThreads int) Index {
+	return b.build(numThreads)
+}
 
 
 

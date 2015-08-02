@@ -4,8 +4,13 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"bioformats/bed/bedgraph"
 )
+
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+}
 
 // Creates an index from the given background file.
 func makeIndex(path string) (bedgraph.Index, error) {
@@ -23,7 +28,7 @@ func makeIndex(path string) (bedgraph.Index, error) {
 		builder.Add(b.Chr, b.Start, b.End, b.Value)
 	}
 		
-	return builder.Build(), nil
+	return builder.BuildThreads(runtime.NumCPU()), nil
 }
 
 // Adds background values around pos to the given value slice.

@@ -264,6 +264,9 @@ Written by Amit Lavon (amitlavon1@gmail.com).
 Usage:
 tiles [options] <meth 1> <meth 2> <meth 3> ...
 
+Samples can be united to the same column using commas:
+tiles [options] <meth 1>,<meth 2> <meth 3>,<meth 4> ...
+
 Accepted options:
 `
 
