@@ -7,37 +7,24 @@ import (
 	"sort"
 	"bufio"
 	"strings"
+	"myflag"
 )
 
 func main() {
 	// Parse arguments
-	if len(os.Args) != 4 && len(os.Args) != 5 {
-		fmt.Println("Crosses region files with 'events' such as introns, " +
-				"exons, LINEs etc.")
-		fmt.Println("\nWritten by Amit Lavon (amitlavon1@gmail.com).\n")
-		fmt.Println("Usage:")
-		fmt.Println("regions <events file> <regions in file> <regions out " +
-				"file> [priorities]")
-		fmt.Println("\nFile structures:")
-		fmt.Println("* events file: 4 columns - chromosome, start, end, name.")
-		fmt.Println("* regions file: 3 columns - chromosome, start, end.")
-		fmt.Println("\nPriorities are comma-separated event names, in case " +
-				"several overlap.")
-		fmt.Println("Priorities for intron/exon: exon,intron,promoter," +
-				"cpg_island")
+	err := parseArgs()
+	if err != nil {
+		fmt.Println("Error parsing arguments:", err)
 		os.Exit(1)
 	}
-	
-	// Parse priorities
-	var prior []string
-	if len(os.Args) == 5 {
-		prior = strings.Split(os.Args[4], "\t")
+	if args.help {
+		fmt.Println(help)
+		fmt.Println(myflag.HelpString())
+		os.Exit(1)
 	}
 
 	fmt.Println("Reading events...")
-	//e, err := eventsFromFile("/cs/icore/amitlavon/data/internet/gene_symbols/genes_intex_cpg.txt")
-	//e, err := eventsFromFile("/cs/icore/amitlavon/data/internet/repeat_masker/repeat_masker_cut.txt")
-	e, err := eventsFromFile(os.Args[1])
+	e, err := eventsFromFile(args.eventFile)
 	
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -48,7 +35,7 @@ func main() {
 	idx := e.index()
 	
 	fmt.Println("Reading regions...")
-	err = processFile(os.Args[2], os.Args[3], idx, prior)
+	err = processFile(args.inFile, args.outFile, idx, args.prior)
 	
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -249,19 +236,32 @@ func (e eventSet) event() string {
 // ***** REGION FILE PROCESSING ***********************************************
 
 func processFile(in string, out string, idx index, prior []string) error {
+	// Buffered i/o.
+	var bout *bufio.Writer
+	var scanner *bed.Scanner
+
 	// Open files
-	fin, err := os.Open(in)
-	if err != nil { return err }
-	defer fin.Close()
+	if in == "" {
+		scanner = bed.NewScanner(os.Stdin)
+	} else {
+		fin, err := os.Open(in)
+		if err != nil { return err }
+		defer fin.Close()
+		
+		scanner = bed.NewScanner(fin)
+	}
 	
-	fout, err := os.Create(out)
-	if err != nil { return err }
-	defer fout.Close()
+	if out == "" {
+		bout = bufio.NewWriter(os.Stdout)
+	} else {
+		fout, err := os.Create(out)
+		if err != nil { return err }
+		defer fout.Close()
+		
+		bout = bufio.NewWriter(fout)
+	}
 	
-	bout := bufio.NewWriter(fout)
 	defer bout.Flush()
-	
-	scanner := bed.NewScanner(fin)
 	
 	// Iterate over lines
 	for scanner.Scan() {
@@ -291,4 +291,84 @@ func processFile(in string, out string, idx index, prior []string) error {
 	// If no error, will return nil
 	return scanner.Err()
 }
+
+// ***** ARGUMENTS *************************************************************
+
+var args struct {
+	eventFile string
+	inFile    string
+	outFile   string
+	prior     []string
+	extend    int
+	help      bool
+}
+
+func parseArgs() error {
+	// Parse command-line flags.
+	events := myflag.String("events", "e", "path", "Input event file. Must " +
+			"be set. Structure: chromosome, start, end, name.", "")
+	in := myflag.String("in", "i", "path", "Input bed file. Default is " +
+			"standard input.", "")
+	out := myflag.String("out", "o", "path", "Output bed file. Default is " +
+			"standard output.", "")
+	extend := myflag.Int("extend", "x", "integer", "Extend each event by n " +
+			"bases in each direction. Default is 0.", 0)
+	prior := myflag.String("priority", "p", "list", "Optional. Comma-" +
+			"separated events for when several overlap. The leftmost will " +
+			"be returned. Priorities for exons/introns:" +
+			" exon,intron,promoter,cpg_island",
+			"")
+	
+	err := myflag.Parse()
+	if err != nil {
+		return err
+	}
+	
+	if !myflag.HasAny() {
+		args.help = true
+		return nil
+	}
+	
+	// Check arguments.
+	if *events == "" {
+		return fmt.Errorf("Event file not set.")
+	}
+	
+	if len(myflag.Args()) != 0 {
+		return fmt.Errorf("Unexpected argument: %s", myflag.Args()[0])
+	}
+	
+	if *extend < 0 {
+		return fmt.Errorf("Bad extension value: %d. Must be at least 0.",
+				*extend)
+	}
+	
+	if *prior != "" {
+		args.prior = strings.Split(*prior, ",")
+		for _, word := range args.prior {
+			if word == "" {
+				return fmt.Errorf("Empty words in priority are not allowed.")
+			}
+		}
+	}
+	
+	args.eventFile = *events
+	args.inFile = *in
+	args.outFile = *out
+	args.extend = *extend
+	
+	return nil
+}
+
+var help =
+`Crosses region files with 'events' such as introns, exons, LINEs etc.
+
+Written by Amit Lavon (amitlavon1@gmail.com).
+
+Usage:
+regions [options] -e <event file>
+
+Accepted options:`
+
+
 
