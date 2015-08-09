@@ -32,10 +32,10 @@ func intsToText(values []int) []byte {
 	return result
 }
 
-// Plots the given data using python. An empty output file name will result in
-// only showing the plot.
+// Plots the given data using python. An output file name equals to "show" will
+// result in only showing the plot.
 func plotWithPython(filesData [][]float64, xvals []int, binSize int,
-		labels []string, outFile string) {
+		labels []string, baseFile string, outFile string) {
 	src := bytes.NewBuffer(nil)
 	
 	// Create imports.
@@ -67,7 +67,7 @@ func plotWithPython(filesData [][]float64, xvals []int, binSize int,
 	}
 	
 	// Add figure settings.
-	fmt.Fprintf(src, "plt.title('Aggregation plot')\n")
+	fmt.Fprintf(src, "plt.title('Aggregation plot\\n%s')\n", baseFile)
 	fmt.Fprintf(src, "plt.xlabel('Distance from region center')\n")
 	fmt.Fprintf(src, "plt.ylabel('Average signal')\n")
 	fmt.Fprintf(src, "plt.axis([%f,%f,%f,%f])\n",

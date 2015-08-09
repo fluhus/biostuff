@@ -26,11 +26,13 @@ func main() {
 	
 	var data [][]float64  // Numbers to plot.
 	var labels []string   // Labels for plot legend.
+	var base string       // Base file name for plot title.
 	
 	// Choose strategy.
 	if len(arguments.bedgraphs) == 1 {
 		// Compare 1 bedgraph to many beds.
 		labels = arguments.beds
+		base = arguments.bedgraphs[0]
 		
 		// Create index.
 		fmt.Printf("Reading bed-graph '%s'...\n", arguments.bedgraphs[0])
@@ -60,6 +62,7 @@ func main() {
 		}
 		
 		labels = arguments.bedgraphs
+		base = arguments.beds[0]
 		
 		// Create indexes.
 		var idxs []bedgraph.Index
@@ -103,7 +106,7 @@ func main() {
 	// Plot using python
 	if arguments.img != "" {
 		fmt.Println("Generating image...")
-		plotWithPython(data, xvals, arguments.bin, labels, arguments.img)
+		plotWithPython(data, xvals, arguments.bin, labels, base, arguments.img)
 	}
 	
 	fmt.Println("Done!")
