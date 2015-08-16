@@ -40,6 +40,8 @@ func plotWithPython(filesData [][]float64, xvals []int, binSize int,
 	
 	// Create imports.
 	fmt.Fprintf(src, "import matplotlib.pyplot as plt\n")
+	fmt.Fprintf(src, "import matplotlib.cm as cm\n")
+	fmt.Fprintf(src, "palette=cm.brg\n")
 	
 	// Find min and max for axes.
 	minValue := math.MaxFloat64
@@ -61,9 +63,10 @@ func plotWithPython(filesData [][]float64, xvals []int, binSize int,
 	
 	// Add plot for each file.
 	for i,values := range filesData {
-		fmt.Fprintf(src, "plt.plot(%s[::%d],%s[::%d],linewidth=2,label='%s')\n",
+		fmt.Fprintf(src, "plt.plot(%s[::%d],%s[::%d],linewidth=2,label='%s'," +
+				"c=palette(%f))\n",
 				intsToText(xvals), binSize, floatsToText(values), binSize,
-				labels[i])
+				labels[i], float64(i) / float64(len(filesData) - 1))
 	}
 	
 	// Add figure settings.
