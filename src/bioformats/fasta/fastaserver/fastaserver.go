@@ -2,7 +2,7 @@
 package main
 
 import (
-	"net"
+	"net/http"
 	"myflag"
 	"fmt"
 	"bioformats/fasta"
@@ -53,23 +53,15 @@ func main() {
 		}
 	}
 	
-	// Listen on port.
-	ln, err := net.Listen("tcp", ":" + *args.port)
-	if err != nil {
-		fmt.Println("Error opening port:", err)
-		os.Exit(2)
-	}
-	
 	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to" +
 			" exit.\n")
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection:", err)
-			continue
-		}
-		
-		go handleConnection(conn)
+	
+	// Listen on port.
+	http.HandleFunc("/sequence", sequenceHandler)
+	http.HandleFunc("/meta", metaHandler)
+	err = http.ListenAndServe(":" + *args.port, nil)
+	if err != nil {
+		fmt.Println("Error listening:", err)
 	}
 }
 
