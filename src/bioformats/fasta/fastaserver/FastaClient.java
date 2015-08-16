@@ -1,14 +1,7 @@
-import java.net.Socket;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-
-import org.json.simple.*;
-import org.json.simple.parser.*;
+import java.io.*;
+import java.net.URL;
+import java.util.*;
+import java.util.regex.*;
 
 /**
  * Communicates with a fasta server, for retrieval of genetic sequences.
@@ -25,26 +18,29 @@ public class FastaClient {
 	 */
 	public static String getSequence(int port, String chr, int start,
 			int length) {
-		try (Socket socket = new Socket("localhost", port)) {
-			OutputStream out = socket.getOutputStream();
-			InputStream in = socket.getInputStream();
+		try {
+			// Connect to server.
+			String address = String.format(
+					"http://localhost:%d/sequence?chr=%s&start=%d&length=%d",
+					port, chr, start, length);
+			InputStream in = (new URL(address)).openStream();
 			
-			// Send request.
-			out.write(String.format("{\"type\":\"sequence\",\"sequence\":" +
-					"{\"chr\":\"%s\",\"start\":%d,\"length\":%d}}",
-					chr, start, length).getBytes());
+			// Parse response.
+			StringBuilder sb = new StringBuilder();
+			for (int i = in.read(); i != -1; i = in.read()) {
+				sb.append((char)i);
+			}
+			String result = sb.toString();
+			in.close();
 			
-			// Read response.
-			JSONObject res = (JSONObject)JSONValue
-					.parse(new InputStreamReader(in));
-			
-			// Check for error.
-			if (res.containsKey("error")) {
-				throw new FastaClientException((String)res.get("error"));
+			// Handle error.
+			if (result.startsWith("Error: ")) {
+				throw new FastaClientException(result.substring(7));
 			}
 			
-			return (String) res.get("sequence");
-		} catch (Exception e) {
+			return result;
+		} catch (IOException e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -69,30 +65,29 @@ public class FastaClient {
 	 * the corresponding length.
 	 */
 	public static Map<String, Long> getChromosomes(int port) {
-		try (Socket socket = new Socket("localhost", port)) {
-			OutputStream out = socket.getOutputStream();
-			InputStream in = socket.getInputStream();
+		try {
+			// Connect to server.
+			String address = String.format("http://localhost:%d/meta", port);
+			InputStream in = (new URL(address)).openStream();
+			Scanner scanner = new Scanner(in);
 			
-			// Send request.
-			out.write("{\"type\":\"meta\"}".getBytes());
-			
-			// Read response.
-			JSONObject res = (JSONObject)JSONValue
-					.parse(new InputStreamReader(in));
-			
-			// Check for error.
-			if (res.containsKey("error")) {
-				throw new FastaClientException((String)res.get("error"));
-			}
-			
-			// Convert to map.
+			// Parse response.
+			Pattern pat = Pattern.compile("^(.*): (\\d+)$");
 			Map<String, Long> result = new HashMap<>();
-			for (Object key : res.keySet()) {
-				result.put((String)key, (Long)res.get(key));
+			while (scanner.hasNext()) {
+				String line = scanner.nextLine();
+				Matcher m = pat.matcher(line);
+				m.find();
+				
+				long length = Long.valueOf(m.group(2));
+				result.put(m.group(1), length);
 			}
+			
+			in.close();
 			
 			return result;
 		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -118,7 +113,7 @@ public class FastaClient {
 	}
 	
 	public static void main(String[] args) {
-		System.out.println("s=" + getSequence("chrI", 100, 10));
+		System.out.println("s=" + getSequence("amit", 10, 10));
 		System.out.println(getChromosomes(1912));
 	}
 }

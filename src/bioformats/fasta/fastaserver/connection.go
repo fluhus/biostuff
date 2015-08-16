@@ -70,6 +70,7 @@ func sequenceHandler(w http.ResponseWriter, req *http.Request) {
 
 // Handles metadata requests.
 func metaHandler(w http.ResponseWriter, req *http.Request) {
+	reportf("Got meta request.")
 	for _, entry := range fa {
 		fmt.Fprintf(w, "%s: %d\n", entry.Name(), entry.Length())
 	}
