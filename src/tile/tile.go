@@ -77,6 +77,8 @@ func tileFile(file string, tileSize int, t *fileTiles) error {
 	
 	scanner := bufio.NewScanner(f)
 	scanner.Scan() // Skip header line.
+
+	minCoverage := float64(*args.minCoverage)
 	
 	for scanner.Scan() {
 		// Split to fields.
@@ -94,6 +96,11 @@ func tileFile(file string, tileSize int, t *fileTiles) error {
 		if total == 0 { continue }  // Avoid parsing 'NA'.
 		ratio, err := strconv.ParseFloat(fields[4], 64)
 		if err != nil { return err }
+
+		// Check if at least minimal coverage.
+		if total < minCoverage {
+			continue
+		}
 		
 		methd := int( total * ratio )
 		
@@ -226,6 +233,7 @@ var args struct {
 	labels []string
 	outFile string
 	tileSize int
+	minCoverage *int
 	err error
 }
 
@@ -236,6 +244,8 @@ func parseArguments() {
 			"columns. Default is file-names.", "")
 	size := myflag.Int("size", "s", "integer", "Length of tile. Default is "+
 			"100.", 100)
+	args.minCoverage = myflag.Int("coverage", "c", "integer", "Minimal coverage" +
+			" for a base to be included. Default is no limit.", -1)
 	
 	args.err = myflag.Parse()
 	if args.err != nil { return }
