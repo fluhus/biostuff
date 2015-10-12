@@ -74,21 +74,59 @@ func fill(value reflect.Value, s []string) error {
 type Scanner struct {
 	*bufio.Scanner
 	typ reflect.Type
+	skipCols int
 }
 
 // Returns a new scanner. typ is a pointer to a struct, that represents the type
 // that should be returned by the parser.
 func NewScanner(r io.Reader, typ interface{}) *Scanner {
+	return NewScannerSkip(r, typ, 0, 0)
+}
+
+// Returns a new scanner. typ is a pointer to a struct, that represents the type
+// that should be returned by the parser. The scanner will skip the first given
+// (non-negative) numbers of rows and columns.
+func NewScannerSkip(r io.Reader, typ interface{}, rows int, cols int) *Scanner {
 	if !isStructPtr(typ) {
 		panic("Argument must be a pointer to a struct.")
 	}
-	return &Scanner{bufio.NewScanner(r), reflect.ValueOf(typ).Elem().Type()}
+	if cols < 0 {
+		panic(fmt.Sprintf("Number of columns must be non-negative (got %d).",
+				cols))
+	}
+	if rows < 0 {
+		panic(fmt.Sprintf("Number of rows must be non-negative (got %d).",
+				rows))
+	}
+	
+	result := &Scanner {
+		bufio.NewScanner(r),
+		reflect.ValueOf(typ).Elem().Type(),
+		cols,
+	}
+	
+	// Skip number of rows.
+	for i := 0; i < rows; i++ {
+		result.Scan()
+	}
+	
+	return result
 }
 
 // Returns the parsed object from the last read line.
 func (s *Scanner) Obj() (interface{}, error) {
+	fields := strings.Split(s.Text(), "\t")
+	
+	// Skip given number of columns.
+	if len(fields) < s.skipCols {
+		fields = nil
+	} else {
+		fields = fields[s.skipCols:]
+	}
+	
+	// Create element.
 	a := reflect.New(s.typ)
-	err := fill(a.Elem(), strings.Split(s.Text(), "\t"))
+	err := fill(a.Elem(), fields)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +137,20 @@ func (s *Scanner) Obj() (interface{}, error) {
 // type that should be returned. Will return a slice of the given type. Reading
 // is buffered.
 func ScanAll(r io.Reader, typ interface{}) (interface{}, error) {
+	return ScanAllSkip(r, typ, 0, 0)
+}
+
+// Scans all objects from the given reader. typ is a pointer to a struct of the
+// type that should be returned. Will return a slice of the given type. Reading
+// is buffered.
+func ScanAllSkip(r io.Reader, typ interface{}, rows int, cols int) (interface{},
+		error) {
 	if !isStructPtr(typ) {
 		panic("Argument must be a pointer to a struct.")
 	}
 	
 	result := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(typ)), 0, 0)
-	s := NewScanner(r, typ)
+	s := NewScannerSkip(r, typ, rows, cols)
 	for s.Scan() {
 		obj, err := s.Obj()
 		if err != nil {
