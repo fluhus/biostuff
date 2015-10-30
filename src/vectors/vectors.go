@@ -6,11 +6,30 @@ import (
 	"fmt"
 )
 
-// L1 (Manhattan) distance.
-var L1 = Lp(1)
+// L1 (Manhattan) distance. Equivalent to Lp(1) but much faster.
+func L1(a, b []float64) float64 {
+	assertMatchingLengths(a, b)
 
-// L2 (Euclidean) distance.
-var L2 = Lp(2)
+	sum := 0.0
+	for i := range a {
+		sum += math.Abs(a[i] - b[i])
+	}
+
+	return sum
+}
+
+// L2 (Euclidean) distance. Equivalent to Lp(2) but much faster.
+func L2(a, b []float64) float64 {
+	assertMatchingLengths(a, b)
+
+	sum := 0.0
+	for i := range a {
+		d := (a[i] - b[i])
+		sum += d * d
+	}
+
+	return math.Sqrt(sum)
+}
 
 // Returns an Lp distance function. For convenience, L1 and L2 are prepared
 // package variables.
