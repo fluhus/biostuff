@@ -29,7 +29,7 @@ func Kmeans(vecs [][]float64, k int) (tags []int, means [][]float64) {
 		k = m
 	}
 
-	// Create initial centroids.
+	// Pick random elements to be the means.
 	initMeans := rand.Perm(m)[:k]
 	means = make([][]float64, k)
 	for i := range means {
@@ -39,7 +39,7 @@ func Kmeans(vecs [][]float64, k int) (tags []int, means [][]float64) {
 
 	// First tagging.
 	tags = tag(vecs, means)
-	dist := distortion(vecs, means, tags)
+	dist := MeanSquareError(vecs, means, tags)
 	distOld := 2 * dist
 
 	// Iterate until converged.
@@ -47,7 +47,7 @@ func Kmeans(vecs [][]float64, k int) (tags []int, means [][]float64) {
 		distOld = dist
 		means = findMeans(vecs, tags, k)
 		tags = tag(vecs, means)
-		dist = distortion(vecs, means, tags)
+		dist = MeanSquareError(vecs, means, tags)
 	}
 
 	return
@@ -80,7 +80,7 @@ func tag(vecs, means [][]float64) []int {
 }
 
 // Calculates the average distance of elements from their assigned means.
-func distortion(vecs, means [][]float64, tags []int) float64 {
+func MeanError(vecs, means [][]float64, tags []int) float64 {
 	if len(tags) != len(vecs) {
 		panic(fmt.Sprintf("Non-matching lengths of matrix and tags: %d, %d",
 				len(vecs), len(tags)))
@@ -121,5 +121,24 @@ func findMeans(vecs [][]float64, tags []int, k int) [][]float64 {
 	}
 
 	return means
+}
+
+// Calculates the average square-distance of elements from their assigned means.
+func MeanSquareError(vecs, means [][]float64, tags []int) float64 {
+	if len(tags) != len(vecs) {
+		panic(fmt.Sprintf("Non-matching lengths of matrix and tags: %d, %d",
+				len(vecs), len(tags)))
+	}
+	if len(vecs) == 0 {
+		return 0
+	}
+
+	d := 0.0
+	for i := range tags {
+		dist := vectors.L2(means[tags[i]], vecs[i])
+		d += dist * dist
+	}
+
+	return d / float64(len(vecs))
 }
 
