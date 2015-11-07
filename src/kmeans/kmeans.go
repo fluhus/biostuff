@@ -38,7 +38,7 @@ func Kmeans(vecs [][]float64, k int) (tags []int, means [][]float64) {
 	}
 
 	// First tagging.
-	tags = tag(vecs, means)
+	tags = tag(vecs, means, make([]int, len(vecs)))
 	dist := MeanSquareError(vecs, means, tags)
 	distOld := 2 * dist
 
@@ -46,17 +46,27 @@ func Kmeans(vecs [][]float64, k int) (tags []int, means [][]float64) {
 	for dist > distOld || dist / distOld < 0.999 {
 		distOld = dist
 		means = findMeans(vecs, tags, k)
-		tags = tag(vecs, means)
+		tags = tag(vecs, means, tags)
 		dist = MeanSquareError(vecs, means, tags)
 	}
 
 	return
 }
 
-// Tags each row with the index of its nearest centroid.
-func tag(vecs, means [][]float64) []int {
+// Tags each row with the index of its nearest centroid. The old tags are used
+// for optimization.
+func tag(vecs, means [][]float64, oldTags []int) []int {
 	if len(means) == 0 {
 		panic("Cannot tag on 0 centroids.")
+	}
+	
+	// Create a distance matrix of means from one another.
+	meansd := make([][]float64, len(means))
+	for i := range meansd {
+		meansd[i] = make([]float64, len(means))
+		for j := range means {
+			meansd[i][j] = vectors.L2(means[i], means[j])
+		}
 	}
 	
 	tags := make([]int, len(vecs))
@@ -64,10 +74,15 @@ func tag(vecs, means [][]float64) []int {
 	// Go over vectors.
 	for i := range vecs {
 		// Find nearest centroid.
-		tags[i] = 0
-		d := vectors.L2(means[0], vecs[i])
+		tags[i] = oldTags[i]
+		d := vectors.L2(means[oldTags[i]], vecs[i])
 		
-		for j := 1; j < len(means); j++ {
+		for j := 0; j < len(means); j++ {
+			// Use triangle inequality to skip means that are too distant.
+			if j == tags[i] || meansd[j][tags[i]] >= 2*d {
+				continue
+			}
+			
 			dj := vectors.L2(means[j], vecs[i])
 			if dj < d {
 				d = dj
