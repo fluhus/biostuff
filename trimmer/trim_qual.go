@@ -3,7 +3,7 @@ package main
 // Handles trimming of low quality ends of the read.
 
 import (
-	"bioformats/fastq"
+	"github.com/fluhus/biostuff/bioformats/fastq"
 )
 
 // Trims the given fastq according to the given threshold.

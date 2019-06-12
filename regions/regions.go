@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
-	"bioformats/bed"
 	"sort"
 	"bufio"
 	"strings"
-	"myflag"
+
+	"github.com/fluhus/biostuff/myflag"
+	"github.com/fluhus/biostuff/bioformats/bed"
 )
 
 func main() {

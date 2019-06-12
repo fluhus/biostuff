@@ -3,7 +3,7 @@ package main
 // Handles trimming of adapters.
 
 import (
-	"bioformats/fastq"
+	"github.com/fluhus/biostuff/bioformats/fastq"
 )
 
 // Trims the given fastq's end (3') according to the given adapter.

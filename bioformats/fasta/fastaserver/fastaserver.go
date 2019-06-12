@@ -3,14 +3,15 @@ package main
 
 import (
 	"net/http"
-	"myflag"
 	"fmt"
-	"bioformats/fasta"
 	"os"
-	"gobz"
 	"strings"
 	"time"
 	"runtime/debug"
+
+	"github.com/fluhus/biostuff/bioformats/fasta"
+	"github.com/fluhus/biostuff/myflag"
+	"github.com/fluhus/biostuff/gobz"
 )
 
 func main() {

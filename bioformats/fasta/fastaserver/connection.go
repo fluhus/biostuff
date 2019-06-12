@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"net/http"
-	"bioformats/fasta"
+
+	"github.com/fluhus/biostuff/bioformats/fasta"
 )
 
 // Handles sequence requests.

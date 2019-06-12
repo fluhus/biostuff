@@ -7,8 +7,9 @@ import (
 	"math"
 	"bufio"
 	"errors"
-	"seqtools"
 	"math/rand"
+
+	"github.com/fluhus/biostuff/seqtools"
 )
 
 // Represents a single Fastq entry.

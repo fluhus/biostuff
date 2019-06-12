@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sort"
 	"bufio"
-	"myflag"
-	"bioformats/bed"
-	"bioformats/bed/bedgraph"
+
+	"github.com/fluhus/biostuff/myflag"
+	"github.com/fluhus/biostuff/bioformats/bed"
+	"github.com/fluhus/biostuff/bioformats/bed/bedgraph"
 )
 
 

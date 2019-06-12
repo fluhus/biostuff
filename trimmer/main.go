@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bioformats/fastq"
 	"fmt"
 	"os"
 	"io"
 	"runtime/pprof"
+
+	"github.com/fluhus/biostuff/bioformats/fastq"
 )
 
 func main() {

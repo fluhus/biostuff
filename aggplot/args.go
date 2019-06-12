@@ -4,7 +4,8 @@ package main
 
 import (
 	"fmt"
-	"myflag"
+
+	"github.com/fluhus/biostuff/myflag"
 )
 
 // Holds parsed arguments.

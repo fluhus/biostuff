@@ -6,9 +6,10 @@ import (
 	"math"
 	"sort"
 	"bufio"
-	"myflag"
 	"strconv"
 	"strings"
+
+	"github.com/fluhus/biostuff/myflag"
 )
 
 func main() {

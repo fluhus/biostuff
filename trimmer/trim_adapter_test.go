@@ -2,7 +2,8 @@ package main
 
 import (
 	"testing"
-	"bioformats/fastq"
+
+	"github.com/fluhus/biostuff/bioformats/fastq"
 )
 
 func Test_NoMatch(t *testing.T) {

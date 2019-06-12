@@ -3,7 +3,8 @@ package strdist
 
 import (
 	"fmt"
-	"seqtools"
+
+	"github.com/fluhus/biostuff/seqtools"
 )
 
 // Computes the edit distance for 2 byte arrays.

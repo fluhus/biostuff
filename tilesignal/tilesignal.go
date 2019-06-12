@@ -7,8 +7,9 @@ import (
 	"sort"
 	"bufio"
 	"runtime/pprof"
-	"bioformats/bed"
-	"bioformats/bed/bedgraph"
+
+	"github.com/fluhus/biostuff/bioformats/bed"
+	"github.com/fluhus/biostuff/bioformats/bed/bedgraph"
 )
 
 // If true, will generate profiling information.

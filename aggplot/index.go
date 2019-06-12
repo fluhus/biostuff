@@ -5,7 +5,8 @@ package main
 import (
 	"os"
 	"runtime"
-	"bioformats/bed/bedgraph"
+
+	"github.com/fluhus/biostuff/bioformats/bed/bedgraph"
 )
 
 func init() {

@@ -117,10 +117,10 @@ func (f *Entry) append(nuc byte) error {
 func (f *Entry) Subsequence(start, length int) []byte {
 	// Check input.
 	if length < 0 {
-		panic(fmt.Sprint("Bad subsequence length: %d", length))
+		panic(fmt.Sprintf("Bad subsequence length: %d", length))
 	}
 	if start < 0 {
-		panic(fmt.Sprint("Bad subsequence start: %d", start))
+		panic(fmt.Sprintf("Bad subsequence start: %d", start))
 	}
 	if start + length > f.Length() {
 		panic(fmt.Sprint("Subsequence position exceeds sequence length: " +
