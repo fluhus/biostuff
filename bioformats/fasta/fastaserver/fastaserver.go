@@ -2,16 +2,16 @@
 package main
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
-	"runtime/debug"
 
 	"github.com/fluhus/biostuff/bioformats/fasta"
-	"github.com/fluhus/biostuff/myflag"
 	"github.com/fluhus/biostuff/gobz"
+	"github.com/fluhus/biostuff/myflag"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 		fmt.Println("Error parsing arguments:", args.err)
 		os.Exit(1)
 	}
-	
+
 	// Read fasta file.
 	fmt.Println("Reading fasta...")
 	now := time.Now()
@@ -39,7 +39,7 @@ func main() {
 		os.Exit(2)
 	}
 	reportf("Took %v.\n", time.Now().Sub(now))
-	
+
 	if *args.serialize {
 		fmt.Println("Serializing fasta...")
 		now = time.Now()
@@ -53,14 +53,14 @@ func main() {
 			return
 		}
 	}
-	
-	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to" +
-			" exit.\n")
-	
+
+	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to"+
+		" exit.\n")
+
 	// Listen on port.
 	http.HandleFunc("/sequence", sequenceHandler)
 	http.HandleFunc("/meta", metaHandler)
-	err = http.ListenAndServe(":" + *args.port, nil)
+	err = http.ListenAndServe(":"+*args.port, nil)
 	if err != nil {
 		fmt.Println("Error listening:", err)
 	}
@@ -78,15 +78,17 @@ var args struct {
 // args.err will be non-nil if a parsing error occurred.
 func parseArguments() {
 	args.port = myflag.String("port", "p", "number",
-			"Port number to listen on. Default: 1912.", "1912")
+		"Port number to listen on. Default: 1912.", "1912")
 	args.verbose = myflag.Bool("verbose", "v", "Print lots of stuff.", false)
 	args.serialize = myflag.Bool("serialize", "s",
-			"Serialize a fasta file for fast loading. Generates a file with " +
+		"Serialize a fasta file for fast loading. Generates a file with "+
 			"the same name with a '.serialized' suffix.", false)
-	
+
 	args.err = myflag.Parse()
-	if args.err != nil { return }
-	
+	if args.err != nil {
+		return
+	}
+
 	if len(myflag.Args()) == 0 {
 		args.err = fmt.Errorf("No fasta input given.")
 		return
@@ -95,15 +97,17 @@ func parseArguments() {
 		args.err = fmt.Errorf("Too many arguments.")
 		return
 	}
-	
+
 	args.file = myflag.Args()[0]
 }
 
 // Returns a fasta object from the given file.
 func readFastaFile(file string) ([]*fasta.Entry, error) {
 	f, err := os.Open(file)
-	if err != nil { return nil, err }
-	
+	if err != nil {
+		return nil, err
+	}
+
 	// Is input file serialized?
 	if strings.HasSuffix(args.file, ".serialized") {
 		// Yes! Deserialize.
@@ -112,16 +116,16 @@ func readFastaFile(file string) ([]*fasta.Entry, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Convert to regular fasta.
 		fa := make([]*fasta.Entry, len(fas))
 		for i := range fas {
 			fa[i] = fasta.FromSerializable(fas[i])
 		}
-		
+
 		// Release unused memory.
 		debug.FreeOSMemory()
-		
+
 		return fa, nil
 	} else {
 		// No! Read textual fasta.
@@ -153,10 +157,9 @@ func serializeFasta() (string, error) {
 	for i := range fas {
 		fas[i] = fasta.ToSerializable(fa[i])
 	}
-	
+
 	newFile := args.file + ".serialized"
 	err := gobz.Save(newFile, fas)
-	
+
 	return newFile, err
 }
-

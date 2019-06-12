@@ -3,15 +3,15 @@ package seqtools
 // Unit test for seqtools.
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 // Compares the output of ReverseComplement with the expected output.
 func helper_ReverseComplement(t *testing.T, input string, expected string) {
 	if ReverseComplementString(input) != expected {
 		t.Error(fmt.Sprintf("rc(%s) gave %s, expected %s",
-				input, ReverseComplementString(input), expected))
+			input, ReverseComplementString(input), expected))
 	}
 }
 

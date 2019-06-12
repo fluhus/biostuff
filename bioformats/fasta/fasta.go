@@ -2,16 +2,15 @@
 package fasta
 
 import (
-	"fmt"
 	"bufio"
+	"fmt"
 	"io"
-	"sort"
 	"runtime/debug"
+	"sort"
 )
 
 // Converts number to nucleotide.
 var num2nuc = []byte{'A', 'C', 'G', 'T'}
-
 
 // *** FASTA ENTRY ************************************************************
 
@@ -49,8 +48,8 @@ func (f *Entry) At(position int) byte {
 	}
 
 	// Extract nucleotide.
-	num := (f.sequence[uposition / 4] >> (uposition % 4 * 2) & 3)
-	
+	num := (f.sequence[uposition/4] >> (uposition % 4 * 2) & 3)
+
 	return num2nuc[num]
 }
 
@@ -62,9 +61,11 @@ func (f *Entry) isN(pos uint) bool {
 
 	i := sort.Search(len(f.nStarts), func(j int) bool {
 		return f.nStarts[j] > pos
-	}) -	1
-	
-	if i == -1 { i = 0 }
+	}) - 1
+
+	if i == -1 {
+		i = 0
+	}
 	return pos >= f.nStarts[i] && pos < f.nEnds[i]
 }
 
@@ -72,12 +73,18 @@ func (f *Entry) isN(pos uint) bool {
 func (f *Entry) append(nuc byte) error {
 	var num uint
 	switch nuc {
-		case 'a', 'A': num = 0
-		case 'c', 'C': num = 1
-		case 'g', 'G': num = 2
-		case 't', 'T': num = 3
-		case 'n', 'N': num = 4
-		default: num = 5
+	case 'a', 'A':
+		num = 0
+	case 'c', 'C':
+		num = 1
+	case 'g', 'G':
+		num = 2
+	case 't', 'T':
+		num = 3
+	case 'n', 'N':
+		num = 4
+	default:
+		num = 5
 	}
 
 	// If unknown nucleotide.
@@ -88,25 +95,25 @@ func (f *Entry) append(nuc byte) error {
 	// If 'N'.
 	if num == 4 {
 		num = 0
-		
+
 		// Start a new chunk?
-		if len(f.nEnds) == 0 || f.nEnds[len(f.nEnds) - 1] < f.length {
+		if len(f.nEnds) == 0 || f.nEnds[len(f.nEnds)-1] < f.length {
 			// Yes.
 			f.nStarts = append(f.nStarts, f.length)
-			f.nEnds = append(f.nEnds, f.length + 1)
+			f.nEnds = append(f.nEnds, f.length+1)
 		} else {
 			// No.
-			f.nEnds[len(f.nEnds) - 1] = f.length + 1
+			f.nEnds[len(f.nEnds)-1] = f.length + 1
 		}
 	}
 
 	// Append an extra byte.
-	if f.length % 4 == 0 {
+	if f.length%4 == 0 {
 		f.sequence = append(f.sequence, 0)
 	}
 
 	// Set bits.
-	f.sequence[f.length / 4] |= byte( num << (f.length % 4 * 2) )
+	f.sequence[f.length/4] |= byte(num << (f.length % 4 * 2))
 
 	f.length++
 
@@ -122,9 +129,9 @@ func (f *Entry) Subsequence(start, length int) []byte {
 	if start < 0 {
 		panic(fmt.Sprintf("Bad subsequence start: %d", start))
 	}
-	if start + length > f.Length() {
-		panic(fmt.Sprint("Subsequence position exceeds sequence length: " +
-				"start %d, length %d.", start, length))
+	if start+length > f.Length() {
+		panic(fmt.Sprint("Subsequence position exceeds sequence length: "+
+			"start %d, length %d.", start, length))
 	}
 
 	// Generate result.
@@ -146,56 +153,61 @@ func (f *Entry) String() string {
 func ReadEntry(r *bufio.Reader) (*Entry, error) {
 	// States of the reader.
 	const (
-		stateStart = iota  // beginning of input
-		stateName          // reading name
-		stateNewLine       // beginning of new line
-		stateSequence      // reading sequence
+		stateStart    = iota // beginning of input
+		stateName            // reading name
+		stateNewLine         // beginning of new line
+		stateSequence        // reading sequence
 	)
-	
+
 	// Result entry.
 	var name []byte
 	result := newEntry()
-	
+
 	// Start reading.
 	state := stateStart
 	var b byte
 	var err error
 	readAnything := false
-	
-	loop: for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
+
+loop:
+	for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
 		readAnything = true
 		switch state {
 		case stateStart:
 			// '>' marks the name of the sequence.
 			if b == '>' {
 				state = stateName
-				
-			// If no '>' then only sequence without name.
+
+				// If no '>' then only sequence without name.
 			} else {
 				state = stateSequence
 				if b == '\n' || b == '\r' {
 					state = stateNewLine
 				} else {
 					err = result.append(b)
-					if err != nil { break loop }
+					if err != nil {
+						break loop
+					}
 				}
 			}
-			
+
 		case stateSequence:
 			if b == '\n' || b == '\r' {
 				state = stateNewLine
 			} else {
 				err = result.append(b)
-				if err != nil { break loop }
+				if err != nil {
+					break loop
+				}
 			}
-			
+
 		case stateName:
 			if b == '\n' || b == '\r' {
 				state = stateNewLine
 			} else {
 				name = append(name, b)
 			}
-			
+
 		case stateNewLine:
 			if b == '\n' || b == '\r' {
 				// Nothing. Move on to the next line.
@@ -207,36 +219,38 @@ func ReadEntry(r *bufio.Reader) (*Entry, error) {
 				// Just more sequence.
 				state = stateSequence
 				err = result.append(b)
-				if err != nil { break loop }
+				if err != nil {
+					break loop
+				}
 			}
 		}
 	}
-	
+
 	// Return EOF only if encountered before reading anything.
 	if !readAnything {
 		return nil, err
 	}
-	
+
 	// EOF will be returned on the next call to read.
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
-	
+
 	result.name = string(name)
 
 	// Reallocate sequence to take less memory.
 	newSequence := make([]byte, len(result.sequence))
 	copy(newSequence, result.sequence)
 	result.sequence = newSequence
-	
+
 	newStarts := make([]uint, len(result.nStarts))
 	copy(newStarts, result.nStarts)
 	result.nStarts = newStarts
-	
+
 	newEnds := make([]uint, len(result.nEnds))
 	copy(newEnds, result.nEnds)
 	result.nEnds = newEnds
-	
+
 	return result, nil
 }
 
@@ -244,15 +258,15 @@ func ReadEntry(r *bufio.Reader) (*Entry, error) {
 // buffered inside the function.
 func ReadFasta(r io.Reader) ([]*Entry, error) {
 	buf := bufio.NewReader(r)
-	
+
 	var result []*Entry
 	var fa *Entry
 	var err error
 
 	for fa, err = ReadEntry(buf); err == nil; fa, err =
-			ReadEntry(buf) {
+		ReadEntry(buf) {
 		result = append(result, fa)
-		
+
 		// Release unused memory, so that the program doesn't
 		// consume twice the memory it really needs.
 		debug.FreeOSMemory()
@@ -264,7 +278,6 @@ func ReadFasta(r io.Reader) ([]*Entry, error) {
 
 	return result, nil
 }
-
 
 // ***** SERIALIZABLE ENTRY ****************************************************
 
@@ -279,14 +292,12 @@ type SerializableEntry struct {
 
 // Converts a fasta entry to a serializable one.
 func ToSerializable(f *Entry) *SerializableEntry {
-	return &SerializableEntry { f.name, f.sequence, f.length, f.nStarts,
-			f.nEnds }
+	return &SerializableEntry{f.name, f.sequence, f.length, f.nStarts,
+		f.nEnds}
 }
 
 // Converts a serializable fasta entry to a regular one.
 func FromSerializable(f *SerializableEntry) *Entry {
-	return &Entry { f.Name, f.Sequence, f.Length, f.NStarts,
-			f.NEnds }
+	return &Entry{f.Name, f.Sequence, f.Length, f.NStarts,
+		f.NEnds}
 }
-
-

@@ -2,11 +2,11 @@
 package fastq
 
 import (
-	"io"
-	"fmt"
-	"math"
 	"bufio"
 	"errors"
+	"fmt"
+	"io"
+	"math"
 	"math/rand"
 
 	"github.com/fluhus/biostuff/seqtools"
@@ -40,58 +40,58 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 			} else {
 				return nil, errors.New("fastq read error: unexpected end of file")
 			}
-		
-		// Not end of file, bummer
+
+			// Not end of file, bummer
 		} else {
 			return nil, errors.New("fastq read error: " + err.Error())
 		}
 	}
-	
+
 	// Handle ID
 	id = trimNewLines(id)
 	if len(id) == 0 || id[0] != '@' {
 		return nil, errors.New("fastq read error: expected '@' at beginning of" +
-				" line: \"" + string(id) + "\"")
+			" line: \"" + string(id) + "\"")
 	}
-	
+
 	// Trim '@'
 	id = id[1:]
-	
+
 	// Read sequence
 	seq, err := reader.ReadBytes('\n')
 	if err != nil {
 		// If end of file, report unexpected
 		if err == io.EOF {
 			return nil, errors.New("fastq read error: unexpected end of file")
-		
-		// Not end of file
+
+			// Not end of file
 		} else {
 			return nil, errors.New("fastq read error: " + err.Error())
 		}
 	}
-	
+
 	seq = trimNewLines(seq)
-	
+
 	// Read plus
 	plus, err := reader.ReadBytes('\n')
 	if err != nil {
 		// If end of file, report unexpected
 		if err == io.EOF {
 			return nil, errors.New("fastq read error: unexpected end of file")
-		
-		// Not end of file
+
+			// Not end of file
 		} else {
 			return nil, errors.New("fastq read error: " + err.Error())
 		}
 	}
-	
+
 	// Handle plus
 	plus = trimNewLines(plus)
 	if len(plus) == 0 || plus[0] != '+' {
 		return nil, errors.New("fastq read error: expected '+' at beginning of" +
-				" line: \"" + string(plus) + "\"")
+			" line: \"" + string(plus) + "\"")
 	}
-	
+
 	// Read qualities
 	quals, err := reader.ReadBytes('\n')
 	if err != nil {
@@ -100,17 +100,17 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 			return nil, errors.New("fastq read error: " + err.Error())
 		}
 	}
-	
+
 	// Handle qualities
 	quals = trimNewLines(quals)
 	if len(quals) != len(seq) {
 		return nil, errors.New("fastq read error: sequence and qualities have" +
-				" different lengths")
+			" different lengths")
 		// BUG( ) TODO should I include more details in the error message?
 	}
-	
+
 	// Finally done!
-	return &Fastq{ id, seq, quals }, nil
+	return &Fastq{id, seq, quals}, nil
 }
 
 // Used for different phred offsets.
@@ -129,19 +129,19 @@ func (f *Fastq) ApplyQuals(offset PhredOffset) {
 	if offset < 0 {
 		panic(fmt.Sprint("bad offset:", offset))
 	}
-	
+
 	// Check quality length
 	if len(f.Quals) != len(f.Sequence) {
 		panic(fmt.Sprintf("inconsistent sequence and quals lengths: %d, %d",
-				len(f.Sequence), len(f.Quals)))
+			len(f.Sequence), len(f.Quals)))
 	}
-	
+
 	// Go over qualities
 	for i := range f.Quals {
 		// Extract real quality
 		phred := f.Quals[i] - byte(offset)
-		qual := math.Pow(10.0, float64(phred) / -10.0)
-		
+		qual := math.Pow(10.0, float64(phred)/-10.0)
+
 		// Mutate randomly
 		if rand.Float64() < qual {
 			originalChar := f.Sequence[i]
@@ -157,7 +157,9 @@ func (f *Fastq) ApplyQuals(offset PhredOffset) {
 func MakeQuals(sequence []byte) []byte {
 	// BUG( ) I should replace this mock with a real quality generator.
 	result := make([]byte, len(sequence))
-	for i := range result { result[i] = 'I' }
+	for i := range result {
+		result[i] = 'I'
+	}
 	return result
 }
 
@@ -165,19 +167,18 @@ func MakeQuals(sequence []byte) []byte {
 func trimNewLines(b []byte) []byte {
 	start := 0
 	end := len(b)
-	for i,v := range b {
-	
+	for i, v := range b {
+
 		if v == '\n' || v == '\r' {
 			// If encountered new lines up to here
 			if i == start {
 				start++
 			}
 		} else {
-			end = i + 1  // end will point to the last non-new-line
+			end = i + 1 // end will point to the last non-new-line
 		}
-		
+
 	}
-	
+
 	return b[start:end]
 }
-

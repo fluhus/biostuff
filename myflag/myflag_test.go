@@ -11,10 +11,10 @@ func TestHelpMessage(t *testing.T) {
 	Float("float", "f", "", "num num", 5)
 	String("something", "", "path", "cool", "default")
 	Bool("boolie", "b", "booboo", false)
-	
+
 	help := HelpString()
 	expected :=
-`	-n <integer>
+		`	-n <integer>
 	-number <integer>
 		yoink yoink
 
@@ -37,12 +37,12 @@ func TestHelpMessage(t *testing.T) {
 
 func TestParsing(t *testing.T) {
 	Reset()
-	
+
 	i := Int("number", "n", "", "", 1)
 	f := Float("float", "f", "", "", 0.1)
 	s := String("something", "", "", "", "default")
 	b := Bool("boolie", "b", "", false)
-	
+
 	// Check defaults.
 	if *i != 1 {
 		t.Fatalf("i=%v instead of 1", *i)
@@ -56,10 +56,10 @@ func TestParsing(t *testing.T) {
 	if *b != false {
 		t.Fatalf("b=%v instead of false", *b)
 	}
-	
+
 	// Parse with short names.
-	ParseStrings([]string{ "-n", "2", "-f", "0.2", "-b" })
-	
+	ParseStrings([]string{"-n", "2", "-f", "0.2", "-b"})
+
 	if *i != 2 {
 		t.Fatalf("i=%v instead of 2", *i)
 	}
@@ -72,11 +72,11 @@ func TestParsing(t *testing.T) {
 	if *b != true {
 		t.Fatalf("b=%v instead of true", *b)
 	}
-	
+
 	// Parse with long names.
-	ParseStrings([]string{ "-number", "3", "-float", "0.3", "-boolie",
-			"-something", "howdy" })
-	
+	ParseStrings([]string{"-number", "3", "-float", "0.3", "-boolie",
+		"-something", "howdy"})
+
 	if *i != 3 {
 		t.Fatalf("i=%v instead of 3", *i)
 	}
@@ -90,4 +90,3 @@ func TestParsing(t *testing.T) {
 		t.Fatalf("b=%v instead of true", *b)
 	}
 }
-

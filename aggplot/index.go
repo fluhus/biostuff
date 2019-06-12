@@ -16,7 +16,9 @@ func init() {
 // Creates an index from the given background file.
 func makeIndex(path string) (bedgraph.Index, error) {
 	f, err := os.Open(path)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer f.Close()
 	scanner := bedgraph.NewScanner(f)
 
@@ -28,16 +30,14 @@ func makeIndex(path string) (bedgraph.Index, error) {
 		b := scanner.Bed()
 		builder.Add(b.Chr, b.Start, b.End, b.Value)
 	}
-		
+
 	return builder.BuildThreads(runtime.NumCPU()), nil
 }
 
 // Adds background values around pos to the given value slice.
 func collect(idx bedgraph.Index, chr string, pos int, values []float64) {
-	vals := idx.ValueRange(chr, pos - len(values)/2, pos + len(values)/2 + 1)
+	vals := idx.ValueRange(chr, pos-len(values)/2, pos+len(values)/2+1)
 	for i := range values {
 		values[i] += vals[i]
 	}
 }
-
-

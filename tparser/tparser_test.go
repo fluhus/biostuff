@@ -1,9 +1,9 @@
 package tparser
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"strings"
+	"testing"
 )
 
 func TestScanner_simple(t *testing.T) {
@@ -55,8 +55,8 @@ func TestScanner_scanAll(t *testing.T) {
 	a, err := ScanAll(r, &thing{})
 	assert.Nil(err)
 	arr := a.([]*thing)
-	assert.Equal([]*thing{ &thing{"chr1", 100, 200, 3.14},
-			&thing{"chr2", 400, 500, 5.66} }, arr)
+	assert.Equal([]*thing{&thing{"chr1", 100, 200, 3.14},
+		&thing{"chr2", 400, 500, 5.66}}, arr)
 }
 
 type thing struct {

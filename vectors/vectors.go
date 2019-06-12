@@ -2,8 +2,8 @@
 package vectors
 
 import (
-	"math"
 	"fmt"
+	"math"
 )
 
 // L1 (Manhattan) distance. Equivalent to Lp(1) but more efficient.
@@ -44,7 +44,7 @@ func Lp(p int) func([]float64, []float64) float64 {
 		fp := float64(p)
 		sum := 0.0
 		for i := range a {
-			sum += math.Pow(math.Abs(a[i] - b[i]), fp)
+			sum += math.Pow(math.Abs(a[i]-b[i]), fp)
 		}
 
 		return math.Pow(sum, 1/fp)
@@ -77,7 +77,7 @@ func Mul(a []float64, m float64) {
 // Returns the dot product of the input vectors.
 func Dot(a, b []float64) float64 {
 	assertMatchingLengths(a, b)
-	
+
 	sum := 0.0
 	for i := range a {
 		sum += a[i] * b[i]
@@ -89,7 +89,7 @@ func Dot(a, b []float64) float64 {
 func Norm(a []float64) float64 {
 	norm := 0.0
 	for _, v := range a {
-		norm += v*v
+		norm += v * v
 	}
 	return math.Sqrt(norm)
 }
@@ -105,7 +105,7 @@ func Copy(a []float64) []float64 {
 // the non-zero elements (without comparing their actual values).
 func Jaccard(a, b []float64) float64 {
 	assertMatchingLengths(a, b)
-	
+
 	un := 0.0
 	in := 0.0
 	for i := range a {
@@ -116,8 +116,8 @@ func Jaccard(a, b []float64) float64 {
 			un++
 		}
 	}
-	
-	return 1 - in / un
+
+	return 1 - in/un
 }
 
 // Panics if 2 vectors are of inequal lengths.
@@ -126,4 +126,3 @@ func assertMatchingLengths(a, b []float64) {
 		panic(fmt.Sprintf("Mismatching lengths: %d, %d.", len(a), len(b)))
 	}
 }
-

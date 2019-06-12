@@ -3,19 +3,18 @@ package bed
 // Bed file indexing.
 
 import (
-	"sort"
 	"fmt"
+	"sort"
 )
-
 
 // ----- EVENT TYPE ------------------------------------------------------------
 
 // Raw event for indexing. Each row in a bed file creates 2 events - one for
 // start and one for end.
 type event struct {
-	pos   int     // Position along chromosome.
-	name  string  // Name of the event (4'th column).
-	start bool    // True is event is starting, of false if not.
+	pos   int    // Position along chromosome.
+	name  string // Name of the event (4'th column).
+	start bool   // True is event is starting, of false if not.
 }
 
 // Sorting interface.
@@ -38,7 +37,6 @@ func (a events) Less(i, j int) bool {
 func (a events) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
-
 
 // ----- EVENT SET/COUNTER -----------------------------------------------------
 
@@ -67,32 +65,35 @@ func eventSet(counts eventCounter) map[string]struct{} {
 		if counts[evt] < 1 {
 			panic("Got non-positive count at '" + evt + "'")
 		}
-		
+
 		// Add to set.
 		set[evt] = struct{}{}
 	}
-	
+
 	return set
 }
-
 
 // ----- INDEX -----------------------------------------------------------------
 
 // A single tile in the index.
 type tile struct {
-	pos   int                  // Start position (0-based).
-	names map[string]struct{}  // Set of overlapping event names.
+	pos   int                 // Start position (0-based).
+	names map[string]struct{} // Set of overlapping event names.
 }
 
 // Compares a tile's values to another's. Returns true iff all fields except pos
 // have equal values. Deep-checks event sets.
 func (t *tile) valuesEqual(t2 *tile) bool {
-	if len(t.names) != len(t2.names) { return false }
+	if len(t.names) != len(t2.names) {
+		return false
+	}
 
 	for e := range t.names {
-		if _, ok := t2.names[e]; !ok { return false }
+		if _, ok := t2.names[e]; !ok {
+			return false
+		}
 	}
-	
+
 	return true
 }
 
@@ -110,11 +111,11 @@ type Index map[string]tiles
 // last tile's position.
 func (idx Index) add(chr string, t *tile) {
 	ichr := idx[chr]
-	if len(ichr) > 0 && ichr[len(ichr) - 1].pos >= t.pos {
+	if len(ichr) > 0 && ichr[len(ichr)-1].pos >= t.pos {
 		panic("Input tile position must be greater than last tile's.")
 	}
-	
-	if len(ichr) == 0 || !ichr[len(ichr) - 1].valuesEqual(t) {
+
+	if len(ichr) == 0 || !ichr[len(ichr)-1].valuesEqual(t) {
 		idx[chr] = append(idx[chr], t)
 	}
 }
@@ -124,26 +125,26 @@ func (idx Index) add(chr string, t *tile) {
 func (idx Index) Names(chr string, pos int) map[string]struct{} {
 	result := map[string]struct{}{}
 	ichr := idx[chr]
-	
+
 	// If no data, return empty.
 	if len(ichr) == 0 {
 		return result
 	}
-	
+
 	// Search for containing tile.
 	i := sort.Search(len(ichr), func(j int) bool {
 		return ichr[j].pos > pos
 	}) - 1
-	
+
 	// Not found.
 	if i == -1 {
 		return result
 	}
-	
+
 	for name := range ichr[i].names {
 		result[name] = struct{}{}
 	}
-	
+
 	return result
 }
 
@@ -172,11 +173,10 @@ func (idx Index) str() string {
 	return result
 }
 
-
 // ----- INDEX BUILDER ---------------------------------------------------------
 
 // Creates indexes from given bed entries.
-type IndexBuilder map[string]events  // Maps chromosome to list of events.
+type IndexBuilder map[string]events // Maps chromosome to list of events.
 
 // Returns a new index builder.
 func NewIndexBuilder() IndexBuilder {
@@ -186,7 +186,7 @@ func NewIndexBuilder() IndexBuilder {
 // Adds a bed entry to the builder.
 func (b IndexBuilder) Add(chr string, start, end int, name string) {
 	b[chr] = append(b[chr], &event{start, name, true},
-			&event{end, name, false})
+		&event{end, name, false})
 }
 
 // Builds an index out of the builder. Builder keeps its state and can be used
@@ -197,7 +197,7 @@ func (b IndexBuilder) Build() Index {
 	for chr, bchr := range b {
 		// Sort events.
 		sort.Sort(bchr)
-		
+
 		// Create tiles.
 		result[chr] = tiles{}
 		counts := eventCounter{}
@@ -208,7 +208,7 @@ func (b IndexBuilder) Build() Index {
 				t := &tile{bchr[i-1].pos, set}
 				result.add(chr, t)
 			}
-			
+
 			// Update counter.
 			if bchr[i].start {
 				counts.inc(bchr[i].name)
@@ -216,17 +216,14 @@ func (b IndexBuilder) Build() Index {
 				counts.dec(bchr[i].name)
 			}
 		}
-		
+
 		// Create tile for last events (doesn't happen in the above loop).
 		if len(bchr) > 0 {
 			set := eventSet(counts)
-			t := &tile{bchr[len(bchr) - 1].pos, set}
+			t := &tile{bchr[len(bchr)-1].pos, set}
 			result.add(chr, t)
 		}
 	}
-	
+
 	return result
 }
-
-
-

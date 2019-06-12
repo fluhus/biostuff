@@ -2,14 +2,14 @@
 package stats
 
 import (
-	"math"
 	"fmt"
+	"math"
 )
 
 // Returns the sum of the values in a sample.
 func Sum(a []float64) float64 {
 	sum := 0.0
-	for _,v := range a {
+	for _, v := range a {
 		sum += v
 	}
 	return sum
@@ -96,7 +96,7 @@ func Ent(distribution []float64) float64 {
 
 	// Go over each bucket
 	result := 0.0
-	for _,v := range distribution {
+	for _, v := range distribution {
 		// Negative values are not allowed
 		if v < 0.0 {
 			return math.NaN()
@@ -123,4 +123,3 @@ func assertMatchingLengths(a, b []float64) {
 		panic(fmt.Sprintf("Mismatching lengths: %d, %d.", len(a), len(b)))
 	}
 }
-

@@ -8,11 +8,16 @@ import "math/rand"
 // Returns -1 for unknown nucleotides.
 func Ntoi(nuc byte) int {
 	switch nuc {
-	case 'A', 'a': return 0
-	case 'C', 'c': return 1
-	case 'G', 'g': return 2
-	case 'T', 't': return 3
-	default:       return -1
+	case 'A', 'a':
+		return 0
+	case 'C', 'c':
+		return 1
+	case 'G', 'g':
+		return 2
+	case 'T', 't':
+		return 3
+	default:
+		return -1
 	}
 }
 
@@ -20,11 +25,16 @@ func Ntoi(nuc byte) int {
 // Returns 'N' for any value not from {0,1,2,3}.
 func Iton(num int) byte {
 	switch num {
-	case 0:  return 'A'
-	case 1:  return 'C'
-	case 2:  return 'G'
-	case 3:  return 'T'
-	default: return 'N'
+	case 0:
+		return 'A'
+	case 1:
+		return 'C'
+	case 2:
+		return 'G'
+	case 3:
+		return 'T'
+	default:
+		return 'N'
 	}
 }
 
@@ -34,40 +44,40 @@ func NgramVector(n int, sequence []byte) []int {
 	if n < 1 || n > 10 {
 		panic(fmt.Sprintf("Bad n: %d", n))
 	}
-	
+
 	// Calculate size of result
 	rsize := 1
 	for i := 0; i < n; i++ {
-		rsize *= 4   // For 4 letters in DNA
+		rsize *= 4 // For 4 letters in DNA
 	}
-	
+
 	// Initialize result
 	result := make([]int, rsize)
-	
+
 	// Count n-grams
 	ngram := 0
-	lastBad := n   // Distance to last bad nucleotide
+	lastBad := n // Distance to last bad nucleotide
 	for i := range sequence {
 		// Nucleotide index
 		ntoi := Ntoi(sequence[i])
-		
+
 		// Check if bad
 		if ntoi == -1 {
 			lastBad = 0
 			ntoi = 0
 		}
-		
+
 		// n-gram index
-		ngram = (ngram * 4) % rsize + Ntoi(sequence[i])
-		
+		ngram = (ngram*4)%rsize + Ntoi(sequence[i])
+
 		// Increment only if went over a whole n-gram and no bad nucleotide
 		if i >= (n-1) && lastBad >= n {
 			result[ngram]++
 		}
-		
+
 		lastBad++
 	}
-	
+
 	return result
 }
 
@@ -94,7 +104,7 @@ func MutateSNP(sequence []byte, n int) (mutant []byte) {
 	// Check input
 	if n > len(sequence) {
 		panic(fmt.Sprintf("n is greater than sequence length: %d > %d",
-				n, len(sequence)))
+			n, len(sequence)))
 	}
 	if n < 0 {
 		panic(fmt.Sprintf("n cannot be negative: %d", n))
@@ -106,15 +116,15 @@ func MutateSNP(sequence []byte, n int) (mutant []byte) {
 
 	// Pick positions to mutate
 	positions := rand.Perm(len(sequence))[0:n]
-	
+
 	// Mutate
-	for _,i := range positions {
+	for _, i := range positions {
 		// Generate random nucleotide that's different from current
 		nuc := RandNuc()
 		for nuc == mutant[i] {
 			nuc = RandNuc()
 		}
-		
+
 		mutant[i] = nuc
 	}
 
@@ -130,7 +140,7 @@ func MutateIns(sequence []byte, size int) (mutant []byte) {
 	}
 
 	// Create result slice
-	mutant = make([]byte, len(sequence) + size)
+	mutant = make([]byte, len(sequence)+size)
 
 	// Pick a random position
 	pos := rand.Intn(len(sequence) + 1)
@@ -139,7 +149,7 @@ func MutateIns(sequence []byte, size int) (mutant []byte) {
 	copy(mutant[:pos], sequence)
 
 	// Copy post-mutation bytes
-	copy(mutant[pos + size:], sequence[pos:])
+	copy(mutant[pos+size:], sequence[pos:])
 
 	// Generate insertion
 	for i := pos; i < (pos + size); i++ {
@@ -162,7 +172,7 @@ func MutateDel(sequence []byte, size int) (mutant []byte) {
 	}
 
 	// Create result slice
-	mutant = make([]byte, len(sequence) - size)
+	mutant = make([]byte, len(sequence)-size)
 
 	// Pick a random position
 	pos := rand.Intn(len(sequence) - size + 1)
@@ -171,7 +181,7 @@ func MutateDel(sequence []byte, size int) (mutant []byte) {
 	copy(mutant[:pos], sequence)
 
 	// Copy post-deletion bytes
-	copy(mutant[pos:], sequence[pos + size:])
+	copy(mutant[pos:], sequence[pos+size:])
 
 	return
 }
@@ -180,28 +190,37 @@ func MutateDel(sequence []byte, size int) (mutant []byte) {
 // characters in "acgtACGT", other characters remain the same.
 func ReverseComplement(sequence []byte) []byte {
 	result := make([]byte, len(sequence))
-	
+
 	// Complement
 	for i := range sequence {
 		switch sequence[i] {
-		case 'a': result[i] = 't'
-		case 'c': result[i] = 'g'
-		case 'g': result[i] = 'c'
-		case 't': result[i] = 'a'
-		case 'A': result[i] = 'T'
-		case 'C': result[i] = 'G'
-		case 'G': result[i] = 'C'
-		case 'T': result[i] = 'A'
-		default:  result[i] = sequence[i]
+		case 'a':
+			result[i] = 't'
+		case 'c':
+			result[i] = 'g'
+		case 'g':
+			result[i] = 'c'
+		case 't':
+			result[i] = 'a'
+		case 'A':
+			result[i] = 'T'
+		case 'C':
+			result[i] = 'G'
+		case 'G':
+			result[i] = 'C'
+		case 'T':
+			result[i] = 'A'
+		default:
+			result[i] = sequence[i]
 		}
 	}
-	
+
 	// Reverse
-	for i := 0; i < len(result) / 2; i++ {
-		result[i], result[len(result) - i - 1] =
-				result[len(result) - i - 1], result[i]
+	for i := 0; i < len(result)/2; i++ {
+		result[i], result[len(result)-i-1] =
+			result[len(result)-i-1], result[i]
 	}
-	
+
 	return result
 }
 
@@ -210,4 +229,3 @@ func ReverseComplement(sequence []byte) []byte {
 func ReverseComplementString(sequence string) string {
 	return string(ReverseComplement([]byte(sequence)))
 }
-

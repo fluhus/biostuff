@@ -1,8 +1,8 @@
 package bed
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestIndex_simple(t *testing.T) {
@@ -19,7 +19,7 @@ func TestIndex_simple(t *testing.T) {
 
 func TestIndex_complex(t *testing.T) {
 	assert := assert.New(t)
-	
+
 	builder := NewIndexBuilder()
 	builder.Add("chr1", 0, 10, "1")
 	builder.Add("chr1", 5, 15, "2")
@@ -30,7 +30,7 @@ func TestIndex_complex(t *testing.T) {
 	builder.Add("chr2", 150, 250, "b")
 	builder.Add("chr2", 120, 170, "a")
 	builder.Add("chr2", 180, 270, "60")
-	
+
 	idx := builder.Build()
 	assert.Equal(names("1"), idx.Names("chr1", 0))
 	assert.Equal(names("1"), idx.Names("chr1", 4))
@@ -39,7 +39,7 @@ func TestIndex_complex(t *testing.T) {
 	assert.Equal(names(), idx.Names("chr1", 20))
 	assert.Equal(names("8"), idx.Names("chr1", 21))
 	assert.Equal(names("8"), idx.Names("chr1", 25))
-	
+
 	assert.Equal(names(), idx.Names("chr2", 0))
 	assert.Equal(names(), idx.Names("chr2", 99))
 	assert.Equal(names("a"), idx.Names("chr2", 100))
@@ -47,7 +47,7 @@ func TestIndex_complex(t *testing.T) {
 	assert.Equal(names("a", "b"), idx.Names("chr2", 170))
 	assert.Equal(names("a", "b", "60"), idx.Names("chr2", 180))
 	assert.Equal(names("b", "60"), idx.Names("chr2", 200))
-	
+
 	assert.Equal(names(), idx.Names("chr3", 0))
 }
 
@@ -58,4 +58,3 @@ func names(n ...string) map[string]struct{} {
 	}
 	return result
 }
-

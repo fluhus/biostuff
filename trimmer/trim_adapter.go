@@ -15,40 +15,41 @@ func trimAdapterEnd(fq *fastq.Fastq, adapter []byte, tolerance int) {
 	if fq == nil {
 		panic("unexpected nil fastq")
 	}
-	
+
 	sequence := fq.Sequence
-	
+
 	// Match search start position
 	start := 0
 	if len(sequence) > len(adapter) {
 		start = len(sequence) - len(adapter)
 	}
-	
+
 	trimPos := len(sequence)
-	
+
 	// For each overlap
-	outerLoop: for si := start; si < len(sequence); si++ {
+outerLoop:
+	for si := start; si < len(sequence); si++ {
 		matchLength := len(sequence) - si
 		remainingMismatches := matchLength / tolerance
-		
+
 		// Compare to adapter starting from this index
 		for ai := 0; ai < matchLength; ai++ {
-		
+
 			// Convert to uppercase for case insensitivity
-			if upper( sequence[ai+si] ) != upper( adapter[ai] ) {
+			if upper(sequence[ai+si]) != upper(adapter[ai]) {
 				remainingMismatches--
 				if remainingMismatches < 0 {
 					continue outerLoop
 				}
 			}
-			
+
 		}
-		
+
 		// If reached here, then adapter was found
 		trimPos = si
 		break outerLoop
 	}
-	
+
 	// Trim!
 	fq.Sequence = fq.Sequence[:trimPos]
 	fq.Quals = fq.Quals[:trimPos]
@@ -62,9 +63,9 @@ func trimAdapterStart(fq *fastq.Fastq, adapter []byte, tolerance int) {
 	reverse(fq.Sequence)
 	reverse(fq.Quals)
 	reverse(adapter)
-	
+
 	trimAdapterEnd(fq, adapter, tolerance)
-	
+
 	reverse(fq.Sequence)
 	reverse(fq.Quals)
 	reverse(adapter)
@@ -72,7 +73,7 @@ func trimAdapterStart(fq *fastq.Fastq, adapter []byte, tolerance int) {
 
 // Reverses the given byte array.
 func reverse(b []byte) {
-	for i := 0; i < len(b) / 2; i++ {
+	for i := 0; i < len(b)/2; i++ {
 		other := len(b) - i - 1
 		b[i], b[other] = b[other], b[i]
 	}
@@ -86,5 +87,3 @@ func upper(b byte) byte {
 		return b
 	}
 }
-
-

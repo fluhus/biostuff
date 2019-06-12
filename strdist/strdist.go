@@ -32,12 +32,14 @@ func EditDistance(s1, s2 []byte) int {
 			}
 
 			// Not first
-			insertion   := prev[j] + 1
-			deletion    := next[j-1] + 1
+			insertion := prev[j] + 1
+			deletion := next[j-1] + 1
 			replacement := prev[j-1]
 
 			// If mismatch, replacement adds an operation
-			if s1[j-1] != s2[i-1] {replacement++}
+			if s1[j-1] != s2[i-1] {
+				replacement++
+			}
 
 			// Select the minimal out of the 3
 			next[j] = minInt(replacement, insertion, deletion)
@@ -60,7 +62,7 @@ func NgramDistance(n int, s1, s2 []byte) int {
 	// Get n-gram vectors
 	v1 := seqtools.NgramVector(n, s1)
 	v2 := seqtools.NgramVector(n, s2)
-	
+
 	// Calculate distance
 	result := 0
 	for i := range v1 {
@@ -70,7 +72,7 @@ func NgramDistance(n int, s1, s2 []byte) int {
 			result += v1[i] - v2[i]
 		}
 	}
-	
+
 	// Return half, so that each difference counts as 1
 	return result / 2
 }
@@ -106,7 +108,9 @@ func HammingDistance(s1, s2 []byte) int {
 
 	// Add 1 for each non matching character
 	for i := range s1 {
-		if s1[i] != s2[i] {result++}
+		if s1[i] != s2[i] {
+			result++
+		}
 	}
 
 	return result
@@ -129,7 +133,9 @@ func maxInt(a ...int) int {
 
 	// Check the others
 	for i := 1; i < len(a); i++ {
-		if a[i] > result {result = a[i]}
+		if a[i] > result {
+			result = a[i]
+		}
 	}
 
 	return result
@@ -147,7 +153,9 @@ func minInt(a ...int) int {
 
 	// Check the others
 	for i := 1; i < len(a); i++ {
-		if a[i] < result {result = a[i]}
+		if a[i] < result {
+			result = a[i]
+		}
 	}
 
 	return result
@@ -180,9 +188,9 @@ type blastBlock struct {
 // low for matches.
 func BlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 	// Step type constants
-	const mm = 0   // Match/mismatch
-	const g1 = 1   // Gap in sequence 1
-	const g2 = 2   // Gap in sequence 2
+	const mm = 0 // Match/mismatch
+	const g1 = 1 // Gap in sequence 1
+	const g2 = 2 // Gap in sequence 2
 
 	// Make sure s1 is the shorter
 	if len(s1) > len(s2) {
@@ -204,7 +212,7 @@ func BlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				next[row] = blastBlock{0, mm}
 				continue
 			}
-			
+
 			// First column
 			if col == 0 {
 				// Check gap type
@@ -212,16 +220,16 @@ func BlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				if next[row-1].step == g2 {
 					next[row] =
 						blastBlock{next[row-1].score + scores.GapExtend, g2}
-				
-				// If opening
+
+					// If opening
 				} else {
 					next[row] =
 						blastBlock{next[row-1].score + scores.GapOpen, g2}
 				}
-				
+
 				continue
 			}
-			
+
 			// First row
 			if row == 0 {
 				// Check gap type
@@ -229,8 +237,8 @@ func BlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				if prev[row].step == g1 {
 					next[row] =
 						blastBlock{prev[row].score + scores.GapExtend, g1}
-				
-				// If opening
+
+					// If opening
 				} else {
 					next[row] =
 						blastBlock{prev[row].score + scores.GapOpen, g1}
@@ -248,31 +256,34 @@ func BlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 			} else {
 				gap1 = prev[row].score + scores.GapOpen
 			}
-			
+
 			// Gap 2 score
 			if next[row-1].step == g2 {
 				gap2 = next[row-1].score + scores.GapExtend
 			} else {
 				gap2 = next[row-1].score + scores.GapOpen
 			}
-			
+
 			// Match / mismatch score
 			if s1[row-1] == s2[col-1] {
 				match = prev[row-1].score + scores.Match
 			} else {
 				match = prev[row-1].score + scores.Mismatch
 			}
-			
+
 			// Pick the minimal
 			minScore := minInt(gap1, gap2, match)
-			
+
 			// Check which one
 			switch minScore {
 			default:
 				panic(fmt.Sprintf("Oh no! invalid minScore: %d", minScore))
-			case match: next[row] = blastBlock{match, mm}
-			case gap1:  next[row] = blastBlock{gap1, g1}
-			case gap2:  next[row] = blastBlock{gap2, g2}
+			case match:
+				next[row] = blastBlock{match, mm}
+			case gap1:
+				next[row] = blastBlock{gap1, g1}
+			case gap2:
+				next[row] = blastBlock{gap2, g2}
 			}
 		}
 
@@ -296,17 +307,19 @@ func BlastDistanceStrings(s1 string, s2 string, scores BlastScores) int {
 // *** LOCAL ***
 func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 	// Step type constants
-	const mm = 0   // Match/mismatch
-	const g1 = 1   // Gap in sequence 1
-	const g2 = 2   // Gap in sequence 2
+	const mm = 0 // Match/mismatch
+	const g1 = 1 // Gap in sequence 1
+	const g2 = 2 // Gap in sequence 2
 
 	// Record lengths
 	m, n := len(s1), len(s2)
 
 	// Dynamic calculation matrix
 	mat := make([][]blastBlock, m+1)
-	for i := range mat { mat[i] = make([]blastBlock, n+1) }
-	
+	for i := range mat {
+		mat[i] = make([]blastBlock, n+1)
+	}
+
 	// Best score recorder
 	bestScore := 0
 
@@ -318,7 +331,7 @@ func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				mat[row][col] = blastBlock{0, mm}
 				continue
 			}
-			
+
 			// First column
 			if col == 0 {
 				// Check gap type
@@ -326,16 +339,16 @@ func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				if mat[row-1][col].step == g2 {
 					mat[row][col] =
 						blastBlock{mat[row-1][col].score + scores.GapExtend, g2}
-				
-				// If opening
+
+					// If opening
 				} else {
 					mat[row][col] =
 						blastBlock{mat[row-1][col].score + scores.GapOpen, g2}
 				}
-				
+
 				continue
 			}
-			
+
 			// First row
 			if row == 0 {
 				// Check gap type
@@ -343,8 +356,8 @@ func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				if mat[row][col-1].step == g1 {
 					mat[row][col] =
 						blastBlock{mat[row][col-1].score + scores.GapExtend, g1}
-				
-				// If opening
+
+					// If opening
 				} else {
 					mat[row][col] =
 						blastBlock{mat[row][col-1].score + scores.GapOpen, g1}
@@ -362,14 +375,14 @@ func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 			} else {
 				gap1 = mat[row][col-1].score + scores.GapOpen
 			}
-			
+
 			// Gap 2 score
 			if mat[row-1][col].step == g2 {
 				gap2 = mat[row-1][col].score + scores.GapExtend
 			} else {
 				gap2 = mat[row-1][col].score + scores.GapOpen
 			}
-			
+
 			// Match / mismatch score
 			if s1[row-1] == s2[col-1] {
 				match = mat[row-1][col-1].score + scores.Match
@@ -378,20 +391,24 @@ func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 				match = mat[row-1][col-1].score + scores.Mismatch
 				newmatch = scores.Mismatch
 			}
-			
+
 			// Pick the minimal
 			minScore := minInt(gap1, gap2, match, newmatch)
-			
+
 			// Check which one
 			switch minScore {
 			default:
 				panic(fmt.Sprintf("Oh no! invalid minScore: %d", minScore))
-			case match:    mat[row][col] = blastBlock{match, mm}
-			case newmatch: mat[row][col] = blastBlock{newmatch, mm}
-			case gap1:     mat[row][col] = blastBlock{gap1, g1}
-			case gap2:     mat[row][col] = blastBlock{gap2, g2}
+			case match:
+				mat[row][col] = blastBlock{match, mm}
+			case newmatch:
+				mat[row][col] = blastBlock{newmatch, mm}
+			case gap1:
+				mat[row][col] = blastBlock{gap1, g1}
+			case gap2:
+				mat[row][col] = blastBlock{gap2, g2}
 			}
-			
+
 			// Update new best score
 			if mat[row][col].score < bestScore {
 				bestScore = mat[row][col].score
@@ -401,4 +418,3 @@ func LocalBlastDistance(s1 []byte, s2 []byte, scores BlastScores) int {
 
 	return bestScore
 }
-

@@ -2,9 +2,9 @@
 package mypprof
 
 import (
-	"runtime/pprof"
-	"os"
 	"bufio"
+	"os"
+	"runtime/pprof"
 )
 
 var fout *os.File
@@ -23,7 +23,7 @@ func Start(file string) {
 		fout, bout = nil, nil
 		panic(err.Error())
 	}
-	
+
 	bout = bufio.NewWriter(fout)
 	pprof.StartCPUProfile(bout)
 }
@@ -40,4 +40,3 @@ func Stop() {
 	fout.Close()
 	fout, bout = nil, nil
 }
-

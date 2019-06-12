@@ -3,19 +3,18 @@ package bedgraph
 // Bed file indexing.
 
 import (
-	"sort"
 	"fmt"
+	"sort"
 )
-
 
 // ----- EVENT TYPE ------------------------------------------------------------
 
 // Raw event for indexing. Each row in a bed file creates 2 events - one for
 // start and one for end.
 type event struct {
-	pos   int      // Position along chromosome.
-	value float64  // Value of the event (4'th column).
-	start bool     // True is event is starting, of false if not.
+	pos   int     // Position along chromosome.
+	value float64 // Value of the event (4'th column).
+	start bool    // True is event is starting, of false if not.
 }
 
 // Sorting interface.
@@ -39,13 +38,12 @@ func (a events) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
-
 // ----- INDEX -----------------------------------------------------------------
 
 // A single tile in the index.
 type tile struct {
-	pos   int                  // Start position (0-based).
-	value float64              // Value for bed-graph.
+	pos   int     // Start position (0-based).
+	value float64 // Value for bed-graph.
 }
 
 // A slice of tiles, duh.
@@ -62,11 +60,11 @@ type Index map[string]tiles
 // last tile's position.
 func (idx Index) add(chr string, t *tile) {
 	ichr := idx[chr]
-	if len(ichr) > 0 && ichr[len(ichr) - 1].pos >= t.pos {
+	if len(ichr) > 0 && ichr[len(ichr)-1].pos >= t.pos {
 		panic("Input tile position must be greater than last tile's.")
 	}
-	
-	if len(ichr) == 0 || ichr[len(ichr) - 1].value != t.value {
+
+	if len(ichr) == 0 || ichr[len(ichr)-1].value != t.value {
 		idx[chr] = append(idx[chr], t)
 	}
 }
@@ -74,59 +72,65 @@ func (idx Index) add(chr string, t *tile) {
 // Returns the value at the given position. Returns 0 if no value is registered.
 func (idx Index) Value(chr string, pos int) float64 {
 	ichr := idx[chr]
-	
+
 	// If no data, return empty.
 	if len(ichr) == 0 {
 		return 0
 	}
-	
+
 	// Search for containing tile.
 	i := sort.Search(len(ichr), func(j int) bool {
 		return ichr[j].pos > pos
 	}) - 1
-	
+
 	// Not found.
 	if i == -1 {
 		return 0
 	}
-	
+
 	return ichr[i].value
 }
 
 func (idx Index) ValueRange(chr string, start, end int) []float64 {
 	ichr := idx[chr]
-	result := make([]float64, end - start)
-	
+	result := make([]float64, end-start)
+
 	// If no data, return zeros.
 	if len(ichr) == 0 {
 		return result
 	}
-	
+
 	// Search for containing tiles.
 	i := sort.Search(len(ichr), func(j int) bool {
 		return ichr[j].pos > start
 	}) - 1
-	
-	if i == -1 { i = 0 }
-	
-	// Go over 
+
+	if i == -1 {
+		i = 0
+	}
+
+	// Go over
 	for i < len(ichr) && ichr[i].pos < end {
 		from := ichr[i].pos - start
-		if from < 0 { from = 0 }
-		
-		to := len(result)
-		if i < len(ichr) - 1 {
-			to2 := ichr[i + 1].pos - start
-			if to2 < to { to = to2 }
+		if from < 0 {
+			from = 0
 		}
-		
+
+		to := len(result)
+		if i < len(ichr)-1 {
+			to2 := ichr[i+1].pos - start
+			if to2 < to {
+				to = to2
+			}
+		}
+
 		for j := from; j < to; j++ {
 			result[j] = ichr[i].value
 		}
 
 		i++
 	}
-	
+
 	return result
 }
 
@@ -142,11 +146,10 @@ func (idx Index) str() string {
 	return result
 }
 
-
 // ----- INDEX BUILDER ---------------------------------------------------------
 
 // Creates indexes from given bed entries.
-type IndexBuilder map[string]events  // Maps chromosome to list of events.
+type IndexBuilder map[string]events // Maps chromosome to list of events.
 
 // Returns a new index builder.
 func NewIndexBuilder() IndexBuilder {
@@ -156,7 +159,7 @@ func NewIndexBuilder() IndexBuilder {
 // Adds a bed entry to the builder.
 func (b IndexBuilder) Add(chr string, start, end int, value float64) {
 	b[chr] = append(b[chr], &event{start, value, true},
-			&event{end, value, false})
+		&event{end, value, false})
 }
 
 // Builds an index out of the builder, using the given number of threads.
@@ -164,7 +167,7 @@ func (b IndexBuilder) Add(chr string, start, end int, value float64) {
 // had before.
 func (b IndexBuilder) build(numThreads int) Index {
 	result := Index{}
-	
+
 	chrChan := make(chan string, numThreads)
 	go func() {
 		// First build the map, to keep later access thread-safe.
@@ -182,10 +185,10 @@ func (b IndexBuilder) build(numThreads int) Index {
 		go func() {
 			for chr := range chrChan {
 				bchr := b[chr]
-				
+
 				// Sort events.
 				sort.Sort(bchr)
-				
+
 				// Create tiles.
 				value := 0.0
 				for i := range bchr {
@@ -194,7 +197,7 @@ func (b IndexBuilder) build(numThreads int) Index {
 						t := &tile{bchr[i-1].pos, value}
 						result.add(chr, t)
 					}
-		
+
 					// Update value.
 					if bchr[i].start {
 						value += bchr[i].value
@@ -202,22 +205,22 @@ func (b IndexBuilder) build(numThreads int) Index {
 						value -= bchr[i].value
 					}
 				}
-				
+
 				// Create tile for last events (doesn't happen in the above loop).
 				if len(bchr) > 0 {
-					t := &tile{bchr[len(bchr) - 1].pos, value}
+					t := &tile{bchr[len(bchr)-1].pos, value}
 					result.add(chr, t)
 				}
 			}
 			done <- 1
 		}()
 	}
-	
+
 	for th := 0; th < numThreads; th++ {
 		<-done
 	}
 	close(done)
-	
+
 	return result
 }
 
@@ -233,7 +236,3 @@ func (b IndexBuilder) Build() Index {
 func (b IndexBuilder) BuildThreads(numThreads int) Index {
 	return b.build(numThreads)
 }
-
-
-
-

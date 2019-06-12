@@ -6,8 +6,8 @@
 package tools
 
 import (
-	"time"
 	"math/rand"
+	"time"
 )
 
 const Mega = 1048576
@@ -30,7 +30,9 @@ func ArgMaxInt(a ...int) int {
 
 	// Check the others
 	for i := 1; i < len(a); i++ {
-		if a[i] > a[result] {result = i}
+		if a[i] > a[result] {
+			result = i
+		}
 	}
 
 	return result
@@ -48,7 +50,9 @@ func ArgMinInt(a ...int) int {
 
 	// Check the others
 	for i := 1; i < len(a); i++ {
-		if a[i] < a[result] {result = i}
+		if a[i] < a[result] {
+			result = i
+		}
 	}
 
 	return result
@@ -59,7 +63,7 @@ func ArgMinInt(a ...int) int {
 func ArgMaxIntR(a ...int) int {
 	// Find maximum
 	m := MaxInt(a...)
-	
+
 	// Go over array and pick one max randomly
 	result := -1
 	found := float64(0)
@@ -71,7 +75,7 @@ func ArgMaxIntR(a ...int) int {
 			}
 		}
 	}
-	
+
 	return result
 }
 
@@ -80,7 +84,7 @@ func ArgMaxIntR(a ...int) int {
 func ArgMinIntR(a ...int) int {
 	// Find minimum
 	m := MinInt(a...)
-	
+
 	// Go over array and pick one max randomly
 	result := -1
 	found := float64(0)
@@ -92,7 +96,7 @@ func ArgMinIntR(a ...int) int {
 			}
 		}
 	}
-	
+
 	return result
 }
 
@@ -118,5 +122,3 @@ func Tic() {
 func Toc() time.Duration {
 	return time.Now().Sub(tic)
 }
-
-

@@ -2,10 +2,10 @@
 package sam
 
 import (
-	"io"
-	"fmt"
 	"bufio"
 	"errors"
+	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -18,25 +18,25 @@ const samFields = 11
 // Represents a single SAM line.
 // Contains the mandatory fields according to the SAM format spec.
 type Sam struct {
-	Qname string   // Query name
-	Flag  int      // Bitwise flag (??)
-	Rname string   // Reference sequence name
-	Pos   int      // Mapping position (1-based)
-	Mapq  int      // Mapping quality
-	Cigar string   // CIGAR string (??)
-	Rnext string   // ??
-	Pnext string   // ??
-	Tlen  int      // Observed template length (??)
-	Seq   string   // Sequence
-	Qual  string   // Phred qualities (ASCII)
+	Qname string // Query name
+	Flag  int    // Bitwise flag (??)
+	Rname string // Reference sequence name
+	Pos   int    // Mapping position (1-based)
+	Mapq  int    // Mapping quality
+	Cigar string // CIGAR string (??)
+	Rnext string // ??
+	Pnext string // ??
+	Tlen  int    // Observed template length (??)
+	Seq   string // Sequence
+	Qual  string // Phred qualities (ASCII)
 }
 
 // A string ready to be printed as a line in a sam file (no new line
 // at the end).
 func (s *Sam) String() string {
 	return fmt.Sprintf("%s %d %s %d %d %s %s %s %d %s %s",
-			s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar,
-			s.Rnext, s.Pnext, s.Tlen, s.Seq, s.Qual)
+		s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar,
+		s.Rnext, s.Pnext, s.Tlen, s.Seq, s.Qual)
 }
 
 // *** SAM READER **************************************************************
@@ -54,7 +54,7 @@ func ReadNext(in *bufio.Reader) (*Sam, error) {
 
 		// Check for error (ignore if EOF and a line was read)
 		if err != nil &&
-				!(err == io.EOF && len(line) > 0) {
+			!(err == io.EOF && len(line) > 0) {
 			return nil, err
 		}
 
@@ -67,8 +67,8 @@ func ReadNext(in *bufio.Reader) (*Sam, error) {
 	// Split to fields
 	fields := strings.Fields(string(line))
 	if len(fields) < samFields {
-		return nil, errors.New(fmt.Sprintf("bad SAM line, only" +
-				" %d fields (out of required %d)", len(fields), samFields))
+		return nil, errors.New(fmt.Sprintf("bad SAM line, only"+
+			" %d fields (out of required %d)", len(fields), samFields))
 	}
 
 	// Generate result & assign fields
@@ -77,24 +77,18 @@ func ReadNext(in *bufio.Reader) (*Sam, error) {
 	result := &Sam{}
 
 	// BUG( ) TODO check int parsing errors and alert about them
-	
-	result.Qname   = fields[0]
+
+	result.Qname = fields[0]
 	result.Flag, _ = atoi(fields[1])
-	result.Rname   = fields[2]
-	result.Pos, _  = atoi(fields[3])
+	result.Rname = fields[2]
+	result.Pos, _ = atoi(fields[3])
 	result.Mapq, _ = atoi(fields[4])
-	result.Cigar   = fields[5]
-	result.Rnext   = fields[6]
-	result.Pnext   = fields[7]
+	result.Cigar = fields[5]
+	result.Rnext = fields[6]
+	result.Pnext = fields[7]
 	result.Tlen, _ = atoi(fields[8])
-	result.Seq     = fields[9]
-	result.Qual    = fields[10]
+	result.Seq = fields[9]
+	result.Qual = fields[10]
 
 	return result, nil
 }
-
-
-
-
-
-

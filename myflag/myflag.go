@@ -2,11 +2,11 @@
 package myflag
 
 import (
-	"os"
-	"fmt"
-	"flag"
 	"bytes"
+	"flag"
+	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 func init() {
@@ -34,7 +34,7 @@ func ParseStrings(args []string) error {
 	} else {
 		hasAny = true
 	}
-	
+
 	return flags.Parse(args)
 }
 
@@ -52,77 +52,75 @@ func HasAny() bool {
 	return hasAny
 }
 
-
 // ----- FLAG REGISTERING ------------------------------------------------------
 
 // Registers a new int flag.
 func Int(name string, shortName string, typ string, description string,
-		value int) *int {
+	value int) *int {
 	// Register long name
 	result := flags.Int(name, value, "")
-	
+
 	// Register short name
 	if shortName != "" {
 		flags.IntVar(result, shortName, value, "")
 	}
-	
+
 	// Add help message
 	addHelpMessage(name, shortName, typ, description)
-	
+
 	return result
 }
 
 // Registers a new float flag.
 func Float(name string, shortName string, typ string, description string,
-		value float64) *float64 {
+	value float64) *float64 {
 	// Register long name
 	result := flags.Float64(name, value, "")
-	
+
 	// Register short name
 	if shortName != "" {
 		flags.Float64Var(result, shortName, value, "")
 	}
-	
+
 	// Add help message
 	addHelpMessage(name, shortName, typ, description)
-	
+
 	return result
 }
 
 // Registers a new string flag.
 func String(name string, shortName string, typ string, description string,
-		value string) *string {
+	value string) *string {
 	// Register long name
 	result := flags.String(name, value, "")
-	
+
 	// Register short name
 	if shortName != "" {
 		flags.StringVar(result, shortName, value, "")
 	}
-	
+
 	// Add help message
 	addHelpMessage(name, shortName, typ, description)
-	
+
 	return result
 }
 
 // Registers a new boolean flag.
 func Bool(name string, shortName string, description string,
-		value bool) *bool {
+	value bool) *bool {
 	// Register long name
 	result := flags.Bool(name, value, "")
-	
+
 	// Register short name
 	if shortName != "" {
 		flags.BoolVar(result, shortName, value, "")
 	}
-	
+
 	// Add help message
 	addHelpMessage(name, shortName, "", description)
-	
+
 	return result
 }
-
 
 // ----- HELP STRING -----------------------------------------------------------
 
@@ -136,12 +134,12 @@ func HelpString() string {
 
 // Adds a help message for the given flag.
 func addHelpMessage(name string, shortName string, typ string,
-		description string) {
+	description string) {
 	// Modify type to fit printing
 	if typ != "" {
 		typ = " <" + typ + ">"
 	}
-	
+
 	// Add help message
 	if shortName != "" {
 		fmt.Fprintf(flagsHelp, "\t-%s%s\n", shortName, typ)
@@ -149,4 +147,3 @@ func addHelpMessage(name string, shortName string, typ string,
 	fmt.Fprintf(flagsHelp, "\t-%s%s\n", name, typ)
 	fmt.Fprintf(flagsHelp, "\t\t%s\n\n", description)
 }
-
