@@ -61,18 +61,18 @@ func parseArguments() {
 	}
 
 	if len(myflag.Args()) == 0 {
-		arguments.err = fmt.Errorf("No query files.")
+		arguments.err = fmt.Errorf("no query files")
 		return
 	}
 
 	if *dist < 0 {
-		arguments.err = fmt.Errorf("Bad range: %d, should be non-negative.",
+		arguments.err = fmt.Errorf("bad range: %d, should be non-negative",
 			*dist)
 		return
 	}
 
 	if *bin < 0 {
-		arguments.err = fmt.Errorf("Bad bin size: %d, should be positive.",
+		arguments.err = fmt.Errorf("bad bin size: %d, should be positive",
 			*bin)
 		return
 	}

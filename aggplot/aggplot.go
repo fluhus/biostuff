@@ -214,17 +214,15 @@ func printData(data [][]float64, xvals []int, labels []string,
 func min(a, b int) int {
 	if a < b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 func max(a, b int) int {
 	if a > b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 // Normalize such that the mins are all 1.

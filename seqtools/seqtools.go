@@ -1,8 +1,10 @@
 // Genetic sequence processing functions.
 package seqtools
 
-import "fmt"
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // Converts a nucleotide to an int.
 // Returns -1 for unknown nucleotides.
