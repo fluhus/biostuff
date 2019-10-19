@@ -9,7 +9,7 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/fluhus/biostuff/seqtools"
+	"github.com/fluhus/golgi/seqtools"
 )
 
 // Represents a single Fastq entry.
@@ -106,7 +106,7 @@ func ReadNext(reader *bufio.Reader) (*Fastq, error) {
 	if len(quals) != len(seq) {
 		return nil, errors.New("fastq read error: sequence and qualities have" +
 			" different lengths")
-		// BUG( ) TODO should I include more details in the error message?
+		// TODO(amit): should I include more details in the error message?
 	}
 
 	// Finally done!
