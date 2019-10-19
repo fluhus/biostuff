@@ -6,9 +6,9 @@ import (
 	"os"
 	"sort"
 
-	"github.com/fluhus/biostuff/bioformats/bed"
-	"github.com/fluhus/biostuff/bioformats/bed/bedgraph"
-	"github.com/fluhus/biostuff/myflag"
+	"github.com/fluhus/golgi/bioformats/bed"
+	"github.com/fluhus/golgi/bioformats/bed/bedgraph"
+	"github.com/fluhus/golgi/myflag"
 )
 
 // ***** MAIN *****************************************************************

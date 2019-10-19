@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/fluhus/biostuff/bioformats/bed/bedgraph"
+	"github.com/fluhus/golgi/bioformats/bed/bedgraph"
 )
 
 func init() {
