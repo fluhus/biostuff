@@ -2,25 +2,25 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/fluhus/biostuff/bioformats/fasta"
-	"github.com/fluhus/biostuff/myflag"
+	"github.com/fluhus/golgi/bioformats/fasta"
 )
 
 func main() {
 	// Handle command-line arguments.
-	parseArguments()
-	if !myflag.HasAny() {
+	if len(os.Args) == 1 { // No arguments
 		fmt.Println("A server for querying fasta files.")
 		fmt.Println("\nUsage:\nfastaserver [options] myfile.fasta")
 		fmt.Println("\nOptions:")
-		fmt.Print(myflag.HelpString())
+		flag.PrintDefaults()
 		os.Exit(1)
 	}
+	parseArguments()
 	if args.err != nil {
 		fmt.Println("Error parsing arguments:", args.err)
 		os.Exit(1)
@@ -59,24 +59,20 @@ var args struct {
 // Parses command-line arguments and places everything in args.
 // args.err will be non-nil if a parsing error occurred.
 func parseArguments() {
-	args.port = myflag.String("port", "p", "number",
-		"Port number to listen on. Default: 1912.", "1912")
-	args.verbose = myflag.Bool("verbose", "v", "Print lots of stuff.", false)
-	args.err = myflag.Parse()
+	args.port = flag.String("port", "1912", "Port number to listen on.")
+	args.verbose = flag.Bool("v", false, "Print out lots of stuff.")
+	flag.Parse()
 
-	if args.err != nil {
-		return
-	}
-	if len(myflag.Args()) == 0 {
+	if len(flag.Args()) == 0 {
 		args.err = fmt.Errorf("No fasta input given.")
 		return
 	}
-	if len(myflag.Args()) == 0 {
+	if len(flag.Args()) == 0 {
 		args.err = fmt.Errorf("Too many arguments.")
 		return
 	}
 
-	args.file = myflag.Args()[0]
+	args.file = flag.Arg(0)
 }
 
 // Returns a fasta object from the given file.

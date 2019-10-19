@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fluhus/biostuff/bioformats/fasta"
+	"github.com/fluhus/golgi/bioformats/fasta"
 )
 
 // Handles sequence requests.
