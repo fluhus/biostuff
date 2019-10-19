@@ -2,13 +2,13 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 
-	"github.com/fluhus/biostuff/bioformats/bed"
-	"github.com/fluhus/biostuff/myflag"
+	"github.com/fluhus/golgi/bioformats/bed"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	}
 	if args.help {
 		fmt.Println(help)
-		fmt.Println(myflag.HelpString())
+		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
@@ -309,38 +309,30 @@ var args struct {
 }
 
 func parseArgs() error {
-	// Parse command-line flags.
-	events := myflag.String("events", "e", "path", "Input event file. Must "+
-		"be set. Structure: chromosome, start, end, name.", "")
-	in := myflag.String("in", "i", "path", "Input bed file. Default is "+
-		"standard input.", "")
-	out := myflag.String("out", "o", "path", "Output bed file. Default is "+
-		"standard output.", "")
-	extend := myflag.Int("extend", "x", "integer", "Extend each event by n "+
-		"bases in each direction. Default is 0.", 0)
-	prior := myflag.String("priority", "p", "list", "Optional. Comma-"+
-		"separated events for when several overlap. The leftmost will "+
-		"be returned. Priorities for exons/introns:"+
-		" exon,intron,promoter,cpg_island",
-		"")
-
-	err := myflag.Parse()
-	if err != nil {
-		return err
-	}
-
-	if !myflag.HasAny() {
+	if len(os.Args) == 1 {
 		args.help = true
 		return nil
 	}
+
+	// Parse command-line flags.
+	events := flag.String("e", "", "Input event file. "+
+		"Must be set. Structure: chromosome, start, end, name.")
+	in := flag.String("i", "", "Input bed file. Default is standard input.")
+	out := flag.String("o", "", "Output bed file. Default is standard output.")
+	extend := flag.Int("x", 0, "Extend each event by n bases in each direction.")
+	prior := flag.String("p", "", "Optional comma-separated events for when "+
+		"several overlap. The leftmost will be returned. "+
+		"Priorities for exons/introns: exon,intron,promoter,cpg_island")
+
+	flag.Parse()
 
 	// Check arguments.
 	if *events == "" {
 		return fmt.Errorf("Event file not set.")
 	}
 
-	if len(myflag.Args()) != 0 {
-		return fmt.Errorf("Unexpected argument: %s", myflag.Args()[0])
+	if len(flag.Args()) != 0 {
+		return fmt.Errorf("Unexpected argument: %s", flag.Args()[0])
 	}
 
 	if *extend < 0 {
