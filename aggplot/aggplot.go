@@ -2,25 +2,27 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"sort"
 
 	"github.com/fluhus/golgi/formats/bed"
 	"github.com/fluhus/golgi/formats/bed/bedgraph"
-	"github.com/fluhus/golgi/myflag"
 )
 
 // ***** MAIN *****************************************************************
 
 func main() {
 	// Parse arguments.
+	if len(os.Args) == 1 {
+		fmt.Println(usage)
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 	parseArguments()
 	if arguments.err != nil {
 		fmt.Println("Error parsing arguments:", arguments.err)
-		os.Exit(1)
-	} else if !myflag.HasAny() {
-		fmt.Print(usage + myflag.HelpString())
 		os.Exit(1)
 	}
 
