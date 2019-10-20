@@ -8,8 +8,8 @@ import (
 	"runtime/pprof"
 	"sort"
 
-	"github.com/fluhus/biostuff/bioformats/bed"
-	"github.com/fluhus/biostuff/bioformats/bed/bedgraph"
+	"github.com/fluhus/golgi/bioformats/bed"
+	"github.com/fluhus/golgi/bioformats/bed/bedgraph"
 )
 
 // If true, will generate profiling information.
