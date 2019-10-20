@@ -4,8 +4,11 @@ package strdist
 import (
 	"fmt"
 
-	"github.com/fluhus/biostuff/seqtools"
+	"github.com/fluhus/golgi/seqtools"
 )
+
+// TODO(amit): Add tests.
+// TODO(amit): Remove bigram functions?
 
 // Computes the edit distance for 2 byte arrays.
 func EditDistance(s1, s2 []byte) int {
@@ -125,6 +128,7 @@ func HammingDistanceStrings(s1, s2 string) int {
 func maxInt(a ...int) int {
 	// Zero arguments not allowed
 	if len(a) == 0 {
+		// TODO(amit): Return min int.
 		panic("must have at least 1 argument")
 	}
 
@@ -145,6 +149,7 @@ func maxInt(a ...int) int {
 func minInt(a ...int) int {
 	// Zero arguments not allowed
 	if len(a) == 0 {
+		// TODO(amit): Return max int.
 		panic("must have at least 1 argument")
 	}
 
