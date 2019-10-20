@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"runtime/debug"
 	"sort"
 )
 
@@ -150,7 +149,7 @@ func (f *Entry) String() string {
 
 // Reads a single fasta entry from a stream. Returns EOF only if nothing was
 // read.
-func ReadEntry(r *bufio.Reader) (*Entry, error) {
+func ReadEntry(r io.ByteScanner) (*Entry, error) {
 	// States of the reader.
 	const (
 		stateStart    = iota // beginning of input
@@ -266,10 +265,6 @@ func ReadFasta(r io.Reader) ([]*Entry, error) {
 	for fa, err = ReadEntry(buf); err == nil; fa, err =
 		ReadEntry(buf) {
 		result = append(result, fa)
-
-		// Release unused memory, so that the program doesn't
-		// consume twice the memory it really needs.
-		debug.FreeOSMemory()
 	}
 
 	if err != io.EOF {
