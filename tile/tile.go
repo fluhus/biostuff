@@ -2,24 +2,24 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"math"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/fluhus/biostuff/myflag"
 )
 
 func main() {
 	// Handle arguments.
-	parseArguments()
-	if !myflag.HasAny() {
+	if len(os.Args) == 1 {
 		fmt.Fprint(os.Stderr, usage)
-		fmt.Fprint(os.Stderr, myflag.HelpString())
+		flag.PrintDefaults()
 		os.Exit(1)
-	} else if args.err != nil {
+	}
+	parseArguments()
+	if args.err != nil {
 		fmt.Fprintln(os.Stderr, "Argument error:", args.err)
 		os.Exit(1)
 	}
@@ -248,22 +248,17 @@ var args struct {
 }
 
 func parseArguments() {
-	out := myflag.String("out", "o", "path", "Output file. Default is"+
-		" standard output.", "stdout")
-	labels := myflag.String("labels", "L", "", "Comma-separated labels of "+
-		"columns. Default is file-names.", "")
-	size := myflag.Int("size", "s", "integer", "Length of tile. Default is "+
-		"100.", 100)
-	args.minCoverage = myflag.Int("coverage", "c", "integer", "Minimal coverage"+
-		" for a base to be included. Default is no limit.", -1)
+	out := flag.String("o", "stdout", "Output file. Default is standard output.")
+	labels := flag.String("l", "",
+		"Comma-separated labels of columns. Default is file-names.")
+	size := flag.Int("s", 100, "Length of tile.")
+	args.minCoverage = flag.Int("c", -1,
+		"Minimal coverage for a base to be included. Default is no limit.")
 
-	args.err = myflag.Parse()
-	if args.err != nil {
-		return
-	}
+	flag.Parse()
 
 	// Split input files into groups.
-	for _, list := range myflag.Args() {
+	for _, list := range flag.Args() {
 		split := strings.Split(list, ",")
 		for _, file := range split {
 			if file == "" {
