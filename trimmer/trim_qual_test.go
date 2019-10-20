@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/fluhus/biostuff/bioformats/fastq"
+	"github.com/fluhus/golgi/bioformats/fastq"
 )
 
 func Test_Simple(t *testing.T) {
