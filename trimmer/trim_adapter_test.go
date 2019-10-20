@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/fluhus/golgi/bioformats/fastq"
+	"github.com/fluhus/golgi/formats/fastq"
 )
 
 func Test_NoMatch(t *testing.T) {

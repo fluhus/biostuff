@@ -6,8 +6,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/fluhus/golgi/bioformats/bed"
-	"github.com/fluhus/golgi/bioformats/bed/bedgraph"
+	"github.com/fluhus/golgi/formats/bed"
+	"github.com/fluhus/golgi/formats/bed/bedgraph"
 	"github.com/fluhus/golgi/myflag"
 )
 

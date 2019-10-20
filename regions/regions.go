@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fluhus/golgi/bioformats/bed"
+	"github.com/fluhus/golgi/formats/bed"
 )
 
 func main() {

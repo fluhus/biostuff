@@ -3,7 +3,7 @@ package main
 // Handles trimming of adapters.
 
 import (
-	"github.com/fluhus/golgi/bioformats/fastq"
+	"github.com/fluhus/golgi/formats/fastq"
 )
 
 // Trims the given fastq's end (3') according to the given adapter.

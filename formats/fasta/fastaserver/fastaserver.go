@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fluhus/golgi/bioformats/fasta"
+	"github.com/fluhus/golgi/formats/fasta"
 )
 
 func main() {

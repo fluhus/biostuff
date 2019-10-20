@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime/pprof"
 
-	"github.com/fluhus/golgi/bioformats/fastq"
+	"github.com/fluhus/golgi/formats/fastq"
 )
 
 func main() {
