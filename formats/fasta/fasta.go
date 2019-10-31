@@ -11,10 +11,8 @@ import (
 // Converts number to nucleotide.
 var num2nuc = []byte{'A', 'C', 'G', 'T'}
 
-// *** FASTA ENTRY ************************************************************
-
-// A single immutable fasta sequence, stored in 2-bit representation.
-type Entry struct {
+// A single immutable fasta sequence.
+type Fasta struct {
 	name     string // sequence name (row that starts with '>')
 	sequence []byte // sequence in 2-bit format
 	length   uint   // number of nucleotides
@@ -22,23 +20,23 @@ type Entry struct {
 	nEnds    []uint // coordinates of ends of 'N' chunks (exclusive)
 }
 
-// Returns an empty fasta entry.
-func newEntry() *Entry {
-	return &Entry{"", nil, 0, nil, nil}
+// Returns an empty fasta sequence.
+func newFasta() *Fasta {
+	return &Fasta{"", nil, 0, nil, nil}
 }
 
-// Returns the number of nucleotides in this fasta entry.
-func (f *Entry) Length() int {
+// Returns the number of nucleotides in this sequence.
+func (f *Fasta) Len() int {
 	return int(f.length)
 }
 
-// Returns the name of the fasta entry.
-func (f *Entry) Name() string {
+// Returns the name of the fasta.
+func (f *Fasta) Name() string {
 	return f.name
 }
 
 // Returns the nucleotide at the given position.
-func (f *Entry) At(position int) byte {
+func (f *Fasta) At(position int) byte {
 	uposition := uint(position)
 
 	// Check if N.
@@ -53,7 +51,7 @@ func (f *Entry) At(position int) byte {
 }
 
 // Checks whether the given pos holds an 'N'.
-func (f *Entry) isN(pos uint) bool {
+func (f *Fasta) isN(pos uint) bool {
 	if len(f.nStarts) == 0 {
 		return false
 	}
@@ -68,8 +66,8 @@ func (f *Entry) isN(pos uint) bool {
 	return pos >= f.nStarts[i] && pos < f.nEnds[i]
 }
 
-// Appends a nucleotide to the fasta entry.
-func (f *Entry) append(nuc byte) error {
+// Appends a nucleotide to the fasta sequence.
+func (f *Fasta) append(nuc byte) error {
 	var num uint
 	switch nuc {
 	case 'a', 'A':
@@ -120,15 +118,14 @@ func (f *Entry) append(nuc byte) error {
 }
 
 // Extracts a subsequence from the fasta.
-func (f *Entry) Subsequence(start, length int) []byte {
-	// Check input.
+func (f *Fasta) Subsequence(start, length int) []byte {
 	if length < 0 {
 		panic(fmt.Sprintf("Bad subsequence length: %d", length))
 	}
 	if start < 0 {
 		panic(fmt.Sprintf("Bad subsequence start: %d", start))
 	}
-	if start+length > f.Length() {
+	if start+length > f.Len() {
 		panic(fmt.Sprint("Subsequence position exceeds sequence length: "+
 			"start %d, length %d.", start, length))
 	}
@@ -142,14 +139,14 @@ func (f *Entry) Subsequence(start, length int) []byte {
 	return result
 }
 
-// String representation of an entry. Format: name[length]
-func (f *Entry) String() string {
-	return fmt.Sprintf("%s[%d]", f.name, f.Length())
+// String representation of a fasta. Format: name[length]
+func (f *Fasta) String() string {
+	return fmt.Sprintf("%s[%d]", f.name, f.Len())
 }
 
-// Reads a single fasta entry from a stream. Returns EOF only if nothing was
+// Reads a single fasta sequence from a stream. Returns EOF only if nothing was
 // read.
-func ReadEntry(r io.ByteScanner) (*Entry, error) {
+func Read(r io.ByteScanner) (*Fasta, error) {
 	// States of the reader.
 	const (
 		stateStart    = iota // beginning of input
@@ -158,9 +155,8 @@ func ReadEntry(r io.ByteScanner) (*Entry, error) {
 		stateSequence        // reading sequence
 	)
 
-	// Result entry.
 	var name []byte
-	result := newEntry()
+	result := newFasta()
 
 	// Start reading.
 	state := stateStart
@@ -255,15 +251,15 @@ loop:
 
 // Reads all fasta entries from the given stream, until EOF. Stream will be
 // buffered inside the function.
-func ReadFasta(r io.Reader) ([]*Entry, error) {
+func ReadAll(r io.Reader) ([]*Fasta, error) {
 	buf := bufio.NewReader(r)
 
-	var result []*Entry
-	var fa *Entry
+	var result []*Fasta
+	var fa *Fasta
 	var err error
 
-	for fa, err = ReadEntry(buf); err == nil; fa, err =
-		ReadEntry(buf) {
+	for fa, err = Read(buf); err == nil; fa, err =
+		Read(buf) {
 		result = append(result, fa)
 	}
 
@@ -274,25 +270,3 @@ func ReadFasta(r io.Reader) ([]*Entry, error) {
 	return result, nil
 }
 
-// ***** SERIALIZABLE ENTRY ****************************************************
-
-// A fasta entry with exported fields for serialization.
-type SerializableEntry struct {
-	Name     string
-	Sequence []byte
-	Length   uint
-	NStarts  []uint
-	NEnds    []uint
-}
-
-// Converts a fasta entry to a serializable one.
-func ToSerializable(f *Entry) *SerializableEntry {
-	return &SerializableEntry{f.name, f.sequence, f.length, f.nStarts,
-		f.nEnds}
-}
-
-// Converts a serializable fasta entry to a regular one.
-func FromSerializable(f *SerializableEntry) *Entry {
-	return &Entry{f.Name, f.Sequence, f.Length, f.NStarts,
-		f.NEnds}
-}
