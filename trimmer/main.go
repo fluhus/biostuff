@@ -84,7 +84,8 @@ func processReads() {
 	var err error
 	var fq *fastq.Fastq
 
-	for fq, err = fastq.ReadNext(inputReader); err == nil; fq, err = fastq.ReadNext(inputReader) {
+	for fq, err = fastq.Read(inputReader); err == nil; fq, err =
+		fastq.Read(inputReader) {
 		readCount++
 		nucleotideCount += len(fq.Sequence)
 

@@ -76,16 +76,16 @@ func parseArguments() {
 }
 
 // Returns a fasta object from the given file.
-func readFastaFile(file string) ([]*fasta.Entry, error) {
+func readFastaFile(file string) ([]*fasta.Fasta, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
-	return fasta.ReadFasta(f)
+	return fasta.ReadAll(f)
 }
 
 // All fasta data will be here.
-var fa []*fasta.Entry
+var fa []*fasta.Fasta
 
 // Print if verbose.
 func report(a ...interface{}) {
