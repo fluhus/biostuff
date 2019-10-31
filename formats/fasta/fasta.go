@@ -1,4 +1,30 @@
-// Deals with fasta parsing and representation.
+// Package fasta deals with fasta parsing and representation.
+//
+// Input Format
+//
+// The package uses the format described in:
+// https://en.wikipedia.org/wiki/FASTA_format
+//
+// A valid fasta can have plain bases:
+//
+//  AAAAAATTTTTTCCCCCCGGGGGG
+//
+// Or have names separating the sequences, starting with '>':
+//
+//  >sequence1
+//  AAAAAATTTTTTCCCCCCGGGGGG
+//  >sequence2
+//  AAAAAATTTTTTCCCCCCGGGGGG
+//
+// Output Format
+//
+// The package is case insensitive. 'A' and 'a' are equivalent. The output
+// of all functions that return bases is in upper case.
+//
+// Memory Footprint
+//
+// Fasta sequences are represented in a 2-bit format. The size of a sequence
+// with n bases should be n/4 bytes, plus 2 integers for each sequence of N's.
 package fasta
 
 import (
@@ -8,10 +34,12 @@ import (
 	"sort"
 )
 
+// BUG(amit): Add an option to create a sequence.
+
 // Converts number to nucleotide.
 var num2nuc = []byte{'A', 'C', 'G', 'T'}
 
-// A single immutable fasta sequence.
+// Fasta is a single immutable fasta sequence.
 type Fasta struct {
 	name     string // sequence name (row that starts with '>')
 	sequence []byte // sequence in 2-bit format
@@ -20,22 +48,22 @@ type Fasta struct {
 	nEnds    []uint // coordinates of ends of 'N' chunks (exclusive)
 }
 
-// Returns an empty fasta sequence.
+// newFasta returns an empty fasta sequence.
 func newFasta() *Fasta {
 	return &Fasta{"", nil, 0, nil, nil}
 }
 
-// Returns the number of nucleotides in this sequence.
+// Len returns the number of nucleotides in this sequence.
 func (f *Fasta) Len() int {
 	return int(f.length)
 }
 
-// Returns the name of the fasta.
+// Name returns the name of the fasta, without the '>' prefix.
 func (f *Fasta) Name() string {
 	return f.name
 }
 
-// Returns the nucleotide at the given position.
+// At returns the nucleotide at the given position.
 func (f *Fasta) At(position int) byte {
 	uposition := uint(position)
 
@@ -50,7 +78,7 @@ func (f *Fasta) At(position int) byte {
 	return num2nuc[num]
 }
 
-// Checks whether the given pos holds an 'N'.
+// isN checks whether the given position holds an 'N'.
 func (f *Fasta) isN(pos uint) bool {
 	if len(f.nStarts) == 0 {
 		return false
@@ -66,7 +94,7 @@ func (f *Fasta) isN(pos uint) bool {
 	return pos >= f.nStarts[i] && pos < f.nEnds[i]
 }
 
-// Appends a nucleotide to the fasta sequence.
+// appends adds a nucleotide to the fasta sequence.
 func (f *Fasta) append(nuc byte) error {
 	var num uint
 	switch nuc {
@@ -117,7 +145,7 @@ func (f *Fasta) append(nuc byte) error {
 	return nil
 }
 
-// Extracts a subsequence from the fasta.
+// Subsequence extracts a subsequence from the fasta.
 func (f *Fasta) Subsequence(start, length int) []byte {
 	if length < 0 {
 		panic(fmt.Sprintf("Bad subsequence length: %d", length))
@@ -129,6 +157,7 @@ func (f *Fasta) Subsequence(start, length int) []byte {
 		panic(fmt.Sprint("Subsequence position exceeds sequence length: "+
 			"start %d, length %d.", start, length))
 	}
+	// BUG(amit): Improve performance of Subsequence.
 
 	// Generate result.
 	result := make([]byte, length)
@@ -139,13 +168,19 @@ func (f *Fasta) Subsequence(start, length int) []byte {
 	return result
 }
 
-// String representation of a fasta. Format: name[length]
+// Sequence returns the entire sequence.
+func (f *Fasta) Sequence() []byte {
+	return f.Subsequence(0, f.Len())
+}
+
+// String returns a string representation of a fasta, for debugging.
+// Format: name[length]
 func (f *Fasta) String() string {
 	return fmt.Sprintf("%s[%d]", f.name, f.Len())
 }
 
-// Reads a single fasta sequence from a stream. Returns EOF only if nothing was
-// read.
+// Read reads a single fasta sequence from a stream. Returns EOF only if
+// nothing was read.
 func Read(r io.ByteScanner) (*Fasta, error) {
 	// States of the reader.
 	const (
@@ -249,8 +284,8 @@ loop:
 	return result, nil
 }
 
-// Reads all fasta entries from the given stream, until EOF. Stream will be
-// buffered inside the function.
+// ReadAll reads all fasta entries from the given stream, until EOF. Stream
+// will be buffered inside the function.
 func ReadAll(r io.Reader) ([]*Fasta, error) {
 	buf := bufio.NewReader(r)
 
@@ -269,4 +304,3 @@ func ReadAll(r io.Reader) ([]*Fasta, error) {
 
 	return result, nil
 }
-
