@@ -2,13 +2,12 @@
 package fastq
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
 )
 
-// Represents a single Fastq entry.
+// Fastq represents a single Fastq entry.
 type Fastq struct {
 	Name     []byte
 	Sequence []byte
@@ -22,11 +21,16 @@ func (f *Fastq) String() string {
 	return fmt.Sprintf("@%s\n%s\n+\n%s", f.Name, f.Sequence, f.Quals)
 }
 
+// BytesReader is anything that has the ReadBytes method.
+type BytesReader interface {
+	ReadBytes(byte) ([]byte, error)
+}
+
 // Read reads the next fastq entry from the reader.
 // Returns a non-nil error if reading fails, or io.EOF if encountered end of
 // file. When EOF is returned, no fastq is available. On error, the returned
 // fastq will be nil.
-func Read(reader *bufio.Reader) (*Fastq, error) {
+func Read(reader BytesReader) (*Fastq, error) {
 	// Read name.
 	name, err := reader.ReadBytes('\n')
 	if err != nil {
