@@ -6,21 +6,25 @@ import (
 	"math/rand"
 )
 
+// Maps nucleotide byte value to its int value.
+var ntoi []int
+
+func init() {
+	// Initialize ntoi values.
+	ntoi = make([]int, 256)
+	for i := range ntoi {
+		ntoi[i] = -1
+	}
+	ntoi['a'], ntoi['A'] = 0, 0
+	ntoi['c'], ntoi['C'] = 1, 1
+	ntoi['g'], ntoi['G'] = 2, 2
+	ntoi['t'], ntoi['T'] = 3, 3
+}
+
 // Converts a nucleotide to an int.
 // Returns -1 for unknown nucleotides.
 func Ntoi(nuc byte) int {
-	switch nuc {
-	case 'A', 'a':
-		return 0
-	case 'C', 'c':
-		return 1
-	case 'G', 'g':
-		return 2
-	case 'T', 't':
-		return 3
-	default:
-		return -1
-	}
+	return ntoi[nuc]
 }
 
 // Converts an int to a nucleotide character.
