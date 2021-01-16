@@ -1,94 +1,130 @@
-// Handles SAM files.
+// Package sam handles SAM files.
 package sam
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
+
+	"github.com/fluhus/gostuff/csvdec"
 )
 
-// *** SAM LINE ****************************************************************
+// TODO(amit): Add marshaling.
 
-// Number of expected fields in a SAM line.
-const samFields = 11
-
-// Represents a single SAM line.
-// Contains the mandatory fields according to the SAM format spec.
-type Sam struct {
-	Qname string // Query name
-	Flag  int    // Bitwise flag (??)
-	Rname string // Reference sequence name
-	Pos   int    // Mapping position (1-based)
-	Mapq  int    // Mapping quality
-	Cigar string // CIGAR string (??)
-	Rnext string // ??
-	Pnext string // ??
-	Tlen  int    // Observed template length (??)
-	Seq   string // Sequence
-	Qual  string // Phred qualities (ASCII)
+// A raw structure for the initial parsing using csvdec.
+type samRaw struct {
+	Qname          string
+	Flag           int
+	Rname          string
+	Pos            int
+	Mapq           int
+	Cigar          string
+	Rnext          string
+	Pnext          int
+	Tlen           int
+	Seq            string
+	Qual           string
+	OptionalFields []string
 }
 
-// A string ready to be printed as a line in a sam file (no new line
-// at the end).
-func (s *Sam) String() string {
-	return fmt.Sprintf("%s %d %s %d %d %s %s %s %d %s %s",
-		s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar,
-		s.Rnext, s.Pnext, s.Tlen, s.Seq, s.Qual)
+// SAM represents a single SAM line.
+type SAM struct {
+	Qname          string                 // Query name
+	Flag           int                    // Bitwise flag
+	Rname          string                 // Reference sequence name
+	Pos            int                    // Mapping position (1-based)
+	Mapq           int                    // Mapping quality
+	Cigar          string                 // CIGAR string
+	Rnext          string                 // Ref. name of the mate/next read
+	Pnext          int                    // Position of the mate/next read
+	Tlen           int                    // Observed template length
+	Seq            string                 // Sequence
+	Qual           string                 // Phred qualities (ASCII)
+	OptionalFields map[string]interface{} // Typed optional fields.
 }
 
-// *** SAM READER **************************************************************
+// Converts a raw SAM struct to an exported SAM struct.
+func fromRaw(raw *samRaw) *SAM {
+	result := &SAM{}
+	result.Qname = raw.Qname
+	result.Flag = raw.Flag
+	result.Rname = raw.Rname
+	result.Pos = raw.Pos
+	result.Mapq = raw.Mapq
+	result.Cigar = raw.Cigar
+	result.Rnext = raw.Rnext
+	result.Pnext = raw.Pnext
+	result.Tlen = raw.Tlen
+	result.Seq = raw.Seq
+	result.Qual = raw.Qual
+	result.OptionalFields = map[string]interface{}{}
+	// TODO(amit): Complete parsing of optional fields.
+	return result
+}
 
-// Returns the next line from a SAM file.
-// Returns the error that the read action had returned.
-func ReadNext(in *bufio.Reader) (*Sam, error) {
-	var line []byte
-	var err error
+// Reader reads and parses SAM lines.
+type Reader struct {
+	r *bufio.Reader
+	d *csvdec.Decoder
+	h bool // Indicates that we are done reading the header.
+}
 
-	for {
-		// Try to read line
-		line, err = in.ReadBytes('\n')
-		line = []byte(strings.Trim(string(line), "\r\n"))
+// NewReader returns a new SAM reader.
+func NewReader(r io.Reader) *Reader {
+	var b *bufio.Reader
+	switch r := r.(type) {
+	case *bufio.Reader:
+		b = r
+	default:
+		b = bufio.NewReader(r)
+	}
+	d := csvdec.NewDecoder(b)
+	d.Comma = '\t'
+	return &Reader{b, d, false}
+}
 
-		// Check for error (ignore if EOF and a line was read)
-		if err != nil &&
-			!(err == io.EOF && len(line) > 0) {
-			return nil, err
-		}
-
-		// Break only if non-comment (starting with '@')
-		if line[0] != '@' {
-			break
+// NextHeader returns the next header line as a raw string, including the '@'.
+// Returns EOF when out of header lines, then Next can be called for the
+// data lines.
+func (r *Reader) NextHeader() (string, error) {
+	if r.h {
+		panic("Cannot read header after reading alignments.")
+	}
+	b, err := r.r.ReadByte()
+	if err != nil {
+		return "", err
+	}
+	if b != '@' {
+		r.r.UnreadByte()
+		r.h = true
+		return "", io.EOF
+	}
+	line, err := r.r.ReadBytes('\n')
+	if err != nil {
+		if err == io.EOF {
+			if len(line) == 0 {
+				return "", io.ErrUnexpectedEOF
+			}
+		} else {
+			return "", err
 		}
 	}
-
-	// Split to fields
-	fields := strings.Fields(string(line))
-	if len(fields) < samFields {
-		return nil, errors.New(fmt.Sprintf("bad SAM line, only"+
-			" %d fields (out of required %d)", len(fields), samFields))
+	line = line[:len(line)-1]
+	if len(line) == 0 {
+		return "", fmt.Errorf("encountered an empty header line")
 	}
+	return "@" + string(line), nil
+}
 
-	// Generate result & assign fields
-	atoi := strconv.Atoi
-
-	result := &Sam{}
-
-	// BUG( ) TODO check int parsing errors and alert about them
-
-	result.Qname = fields[0]
-	result.Flag, _ = atoi(fields[1])
-	result.Rname = fields[2]
-	result.Pos, _ = atoi(fields[3])
-	result.Mapq, _ = atoi(fields[4])
-	result.Cigar = fields[5]
-	result.Rnext = fields[6]
-	result.Pnext = fields[7]
-	result.Tlen, _ = atoi(fields[8])
-	result.Seq = fields[9]
-	result.Qual = fields[10]
-
-	return result, nil
+// Next returns the next SAM line.
+func (r *Reader) Next() (*SAM, error) {
+	for !r.h {
+		r.NextHeader()
+	}
+	raw := &samRaw{}
+	err := r.d.Decode(raw)
+	if err != nil {
+		return nil, err
+	}
+	return fromRaw(raw), nil
 }
