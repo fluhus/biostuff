@@ -99,3 +99,27 @@ func TestReader_skipHeader(t *testing.T) {
 		t.Fatalf("Next() error=%v, want EOF", err)
 	}
 }
+
+func TestDecoder_tags(t *testing.T) {
+	input := "c\t2\td\t5\t30\t32M\te\t40\t50\tAAAA\tFFFF\t" +
+		"BC:Z:barcode\tAS:i:123\tZF:f:3.1415\tZH:H:1234abcd"
+	r := NewReader(bytes.NewBuffer([]byte(input)))
+
+	want := &SAM{
+		"c", 2, "d", 5, 30, "32M", "e", 40, 50, "AAAA", "FFFF",
+		map[string]interface{}{
+			"BC": "barcode",
+			"AS": 123,
+			"ZF": 3.1415,
+			"ZH": []byte{18, 52, 171, 205},
+		},
+	}
+
+	got, err := r.Next()
+	if err != nil {
+		t.Fatalf("Next() failed: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Next()=%v, want %v", got, want)
+	}
+}
