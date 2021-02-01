@@ -2,7 +2,6 @@
 package fastq
 
 import (
-	"errors"
 	"fmt"
 	"io"
 )
@@ -12,13 +11,6 @@ type Fastq struct {
 	Name     []byte
 	Sequence []byte
 	Quals    []byte
-}
-
-// Returns a formatted representation of the entry, ready to be printed
-// (no new line at the end).
-func (f *Fastq) String() string {
-	// BUG(amit): Use MarshalText for encoding.
-	return fmt.Sprintf("@%s\n%s\n+\n%s", f.Name, f.Sequence, f.Quals)
 }
 
 // BytesReader is anything that has the ReadBytes method.
@@ -38,21 +30,18 @@ func Read(reader BytesReader) (*Fastq, error) {
 		if err == io.EOF {
 			if len(name) == 0 {
 				return nil, err
-			} else {
-				return nil, errors.New("fastq read: unexpected end of file")
 			}
-
-			// Not end of file.
-		} else {
-			return nil, errors.New("fastq read: " + err.Error())
+			return nil, io.ErrUnexpectedEOF
 		}
+		// Not end of file.
+		return nil, fmt.Errorf("fastq read: %v", err)
 	}
 
 	// Handle name.
 	name = trimNewLines(name)
 	if len(name) == 0 || name[0] != '@' {
-		return nil, errors.New("fastq read: expected '@' at beginning of" +
-			" line: \"" + string(name) + "\"")
+		return nil, fmt.Errorf("fastq read: expected '@' at beginning of"+
+			" line: %q", string(name))
 	}
 
 	// Trim '@'
@@ -63,12 +52,11 @@ func Read(reader BytesReader) (*Fastq, error) {
 	if err != nil {
 		// If end of file, report unexpected
 		if err == io.EOF {
-			return nil, errors.New("fastq read: unexpected end of file")
+			return nil, fmt.Errorf("fastq read: unexpected end of file")
 
-			// Not end of file
-		} else {
-			return nil, errors.New("fastq read: " + err.Error())
 		}
+		// Not end of file
+		return nil, fmt.Errorf("fastq read: %v", err)
 	}
 
 	seq = trimNewLines(seq)
@@ -78,19 +66,18 @@ func Read(reader BytesReader) (*Fastq, error) {
 	if err != nil {
 		// If end of file, report unexpected
 		if err == io.EOF {
-			return nil, errors.New("fastq read: unexpected end of file")
+			return nil, io.ErrUnexpectedEOF
 
-			// Not end of file
-		} else {
-			return nil, errors.New("fastq read: " + err.Error())
 		}
+		// Not end of file
+		return nil, fmt.Errorf("fastq read: %v", err)
 	}
 
 	// Handle plus
 	plus = trimNewLines(plus)
 	if len(plus) == 0 || plus[0] != '+' {
-		return nil, errors.New("fastq read: expected '+' at beginning of" +
-			" line: \"" + string(plus) + "\"")
+		return nil, fmt.Errorf("fastq read: expected '+' at beginning of"+
+			" line: %q", string(plus))
 	}
 
 	// Read qualities
@@ -98,14 +85,14 @@ func Read(reader BytesReader) (*Fastq, error) {
 	if err != nil {
 		// If end of file, ignore and report on next read
 		if err != io.EOF {
-			return nil, errors.New("fastq read: " + err.Error())
+			return nil, fmt.Errorf("fastq read: %v", err)
 		}
 	}
 
 	// Handle qualities
 	quals = trimNewLines(quals)
 	if len(quals) != len(seq) {
-		return nil, errors.New("fastq read: sequence and qualities have" +
+		return nil, fmt.Errorf("fastq read: sequence and qualities have" +
 			" different lengths")
 		// TODO(amit): should I include more details in the error message?
 	}
@@ -130,6 +117,5 @@ func trimNewLines(b []byte) []byte {
 		}
 
 	}
-
 	return b[start:end]
 }
