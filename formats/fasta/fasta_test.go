@@ -2,82 +2,65 @@ package fasta
 
 import (
 	"bufio"
+	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestRead_simple(t *testing.T) {
+func TestNext_simple(t *testing.T) {
 	input := ">foo\nAaTtGnNngcCaN"
-	fa, err := Read(bufio.NewReader(strings.NewReader(input)))
+	want := &Fasta{[]byte("foo"), []byte("AaTtGnNngcCaN")}
+	got, err := Next(bufio.NewReader(strings.NewReader(input)))
 	if err != nil {
-		t.Fatalf("ReadEntry(%q) failed: %v", input, err)
+		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
-	checkFasta(t, fa, "foo", "AaTtGnNngcCaN")
-	//assert.Equal(2, len(fa.nEnds))
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("Next(%q)=%v, want %v", input, got, want)
+	}
 }
 
-func TestRead_noName(t *testing.T) {
+func TestNext_noName(t *testing.T) {
 	input := "AaTtGngcCaN"
-	fa, err := Read(bufio.NewReader(strings.NewReader(input)))
+	want := &Fasta{nil, []byte("AaTtGngcCaN")}
+	got, err := Next(bufio.NewReader(strings.NewReader(input)))
 	if err != nil {
-		t.Fatalf("Read(%q) failed: %v", input, err)
+		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
-	checkFasta(t, fa, "", input)
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("Next(%q)=%v, want %v", input, got, want)
+	}
 }
 
-func TestReady_multiline(t *testing.T) {
+func TestNext_multiline(t *testing.T) {
 	input := ">foo\nAaTtGngcCaN\nGGgg\n>foo"
-
-	fa, err := Read(bufio.NewReader(strings.NewReader(input)))
+	want := &Fasta{[]byte("foo"), []byte("AaTtGngcCaNGGgg")}
+	got, err := Next(bufio.NewReader(strings.NewReader(input)))
 	if err != nil {
-		t.Fatalf("Read(%q) failed: %v", input, err)
+		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
-	checkFasta(t, fa, "foo", "AaTtGngcCaNGGgg")
-}
-
-func TestRead_badChars(t *testing.T) {
-	input := ">foo\naaaaaaKaaaaa"
-	_, err := Read(bufio.NewReader(strings.NewReader(input)))
-	if err == nil {
-		t.Fatalf("Read(%q) succeeded, want fail", input)
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("Next(%q)=%v, want %v", input, got, want)
 	}
 }
 
-func TestReadAll_simple(t *testing.T) {
+func TestForEach_simple(t *testing.T) {
 	input := ">foo\nAaTtGngcCaN\nGGgg\n>bar\naaaGcgnnNcTAtgGa\nAA\n\nGagaGNtCc"
-
-	fas, err := ReadAll(strings.NewReader(input))
+	want := []*Fasta{
+		{[]byte("foo"), []byte("AaTtGngcCaNGGgg")},
+		{[]byte("bar"), []byte("aaaGcgnnNcTAtgGaAAGagaGNtCc")},
+	}
+	var got []*Fasta
+	err := ForEach(strings.NewReader(input), func(fa *Fasta) error {
+		got = append(got, fa)
+		return nil
+	})
 	if err != nil {
-		t.Fatalf("ReadAll(%q) failed: %v", input, err)
+		t.Fatalf("ForEach(%q) failed: %v", input, err)
 	}
-	if len(fas) != 2 {
-		t.Fatalf("len(ReadAll(%q))=%v, want 2", input, len(fas))
+	if len(got) != 2 {
+		t.Fatalf("len(ForEach(%q))=%v, want 2", input, len(got))
 	}
-	checkFasta(t, fas[0], "foo", "AaTtGngcCaNGGgg")
-	checkFasta(t, fas[1], "bar", "aaaGcgnnNcTAtgGaAAGagaGNtCc")
-}
-
-func checkFasta(t *testing.T, fa *Fasta, name string, sequence string) {
-	if name != fa.Name() {
-		t.Fatalf("Name()=%q, want %q", fa.Name(), name)
-	}
-
-	usequence := strings.ToUpper(sequence)
-	fasequence := ""
-	for i := 0; i < fa.Len(); i++ {
-		fasequence += string([]byte{fa.At(i)})
-	}
-	if usequence != fasequence {
-		t.Fatalf("At(...)=%q, want %q", fasequence, usequence)
-	}
-	for i := range usequence {
-		for l := 0; l < len(usequence)-i; l++ {
-			usub := usequence[i : i+l]
-			fasub := string(fa.Subsequence(i, l))
-			if usub != fasub {
-				t.Fatalf("Subsequence(%v,%v)=%q, want %q",
-					i, l, fasub, usub)
-			}
-		}
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("ForEach(%q)=%v, want %v", input, got, want)
 	}
 }
