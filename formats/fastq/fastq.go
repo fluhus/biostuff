@@ -2,15 +2,16 @@
 package fastq
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 )
 
 // Fastq represents a single Fastq entry.
 type Fastq struct {
-	Name     []byte
-	Sequence []byte
-	Quals    []byte
+	Name     []byte // Entry name (without the '@')
+	Sequence []byte // Sequence as received
+	Quals    []byte // Qualities as received
 }
 
 // BytesReader is anything that has the ReadBytes method.
@@ -18,11 +19,11 @@ type BytesReader interface {
 	ReadBytes(byte) ([]byte, error)
 }
 
-// Read reads the next fastq entry from the reader.
+// Next reads the next fastq entry from the reader.
 // Returns a non-nil error if reading fails, or io.EOF if encountered end of
 // file. When EOF is returned, no fastq is available. On error, the returned
 // fastq will be nil.
-func Read(reader BytesReader) (*Fastq, error) {
+func Next(reader BytesReader) (*Fastq, error) {
 	// Read name.
 	name, err := reader.ReadBytes('\n')
 	if err != nil {
@@ -118,4 +119,24 @@ func trimNewLines(b []byte) []byte {
 
 	}
 	return b[start:end]
+}
+
+// ForEach reads all the sequences from the given fastq stream, until EOF.
+// Calls f on each sequence. If f returns a non-nil error, iteration is stopped
+// and the error is returned.
+func ForEach(r io.Reader, f func(*Fastq) error) error {
+	buf := bufio.NewReader(r)
+	var fa *Fastq
+	var err error
+
+	for fa, err = Next(buf); err == nil; fa, err = Next(buf) {
+		if err := f(fa); err != nil {
+			return err
+		}
+	}
+	if err != io.EOF {
+		return err
+	}
+
+	return nil
 }
