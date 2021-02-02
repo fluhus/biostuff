@@ -64,11 +64,11 @@ func parseArguments() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		args.err = fmt.Errorf("No fasta input given.")
+		args.err = fmt.Errorf("no fasta input given")
 		return
 	}
 	if len(flag.Args()) == 0 {
-		args.err = fmt.Errorf("Too many arguments.")
+		args.err = fmt.Errorf("too many arguments")
 		return
 	}
 
@@ -81,7 +81,12 @@ func readFastaFile(file string) ([]*fasta.Fasta, error) {
 	if err != nil {
 		return nil, err
 	}
-	return fasta.ReadAll(f)
+	var fas []*fasta.Fasta
+	err = fasta.ForEach(f, func(fa *fasta.Fasta) error {
+		fas = append(fas, fa)
+		return nil
+	})
+	return fas, err
 }
 
 // All fasta data will be here.

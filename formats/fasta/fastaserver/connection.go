@@ -36,7 +36,7 @@ func sequenceHandler(w http.ResponseWriter, req *http.Request) {
 	// Find fasta.
 	var entry *fasta.Fasta
 	for _, e := range fa {
-		if e.Name() == chr {
+		if string(e.Name) == chr {
 			entry = e
 		}
 	}
@@ -57,15 +57,15 @@ func sequenceHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if start+length > entry.Len() {
+	if start+length > len(entry.Sequence) {
 		fmt.Fprintf(w, "Error: Position exceeds chromosome length (max %d).",
-			entry.Len())
+			len(entry.Sequence))
 		return
 	}
 
 	// Everything is ok!
 	reportf("chr=%s start=%d len=%d\n", chr, start, length)
-	seq := entry.Subsequence(start, length)
+	seq := entry.Sequence[start : start+length]
 	w.Write(seq)
 }
 
@@ -73,6 +73,6 @@ func sequenceHandler(w http.ResponseWriter, req *http.Request) {
 func metaHandler(w http.ResponseWriter, req *http.Request) {
 	reportf("Got meta request.")
 	for _, entry := range fa {
-		fmt.Fprintf(w, "%s: %d\n", entry.Name(), entry.Len())
+		fmt.Fprintf(w, "%s: %d\n", entry.Name, len(entry.Sequence))
 	}
 }
