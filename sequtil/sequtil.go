@@ -235,3 +235,32 @@ func ReverseComplement(sequence []byte) []byte {
 func ReverseComplementString(sequence string) string {
 	return string(ReverseComplement([]byte(sequence)))
 }
+
+// DNATo2Bit writes to dst the 2-bit representation of the DNA sequence in src.
+// N's are treated like A's, so it's the callers responsibility to keep a record
+// of N's. Any character not in "aAcCgGtTnN" will cause a panic.
+func DNATo2Bit(dst []byte, src []byte) {
+	if len(dst) < (len(src)+3)/4 {
+		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
+			len(dst), (len(src)+3)/4))
+	}
+	for i, b := range src {
+		di := i / 4
+		shift := i % 4 * 2
+		var db byte
+		switch b {
+		case 'a', 'A', 'n', 'N':
+			db = 0
+		case 'c', 'C':
+			db = 1
+		case 'g', 'G':
+			db = 2
+		case 't', 'T':
+			db = 3
+		default:
+			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
+		}
+		db <<= shift
+		dst[di] |= db
+	}
+}
