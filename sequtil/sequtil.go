@@ -248,6 +248,10 @@ func DNATo2Bit(dst, src []byte) {
 	for i, b := range src {
 		di := i / 4
 		shift := i % 4 * 2
+		if shift == 0 {
+			// Reset byte value before or'ing.
+			dst[di] = 0
+		}
 		var db byte
 		switch b {
 		case 'a', 'A', 'n', 'N':
@@ -263,5 +267,23 @@ func DNATo2Bit(dst, src []byte) {
 		}
 		db <<= shift
 		dst[di] |= db
+	}
+}
+
+// DNAFrom2Bit writes to dst the nucleotides represented in 2-bit in src.
+// Only outputs characters in "ACGT".
+func DNAFrom2Bit(dst, src []byte) {
+	if len(dst) < len(src)*4-3 {
+		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
+			len(dst), len(src)*4-3))
+	}
+	n := len(src) * 4
+	if len(dst) < n {
+		n = len(dst)
+	}
+	for i := 0; i < n; i++ {
+		si := i / 4
+		shift := i % 4 * 2
+		dst[i] = Iton((int(src[si]) >> shift) & 3)
 	}
 }

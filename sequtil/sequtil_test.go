@@ -45,3 +45,21 @@ func TestDNATo2Bit(t *testing.T) {
 		}
 	}
 }
+
+func TestDNAFrom2Bit(t *testing.T) {
+	tests := []struct {
+		input []byte
+		want  []byte
+	}{
+		{[]byte{0b11100100, 0b00011011}, []byte("ACGTTGCA")},
+		{[]byte{0b00110011, 0b00000011}, []byte("TATAT")},
+		{[]byte{0b00010101}, []byte("CCC")},
+	}
+	for _, test := range tests {
+		got := make([]byte, len(test.want))
+		DNAFrom2Bit(got, test.input)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("DNAFrom2Bit(%v)=%v, want %v", test.input, got, test.want)
+		}
+	}
+}
