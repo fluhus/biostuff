@@ -1,9 +1,8 @@
-// Genetic sequence processing functions.
-package seqtools
+// Package sequtil provides genetic sequence processing functions.
+package sequtil
 
 import (
 	"fmt"
-	"math/rand"
 )
 
 // Maps nucleotide byte value to its int value.
@@ -21,14 +20,14 @@ func init() {
 	ntoi['t'], ntoi['T'] = 3, 3
 }
 
-// Converts a nucleotide to an int.
+// Ntoi converts a nucleotide to an int.
 // Returns -1 for unknown nucleotides.
 func Ntoi(nuc byte) int {
 	return ntoi[nuc]
 }
 
-// Converts an int to a nucleotide character.
-// Returns 'N' for any value not from {0,1,2,3}.
+// Iton converts an int to a nucleotide character.
+// Returns 'N' for any value not in {0,1,2,3}.
 func Iton(num int) byte {
 	switch num {
 	case 0:
@@ -44,39 +43,39 @@ func Iton(num int) byte {
 	}
 }
 
-// Returns the n-gram count vector for the given sequence.
-func NgramVector(n int, sequence []byte) []int {
-	// Check input
+// NgramCounts returns the n-gram count vector for the given sequence.
+func NgramCounts(n int, sequence []byte) []int {
+	// Check input.
 	if n < 1 || n > 10 {
 		panic(fmt.Sprintf("Bad n: %d", n))
 	}
 
-	// Calculate size of result
+	// Calculate size of result.
 	rsize := 1
 	for i := 0; i < n; i++ {
 		rsize *= 4 // For 4 letters in DNA
 	}
 
-	// Initialize result
+	// Initialize result.
 	result := make([]int, rsize)
 
-	// Count n-grams
+	// Count n-grams.
 	ngram := 0
 	lastBad := n // Distance to last bad nucleotide
 	for i := range sequence {
-		// Nucleotide index
+		// Nucleotide index.
 		ntoi := Ntoi(sequence[i])
 
-		// Check if bad
+		// Check if bad.
 		if ntoi == -1 {
 			lastBad = 0
 			ntoi = 0
 		}
 
-		// n-gram index
+		// n-gram index.
 		ngram = (ngram*4)%rsize + Ntoi(sequence[i])
 
-		// Increment only if went over a whole n-gram and no bad nucleotide
+		// Increment only if went over a whole n-gram and no bad nucleotide.
 		if i >= (n-1) && lastBad >= n {
 			result[ngram]++
 		}
@@ -85,111 +84,6 @@ func NgramVector(n int, sequence []byte) []int {
 	}
 
 	return result
-}
-
-// Returns a random (uniform) nucleotide.
-func RandNuc() byte {
-	return Iton(rand.Intn(4))
-}
-
-// Generates a random (uniform) DNA sequence.
-func RandSeq(length int) []byte {
-	// Create result array
-	result := make([]byte, length)
-
-	// Randomize characters
-	for i := range result {
-		result[i] = RandNuc()
-	}
-
-	return result
-}
-
-// Returns a copy of the sequence, with exactly n SNPs.
-func MutateSNP(sequence []byte, n int) (mutant []byte) {
-	// Check input
-	if n > len(sequence) {
-		panic(fmt.Sprintf("n is greater than sequence length: %d > %d",
-			n, len(sequence)))
-	}
-	if n < 0 {
-		panic(fmt.Sprintf("n cannot be negative: %d", n))
-	}
-
-	// Create result slice
-	mutant = make([]byte, len(sequence))
-	copy(mutant, sequence)
-
-	// Pick positions to mutate
-	positions := rand.Perm(len(sequence))[0:n]
-
-	// Mutate
-	for _, i := range positions {
-		// Generate random nucleotide that's different from current
-		nuc := RandNuc()
-		for nuc == mutant[i] {
-			nuc = RandNuc()
-		}
-
-		mutant[i] = nuc
-	}
-
-	return
-}
-
-// Returns a new sequence with an insertion with the given size, at a random
-// position along the sequence.
-func MutateIns(sequence []byte, size int) (mutant []byte) {
-	// Check input
-	if size < 0 {
-		panic(fmt.Sprintf("bad size: %d", size))
-	}
-
-	// Create result slice
-	mutant = make([]byte, len(sequence)+size)
-
-	// Pick a random position
-	pos := rand.Intn(len(sequence) + 1)
-
-	// Copy pre-mutation bytes
-	copy(mutant[:pos], sequence)
-
-	// Copy post-mutation bytes
-	copy(mutant[pos+size:], sequence[pos:])
-
-	// Generate insertion
-	for i := pos; i < (pos + size); i++ {
-		mutant[i] = RandNuc()
-	}
-
-	return
-}
-
-// Deletes a random subsequence of the given size.
-func MutateDel(sequence []byte, size int) (mutant []byte) {
-	// Check input
-	if size > len(sequence) {
-		panic(fmt.Sprintf("Size (%d) is greater than sequence length(%d)",
-			size, len(sequence)))
-	}
-
-	if size < 0 {
-		panic(fmt.Sprintf("Bad size: %d", size))
-	}
-
-	// Create result slice
-	mutant = make([]byte, len(sequence)-size)
-
-	// Pick a random position
-	pos := rand.Intn(len(sequence) - size + 1)
-
-	// Copy pre-deletion bytes
-	copy(mutant[:pos], sequence)
-
-	// Copy post-deletion bytes
-	copy(mutant[pos:], sequence[pos+size:])
-
-	return
 }
 
 // ReverseComplement writes to dst the reverse complement of src.

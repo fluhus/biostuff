@@ -1,6 +1,4 @@
-package seqtools
-
-// Unit test for seqtools.
+package sequtil
 
 import (
 	"reflect"
