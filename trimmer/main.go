@@ -84,8 +84,8 @@ func processReads() {
 	var err error
 	var fq *fastq.Fastq
 
-	for fq, err = fastq.Read(inputReader); err == nil; fq, err =
-		fastq.Read(inputReader) {
+	for fq, err = fastq.Next(inputReader); err == nil; fq, err =
+		fastq.Next(inputReader) {
 		readCount++
 		nucleotideCount += len(fq.Sequence)
 
@@ -116,8 +116,14 @@ func processReads() {
 		// Print if long enough
 		// TODO: add as command line option
 		if len(fq.Sequence) >= minReadLength {
-			outputWriter.WriteString(fq.String())
-			outputWriter.WriteByte('\n')
+			// panic("Trimmer is broken. Need to fix output format below.")
+			outputWriter.WriteString("@")
+			outputWriter.Write(fq.Name)
+			outputWriter.WriteString("\n")
+			outputWriter.Write(fq.Sequence)
+			outputWriter.WriteString("\n+\n")
+			outputWriter.Write(fq.Quals)
+			outputWriter.WriteString("\n")
 		} else {
 			shortCount++
 		}

@@ -4,7 +4,7 @@ package strdist
 import (
 	"fmt"
 
-	"github.com/fluhus/golgi/seqtools"
+	"github.com/fluhus/golgi/sequtil"
 )
 
 // TODO(amit): Add tests.
@@ -63,8 +63,8 @@ func EditDistanceStrings(s1, s2 string) int {
 // Returns the n-gram distance between 2 DNA sequences
 func NgramDistance(n int, s1, s2 []byte) int {
 	// Get n-gram vectors
-	v1 := seqtools.NgramVector(n, s1)
-	v2 := seqtools.NgramVector(n, s2)
+	v1 := sequtil.NgramCounts(n, s1)
+	v2 := sequtil.NgramCounts(n, s2)
 
 	// Calculate distance
 	result := 0
