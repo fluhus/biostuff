@@ -3,26 +3,29 @@ package seqtools
 // Unit test for seqtools.
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
 
-// Compares the output of ReverseComplement with the expected output.
-func helper_ReverseComplement(t *testing.T, input string, expected string) {
-	if ReverseComplementString(input) != expected {
-		t.Error(fmt.Sprintf("rc(%s) gave %s, expected %s",
-			input, ReverseComplementString(input), expected))
+func TestReverseComplementString(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"A", "T"},
+		{"AAA", "TTT"},
+		{"aaa", "ttt"},
+		{"AACTTGGG", "CCCAAGTT"},
+		{"TGTGTG", "CACACA"},
+		{"", ""},
 	}
-}
-
-func Test_ReverseComplement(t *testing.T) {
-	helper_ReverseComplement(t, "A", "T")
-	helper_ReverseComplement(t, "AAA", "TTT")
-	helper_ReverseComplement(t, "aaa", "ttt")
-	helper_ReverseComplement(t, "AACTTGGG", "CCCAAGTT")
-	helper_ReverseComplement(t, "TGTGTG", "CACACA")
-	helper_ReverseComplement(t, "", "")
+	for _, test := range tests {
+		got := ReverseComplementString(test.input)
+		if got != test.want {
+			t.Errorf("ReverseComplementString(%q)=%v, want %v",
+				test.input, got, test.want)
+		}
+	}
 }
 
 func TestDNATo2Bit(t *testing.T) {

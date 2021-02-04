@@ -192,54 +192,55 @@ func MutateDel(sequence []byte, size int) (mutant []byte) {
 	return
 }
 
-// Returns the reverse complement of the given sequence. Only complements
-// characters in "acgtACGT", other characters remain the same.
-func ReverseComplement(sequence []byte) []byte {
-	result := make([]byte, len(sequence))
+// ReverseComplement writes to dst the reverse complement of src.
+// Characters not in "aAcCgGtTnN" will cause a panic.
+func ReverseComplement(dst, src []byte) {
+	if len(dst) < len(src) {
+		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
+			len(dst), len(src)))
+	}
 
 	// Complement
-	for i := range sequence {
-		switch sequence[i] {
+	for i, b := range src {
+		switch b {
 		case 'a':
-			result[i] = 't'
+			dst[len(src)-1-i] = 't'
 		case 'c':
-			result[i] = 'g'
+			dst[len(src)-1-i] = 'g'
 		case 'g':
-			result[i] = 'c'
+			dst[len(src)-1-i] = 'c'
 		case 't':
-			result[i] = 'a'
+			dst[len(src)-1-i] = 'a'
 		case 'A':
-			result[i] = 'T'
+			dst[len(src)-1-i] = 'T'
 		case 'C':
-			result[i] = 'G'
+			dst[len(src)-1-i] = 'G'
 		case 'G':
-			result[i] = 'C'
+			dst[len(src)-1-i] = 'C'
 		case 'T':
-			result[i] = 'A'
+			dst[len(src)-1-i] = 'A'
+		case 'N':
+			dst[len(src)-1-i] = 'N'
+		case 'n':
+			dst[len(src)-1-i] = 'n'
 		default:
-			result[i] = sequence[i]
+			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
 		}
 	}
-
-	// Reverse
-	for i := 0; i < len(result)/2; i++ {
-		result[i], result[len(result)-i-1] =
-			result[len(result)-i-1], result[i]
-	}
-
-	return result
 }
 
-// Returns the reverse complement of the given sequence. Only complements
-// characters in "acgtACGT", other characters remain the same.
-func ReverseComplementString(sequence string) string {
-	return string(ReverseComplement([]byte(sequence)))
+// ReverseComplementString returns the reverse complement of s.
+// Characters not in "aAcCgGtTnN" will cause a panic.
+func ReverseComplementString(s string) string {
+	result := make([]byte, len(s))
+	ReverseComplement(result, []byte(s))
+	return string(result)
 }
 
 // DNATo2Bit writes to dst the 2-bit representation of the DNA sequence in src.
 // N's are treated like A's, so it's the callers responsibility to keep a record
 // of N's. Any character not in "aAcCgGtTnN" will cause a panic.
-func DNATo2Bit(dst []byte, src []byte) {
+func DNATo2Bit(dst, src []byte) {
 	if len(dst) < (len(src)+3)/4 {
 		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
 			len(dst), (len(src)+3)/4))
