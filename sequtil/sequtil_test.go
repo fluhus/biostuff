@@ -31,9 +31,9 @@ func TestDNATo2Bit(t *testing.T) {
 		input []byte
 		want  []byte
 	}{
-		{[]byte("acgtTGCA"), []byte{0b11100100, 0b00011011}},
-		{[]byte("tatat"), []byte{0b00110011, 0b00000011}},
-		{[]byte("ccc"), []byte{0b00010101}},
+		{[]byte("acgtTGCA"), []byte{0b00011011, 0b11100100}},
+		{[]byte("tatat"), []byte{0b11001100, 0b11000000}},
+		{[]byte("ccc"), []byte{0b01010100}},
 	}
 	for _, test := range tests {
 		got := make([]byte, len(test.want))
@@ -49,9 +49,9 @@ func TestDNAFrom2Bit(t *testing.T) {
 		input []byte
 		want  []byte
 	}{
-		{[]byte{0b11100100, 0b00011011}, []byte("ACGTTGCA")},
-		{[]byte{0b00110011, 0b00000011}, []byte("TATAT")},
-		{[]byte{0b00010101}, []byte("CCC")},
+		{[]byte{0b00011011, 0b11100100}, []byte("ACGTTGCA")},
+		{[]byte{0b11001100, 0b11000000}, []byte("TATAT")},
+		{[]byte{0b01010100}, []byte("CCC")},
 	}
 	for _, test := range tests {
 		got := make([]byte, len(test.want))

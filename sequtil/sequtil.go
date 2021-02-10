@@ -132,8 +132,7 @@ func ReverseComplementString(s string) string {
 }
 
 // DNATo2Bit writes to dst the 2-bit representation of the DNA sequence in src.
-// N's are treated like A's, so it's the callers responsibility to keep a record
-// of N's. Any character not in "aAcCgGtTnN" will cause a panic.
+// Any character not in "aAcCgGtT" will cause a panic.
 func DNATo2Bit(dst, src []byte) {
 	if len(dst) < (len(src)+3)/4 {
 		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
@@ -141,14 +140,14 @@ func DNATo2Bit(dst, src []byte) {
 	}
 	for i, b := range src {
 		di := i / 4
-		shift := i % 4 * 2
-		if shift == 0 {
+		shift := 6 - i%4*2 // Make the first character the most significant.
+		if shift == 6 {
 			// Reset byte value before or'ing.
 			dst[di] = 0
 		}
 		var db byte
 		switch b {
-		case 'a', 'A', 'n', 'N':
+		case 'a', 'A':
 			db = 0
 		case 'c', 'C':
 			db = 1
@@ -157,7 +156,7 @@ func DNATo2Bit(dst, src []byte) {
 		case 't', 'T':
 			db = 3
 		default:
-			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
+			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtT", b))
 		}
 		db <<= shift
 		dst[di] |= db
@@ -177,7 +176,7 @@ func DNAFrom2Bit(dst, src []byte) {
 	}
 	for i := 0; i < n; i++ {
 		si := i / 4
-		shift := i % 4 * 2
+		shift := 6 - i%4*2 // The first character is the most significant.
 		dst[i] = Iton((int(src[si]) >> shift) & 3)
 	}
 }
