@@ -61,3 +61,22 @@ func TestDNAFrom2Bit(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkDNATo2Bit(b *testing.B) {
+	dna := []byte("acgtacgtacgtacgtacgtacgtacgtacgt")
+	twobit := make([]byte, len(dna)/4)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DNATo2Bit(twobit, dna)
+	}
+}
+
+func BenchmarkDNAFrom2Bit(b *testing.B) {
+	dna := []byte("acgtacgtacgtacgtacgtacgtacgtacgt")
+	twobit := make([]byte, len(dna)/4)
+	DNATo2Bit(twobit, dna)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DNAFrom2Bit(dna, twobit)
+	}
+}

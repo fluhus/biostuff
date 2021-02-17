@@ -145,23 +145,19 @@ func DNATo2Bit(dst, src []byte) {
 			// Reset byte value before or'ing.
 			dst[di] = 0
 		}
-		var db byte
-		switch b {
-		case 'a', 'A':
-			db = 0
-		case 'c', 'C':
-			db = 1
-		case 'g', 'G':
-			db = 2
-		case 't', 'T':
-			db = 3
-		default:
+		dbInt := Ntoi(b)
+		if dbInt == -1 {
 			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtT", b))
 		}
-		db <<= shift
+		db := byte(dbInt) << shift
 		dst[di] |= db
 	}
 }
+
+// Used instead of calling Iton.
+// Improves performance at the cost of no safety checks. Since values in 2-bit
+// are always 0-3, it is actually safe to use it.
+var itonFor2Bit = []byte{'A', 'C', 'G', 'T'}
 
 // DNAFrom2Bit writes to dst the nucleotides represented in 2-bit in src.
 // Only outputs characters in "ACGT".
@@ -177,6 +173,6 @@ func DNAFrom2Bit(dst, src []byte) {
 	for i := 0; i < n; i++ {
 		si := i / 4
 		shift := 6 - i%4*2 // The first character is the most significant.
-		dst[i] = Iton((int(src[si]) >> shift) & 3)
+		dst[i] = itonFor2Bit[(int(src[si])>>shift)&3]
 	}
 }
