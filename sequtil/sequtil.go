@@ -154,11 +154,6 @@ func DNATo2Bit(dst, src []byte) {
 	}
 }
 
-// Used instead of calling Iton.
-// Improves performance at the cost of no safety checks. Since values in 2-bit
-// are always 0-3, it is actually safe to use it.
-var itonFor2Bit = []byte{'A', 'C', 'G', 'T'}
-
 // DNAFrom2Bit writes to dst the nucleotides represented in 2-bit in src.
 // Only outputs characters in "ACGT".
 func DNAFrom2Bit(dst, src []byte) {
@@ -166,13 +161,22 @@ func DNAFrom2Bit(dst, src []byte) {
 		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
 			len(dst), len(src)*4-3))
 	}
-	n := len(src) * 4
-	if len(dst) < n {
-		n = len(dst)
+	for i := 0; i < len(src); i++ {
+		copy(dst[i*4:], dnaFrom2bit[src[i]][:])
 	}
-	for i := 0; i < n; i++ {
-		si := i / 4
-		shift := 6 - i%4*2 // The first character is the most significant.
-		dst[i] = itonFor2Bit[(int(src[si])>>shift)&3]
+}
+
+// Maps 2-bit value to its expanded representation.
+var dnaFrom2bit = make([][4]byte, 256)
+
+// Initializes the dnaFrom2bit slice.
+func init() {
+	val := make([]byte, 4)
+	for i := 0; i < 256; i++ {
+		for j := 0; j < 4; j++ {
+			// First base is the most significant digit.
+			val[3-j] = Iton((i >> (2 * j)) & 3)
+		}
+		copy(dnaFrom2bit[i][:], val)
 	}
 }
