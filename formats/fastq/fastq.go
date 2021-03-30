@@ -3,6 +3,7 @@ package fastq
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 )
@@ -14,129 +15,77 @@ type Fastq struct {
 	Quals    []byte // Qualities as received
 }
 
-// BytesReader is anything that has the ReadBytes method.
-type BytesReader interface {
-	ReadBytes(byte) ([]byte, error)
+// A Reader reads text from an input and returns Fastq objects.
+type Reader struct {
+	s *bufio.Scanner
+}
+
+// NewReader returns a new Fastq reader.
+func NewReader(r io.Reader) *Reader {
+	return &Reader{s: bufio.NewScanner(r)}
 }
 
 // Next reads the next fastq entry from the reader.
 // Returns a non-nil error if reading fails, or io.EOF if encountered end of
-// file. When EOF is returned, no fastq is available. On error, the returned
-// fastq will be nil.
-func Next(reader BytesReader) (*Fastq, error) {
+// file. When EOF is returned, no fastq is available.
+func (r *Reader) Next() (*Fastq, error) {
 	// Read name.
-	name, err := reader.ReadBytes('\n')
-	if err != nil {
-		// If end of file and no read, we're done.
-		if err == io.EOF {
-			if len(name) == 0 {
-				return nil, err
-			}
-			return nil, io.ErrUnexpectedEOF
+	if !r.s.Scan() {
+		if r.s.Err() == nil {
+			return nil, io.EOF
 		}
-		// Not end of file.
-		return nil, fmt.Errorf("fastq read: %v", err)
+		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
+	name := copyBytes(r.s.Bytes())
 
 	// Handle name.
-	name = trimNewLines(name)
 	if len(name) == 0 || name[0] != '@' {
 		return nil, fmt.Errorf("fastq read: expected '@' at beginning of"+
 			" line: %q", string(name))
 	}
-
-	// Trim '@'
 	name = name[1:]
 
 	// Read sequence
-	seq, err := reader.ReadBytes('\n')
-	if err != nil {
-		// If end of file, report unexpected
-		if err == io.EOF {
-			return nil, fmt.Errorf("fastq read: unexpected end of file")
-
+	if !r.s.Scan() {
+		if r.s.Err() == nil {
+			return nil, io.ErrUnexpectedEOF
 		}
-		// Not end of file
-		return nil, fmt.Errorf("fastq read: %v", err)
+		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-
-	seq = trimNewLines(seq)
+	seq := copyBytes(r.s.Bytes())
 
 	// Read plus
-	plus, err := reader.ReadBytes('\n')
-	if err != nil {
-		// If end of file, report unexpected
-		if err == io.EOF {
+	if !r.s.Scan() {
+		if r.s.Err() == nil {
 			return nil, io.ErrUnexpectedEOF
-
 		}
-		// Not end of file
-		return nil, fmt.Errorf("fastq read: %v", err)
+		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-
-	// Handle plus
-	plus = trimNewLines(plus)
-	if len(plus) == 0 || plus[0] != '+' {
+	plus := copyBytes(r.s.Bytes())
+	if !bytes.Equal(plus, []byte("+")) {
 		return nil, fmt.Errorf("fastq read: expected '+' at beginning of"+
 			" line: %q", string(plus))
 	}
 
 	// Read qualities
-	quals, err := reader.ReadBytes('\n')
-	if err != nil {
-		// If end of file, ignore and report on next read
-		if err != io.EOF {
-			return nil, fmt.Errorf("fastq read: %v", err)
+	if !r.s.Scan() {
+		if r.s.Err() == nil {
+			return nil, io.ErrUnexpectedEOF
 		}
+		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-
-	// Handle qualities
-	quals = trimNewLines(quals)
+	quals := copyBytes(r.s.Bytes())
 	if len(quals) != len(seq) {
-		return nil, fmt.Errorf("fastq read: sequence and qualities have" +
-			" different lengths")
-		// TODO(amit): should I include more details in the error message?
+		return nil, fmt.Errorf("fastq read: sequence and qualities have"+
+			" different lengths: %v and %v", len(seq), len(quals))
 	}
 
-	// Finally done!
 	return &Fastq{name, seq, quals}, nil
 }
 
-// trimNewLines Trims new-line and carriage-return from both ends of the slice.
-func trimNewLines(b []byte) []byte {
-	start := 0
-	end := len(b)
-	for i, v := range b {
-
-		if v == '\n' || v == '\r' {
-			// If encountered new lines up to here.
-			if i == start {
-				start++
-			}
-		} else {
-			end = i + 1 // end will point to the last non-new-line
-		}
-
-	}
-	return b[start:end]
-}
-
-// ForEach reads all the sequences from the given fastq stream, until EOF.
-// Calls f on each sequence. If f returns a non-nil error, iteration is stopped
-// and the error is returned.
-func ForEach(r io.Reader, f func(*Fastq) error) error {
-	buf := bufio.NewReader(r)
-	var fa *Fastq
-	var err error
-
-	for fa, err = Next(buf); err == nil; fa, err = Next(buf) {
-		if err := f(fa); err != nil {
-			return err
-		}
-	}
-	if err != io.EOF {
-		return err
-	}
-
-	return nil
+// Copies the given bytes to a newly allocated slice.
+func copyBytes(src []byte) []byte {
+	b := make([]byte, len(src))
+	copy(b, src)
+	return b
 }
