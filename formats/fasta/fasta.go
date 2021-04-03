@@ -15,16 +15,6 @@
 //  AAAAAATTTTTTCCCCCCGGGGGG
 //  >sequence2
 //  AAAAAATTTTTTCCCCCCGGGGGG
-//
-// Output Format
-//
-// The package is case insensitive. 'A' and 'a' are equivalent. The output
-// of all functions that return bases is in upper case.
-//
-// Memory Footprint
-//
-// Fasta sequences are represented in a 2-bit format. The size of a sequence
-// with n bases should be n/4 bytes, plus 2 integers for each sequence of N's.
 package fasta
 
 import (
@@ -120,7 +110,7 @@ loop:
 	if !readAnything {
 		return nil, err
 	}
-	// EOF will be returned on the next call to read.
+	// EOF will be returned on the next call to Next.
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
