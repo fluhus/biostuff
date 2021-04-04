@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -35,7 +36,7 @@ func main() {
 		fmt.Println("Error reading fasta:", err)
 		os.Exit(2)
 	}
-	reportf("Took %v.\n", time.Now().Sub(now))
+	reportf("Took %v.\n", time.Since(now))
 
 	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to"+
 		" exit.\n")
@@ -81,12 +82,18 @@ func readFastaFile(file string) ([]*fasta.Fasta, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
+	r := fasta.NewReader(f)
+
 	var fas []*fasta.Fasta
-	err = fasta.ForEach(f, func(fa *fasta.Fasta) error {
+	var fa *fasta.Fasta
+	for fa, err = r.Next(); err == nil; fa, err = r.Next() {
 		fas = append(fas, fa)
-		return nil
-	})
-	return fas, err
+	}
+	if err != io.EOF {
+		return nil, err
+	}
+	return fas, nil
 }
 
 // All fasta data will be here.

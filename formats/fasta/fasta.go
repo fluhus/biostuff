@@ -15,16 +15,6 @@
 //  AAAAAATTTTTTCCCCCCGGGGGG
 //  >sequence2
 //  AAAAAATTTTTTCCCCCCGGGGGG
-//
-// Output Format
-//
-// The package is case insensitive. 'A' and 'a' are equivalent. The output
-// of all functions that return bases is in upper case.
-//
-// Memory Footprint
-//
-// Fasta sequences are represented in a 2-bit format. The size of a sequence
-// with n bases should be n/4 bytes, plus 2 integers for each sequence of N's.
 package fasta
 
 import (
@@ -38,9 +28,19 @@ type Fasta struct {
 	Sequence []byte // Sequence
 }
 
+// A Reader reads sequences from a fasta stream.
+type Reader struct {
+	r *bufio.Reader
+}
+
+// NewReader returns a new reader for the given input.
+func NewReader(r io.Reader) *Reader {
+	return &Reader{bufio.NewReader(r)}
+}
+
 // Next reads a single fasta sequence from a stream. Returns EOF only if
 // nothing was read.
-func Next(r io.ByteScanner) (*Fasta, error) {
+func (r *Reader) Next() (*Fasta, error) {
 	// States of the reader.
 	const (
 		stateStart    = iota // Beginning of input
@@ -57,7 +57,7 @@ func Next(r io.ByteScanner) (*Fasta, error) {
 	readAnything := false
 
 loop:
-	for b, err = r.ReadByte(); err == nil; b, err = r.ReadByte() {
+	for b, err = r.r.ReadByte(); err == nil; b, err = r.r.ReadByte() {
 		readAnything = true
 		switch state {
 		case stateStart:
@@ -93,7 +93,7 @@ loop:
 				// Nothing. Move on to the next line.
 			} else if b == '>' {
 				// New sequence => done reading.
-				r.UnreadByte()
+				r.r.UnreadByte()
 				break loop
 			} else {
 				// Just more sequence.
@@ -110,30 +110,10 @@ loop:
 	if !readAnything {
 		return nil, err
 	}
-	// EOF will be returned on the next call to read.
+	// EOF will be returned on the next call to Next.
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
 
 	return result, nil
-}
-
-// ForEach reads all the sequences from the given fasta stream, until EOF.
-// Calls f on each sequence. If f returns a non-nil error, iteration is stopped
-// and the error is returned.
-func ForEach(r io.Reader, f func(*Fasta) error) error {
-	buf := bufio.NewReader(r)
-	var fa *Fasta
-	var err error
-
-	for fa, err = Next(buf); err == nil; fa, err = Next(buf) {
-		if err := f(fa); err != nil {
-			return err
-		}
-	}
-	if err != io.EOF {
-		return err
-	}
-
-	return nil
 }

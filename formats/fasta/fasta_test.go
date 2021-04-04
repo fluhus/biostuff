@@ -1,7 +1,7 @@
 package fasta
 
 import (
-	"bufio"
+	"io"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,7 +10,7 @@ import (
 func TestNext_simple(t *testing.T) {
 	input := ">foo\nAaTtGnNngcCaN"
 	want := &Fasta{[]byte("foo"), []byte("AaTtGnNngcCaN")}
-	got, err := Next(bufio.NewReader(strings.NewReader(input)))
+	got, err := NewReader(strings.NewReader(input)).Next()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -22,7 +22,7 @@ func TestNext_simple(t *testing.T) {
 func TestNext_noName(t *testing.T) {
 	input := "AaTtGngcCaN"
 	want := &Fasta{nil, []byte("AaTtGngcCaN")}
-	got, err := Next(bufio.NewReader(strings.NewReader(input)))
+	got, err := NewReader(strings.NewReader(input)).Next()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -34,7 +34,7 @@ func TestNext_noName(t *testing.T) {
 func TestNext_multiline(t *testing.T) {
 	input := ">foo\nAaTtGngcCaN\nGGgg\n>foo"
 	want := &Fasta{[]byte("foo"), []byte("AaTtGngcCaNGGgg")}
-	got, err := Next(bufio.NewReader(strings.NewReader(input)))
+	got, err := NewReader(strings.NewReader(input)).Next()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -43,18 +43,20 @@ func TestNext_multiline(t *testing.T) {
 	}
 }
 
-func TestForEach_simple(t *testing.T) {
+func TestNext_multiple(t *testing.T) {
 	input := ">foo\nAaTtGngcCaN\nGGgg\n>bar\naaaGcgnnNcTAtgGa\nAA\n\nGagaGNtCc"
+	r := NewReader(strings.NewReader(input))
 	want := []*Fasta{
 		{[]byte("foo"), []byte("AaTtGngcCaNGGgg")},
 		{[]byte("bar"), []byte("aaaGcgnnNcTAtgGaAAGagaGNtCc")},
 	}
 	var got []*Fasta
-	err := ForEach(strings.NewReader(input), func(fa *Fasta) error {
+	var err error
+	var fa *Fasta
+	for fa, err = r.Next(); err == nil; fa, err = r.Next() {
 		got = append(got, fa)
-		return nil
-	})
-	if err != nil {
+	}
+	if err != io.EOF {
 		t.Fatalf("ForEach(%q) failed: %v", input, err)
 	}
 	if len(got) != 2 {
