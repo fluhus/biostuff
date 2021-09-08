@@ -1,369 +1,109 @@
-package main
-
-// TODO(amit): Make this a reusable package.
+// Package regions provides an index for searching on intervals.
+package regions
 
 import (
-	"bufio"
-	"flag"
 	"fmt"
-	"os"
 	"sort"
-	"strings"
-
-	"github.com/fluhus/golgi/formats/bed"
 )
 
-func main() {
-	// Parse arguments
-	err := parseArgs()
-	if err != nil {
-		fmt.Println("Error parsing arguments:", err)
-		os.Exit(1)
-	}
-	if args.help {
-		fmt.Println(help)
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-
-	fmt.Println("Reading events...")
-	e, err := eventsFromFile(args.eventFile)
-
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(2)
-	}
-
-	fmt.Println("Indexing...")
-	idx := e.index()
-
-	fmt.Println("Reading regions...")
-	err = processFile(args.inFile, args.outFile, idx, args.prior)
-
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(2)
-	}
-
-	fmt.Println("Done!")
+// Index is a searchable collection of intervals.
+type Index struct {
+	idx []interval
 }
 
-// ***** EVENT PARSING ********************************************************
-
-type event struct {
-	chr   string
-	pos   int
-	start bool // true if event start, false if event end
-	name  string
-}
-
-type events []*event
-
-func (e events) names() []string {
-	m := make(map[string]struct{})
-	for _, evt := range e {
-		m[evt.name] = struct{}{}
+// NewIndex returns an index on the given interval starts and ends. Starts and ends
+// should be of the same length. End positions are exclusive, meaning that an end
+// value of n implies that the interval's last position is n-1.
+func NewIndex(starts, ends []int) *Index {
+	if len(starts) != len(ends) {
+		panic(fmt.Sprintf("lengths of starts and ends don't match: %v!=%v",
+			len(starts), len(ends)))
 	}
-
-	var result []string
-	for name := range m {
-		result = append(result, name)
+	events := make([]event, 0, len(starts)+len(ends))
+	for i := range starts {
+		// TODO(amit): Check that start<end
+		events = append(events, event{i, starts[i], true})
+		events = append(events, event{i, ends[i], false})
 	}
-
-	return result
-}
-
-func eventsFromFile(file string) (events, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	scanner := bed.NewScanner(f)
-	var result events
-
-	for scanner.Scan() {
-		b := scanner.Bed()
-		name := scanner.Fields()[0]
-		result = append(result, &event{b.Chr, b.Start, true, name})
-		result = append(result, &event{b.Chr, b.End, false, name})
-	}
-
-	if scanner.Err() != nil {
-		return nil, scanner.Err()
-	}
-
-	// Sort
-	result.sort()
-
-	return result, nil
-}
-
-// ***** EVENT SORTING ********************************************************
-
-func (e events) sort() {
-	sort.Sort(e)
-}
-
-func (e events) Len() int {
-	return len(e)
-}
-
-func (e events) Less(i, j int) bool {
-	if e[i].chr != e[j].chr {
-		return e[i].chr < e[j].chr
-	}
-
-	if e[i].pos != e[j].pos {
-		return e[i].pos < e[j].pos
-	}
-
-	if e[i].start != e[j].start {
-		return e[i].start == false // end comes first
-	}
-
-	return true // arbitrary
-}
-
-func (e events) Swap(i, j int) {
-	e[i], e[j] = e[j], e[i]
-}
-
-// ***** EVENT INDEXING *******************************************************
-
-// Maps from event name to count.
-type eventCounter map[string]int
-
-// Holds names of events.
-type eventSet map[string]struct{}
-
-// Holds event names that are present starting from pos up to the next set.
-type eventSetPos struct {
-	chr   string
-	pos   int
-	names eventSet
-}
-
-type index []*eventSetPos
-
-// Events are assumed to be sorted.
-func (e events) index() index {
-	var result []*eventSetPos
-	var counter eventCounter
-
-	for _, evt := range e {
-		// Check if new chromosome
-		if len(result) == 0 || result[len(result)-1].chr != evt.chr {
-			// Reset counter
-			counter = make(map[string]int)
+	sort.Slice(events, func(i, j int) bool {
+		return eventLess(events[i], events[j])
+	})
+	var intervals []interval
+	idxs := map[int]struct{}{}
+	var pos int
+	for i, e := range events {
+		if i == 0 {
+			pos = e.pos
 		}
-
-		// Start -> increment
-		if evt.start {
-			counter[evt.name]++
-
-			// If created new event
-			if counter[evt.name] == 1 {
-				result = append(result, &eventSetPos{evt.chr, evt.pos,
-					counter.set()})
-			}
-
-			// End -> decrement
+		if e.pos != pos {
+			intervals = append(intervals, interval{pos, keys(idxs)})
+			pos = e.pos
+		}
+		if e.start {
+			idxs[e.idx] = struct{}{}
 		} else {
-			counter[evt.name]--
-
-			// If deleted an event
-			if counter[evt.name] == 0 {
-				result = append(result, &eventSetPos{evt.chr, evt.pos,
-					counter.set()})
-			}
-
-			// If negative, we have a problem
-			if counter[evt.name] == -1 {
-				panic(fmt.Sprintf("-1 event count at (%s,%d): %s",
-					evt.chr, evt.pos, evt.name))
-			}
+			delete(idxs, e.idx)
 		}
 	}
-
-	return result
+	intervals = append(intervals, interval{pos, keys(idxs)})
+	return &Index{intervals}
 }
 
-func (e eventCounter) set() eventSet {
-	result := make(map[string]struct{})
-
-	for name := range e {
-		if e[name] > 0 {
-			result[name] = struct{}{}
-		}
-	}
-
-	return result
-}
-
-// Returns the names of all events that overlap
-func (idx index) search(chr string, start int, end int) eventSet {
-	// Search
-	i := sort.Search(len(idx), func(a int) bool {
-		return idx[a].chr > chr || (idx[a].chr == chr && idx[a].pos > start)
-	}) - 1
-
-	if i == -1 {
-		i = 0
-	}
-
-	result := make(map[string]struct{})
-
-	for ; idx[i].chr < chr || (idx[i].chr == chr && idx[i].pos <= end); i++ {
-		if idx[i].chr != chr {
-			continue
-		}
-
-		for name := range idx[i].names {
-			result[name] = struct{}{}
-		}
-	}
-
-	return result
-}
-
-// Returns one arbitrary event from the set. If empty, returns an empty string.
-func (e eventSet) event() string {
-	for name := range e {
-		return name
-	}
-	return ""
-}
-
-// ***** REGION FILE PROCESSING ***********************************************
-
-func processFile(in string, out string, idx index, prior []string) error {
-	// Buffered i/o.
-	var bout *bufio.Writer
-	var scanner *bed.Scanner
-
-	// Open files
-	if in == "" {
-		scanner = bed.NewScanner(os.Stdin)
-	} else {
-		fin, err := os.Open(in)
-		if err != nil {
-			return err
-		}
-		defer fin.Close()
-
-		scanner = bed.NewScanner(fin)
-	}
-
-	if out == "" {
-		bout = bufio.NewWriter(os.Stdout)
-	} else {
-		fout, err := os.Create(out)
-		if err != nil {
-			return err
-		}
-		defer fout.Close()
-
-		bout = bufio.NewWriter(fout)
-	}
-
-	defer bout.Flush()
-
-	// Iterate over lines
-	for scanner.Scan() {
-		// Look up
-		b := scanner.Bed()
-		eSet := idx.search(b.Chr, b.Start, b.End)
-		var name string
-		found := false
-
-		// Pick by priority
-		for _, p := range prior {
-			if _, ok := eSet[p]; ok {
-				name = p
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			name = eSet.event()
-		}
-
-		// Print
-		fmt.Fprintf(bout, "%s\t%s\n", scanner.Text(), name)
-	}
-
-	// If no error, will return nil
-	return scanner.Err()
-}
-
-// ***** ARGUMENTS *************************************************************
-
-var args struct {
-	eventFile string
-	inFile    string
-	outFile   string
-	prior     []string
-	extend    int
-	help      bool
-}
-
-func parseArgs() error {
-	if len(os.Args) == 1 {
-		args.help = true
+// At returns the intervals at position i. Returned values are the serial numbers of
+// the start-end pairs for which start[n] <= i < end[n].
+func (idx *Index) At(i int) []int {
+	at := sort.Search(len(idx.idx), func(j int) bool {
+		return idx.idx[j].start > i
+	})
+	if at == 0 {
 		return nil
 	}
-
-	// Parse command-line flags.
-	events := flag.String("e", "", "Input event file. "+
-		"Must be set. Structure: chromosome, start, end, name.")
-	in := flag.String("i", "", "Input bed file. Default is standard input.")
-	out := flag.String("o", "", "Output bed file. Default is standard output.")
-	extend := flag.Int("x", 0, "Extend each event by n bases in each direction.")
-	prior := flag.String("p", "", "Optional comma-separated events for when "+
-		"several overlap. The leftmost will be returned. "+
-		"Priorities for exons/introns: exon,intron,promoter,cpg_island")
-
-	flag.Parse()
-
-	// Check arguments.
-	if *events == "" {
-		return fmt.Errorf("Event file not set.")
-	}
-
-	if len(flag.Args()) != 0 {
-		return fmt.Errorf("Unexpected argument: %s", flag.Args()[0])
-	}
-
-	if *extend < 0 {
-		return fmt.Errorf("Bad extension value: %d. Must be at least 0.",
-			*extend)
-	}
-
-	if *prior != "" {
-		args.prior = strings.Split(*prior, ",")
-		for _, word := range args.prior {
-			if word == "" {
-				return fmt.Errorf("Empty words in priority are not allowed.")
-			}
-		}
-	}
-
-	args.eventFile = *events
-	args.inFile = *in
-	args.outFile = *out
-	args.extend = *extend
-
-	return nil
+	return cp(idx.idx[at-1].idxs) // Return a copy to keep the index read-only.
 }
 
-var help = `Crosses region files with 'events' such as introns, exons, LINEs etc.
+// A start or an end of an interval.
+type event struct {
+	idx   int
+	pos   int
+	start bool
+}
 
-Written by Amit Lavon (amitlavon1@gmail.com).
+// Compares 2 events for sorting.
+func eventLess(a, b event) bool {
+	if a.pos != b.pos {
+		return a.pos < b.pos
+	}
+	if a.start != b.start {
+		return !a.start // End comes before start
+	}
+	return a.idx < b.idx
+}
 
-Usage:
-regions [options] -e <event file>
+// The start of a piece with the intervals that intersect with it.
+type interval struct {
+	start int
+	idxs  []int
+}
 
-Accepted options:`
+// Returns the keys of a map, sorted.
+func keys(m map[int]struct{}) []int {
+	if len(m) == 0 {
+		return nil
+	}
+	result := make([]int, 0, len(m))
+	for k := range m {
+		result = append(result, k)
+	}
+	sort.Ints(result)
+	return result
+}
+
+// Copies an int slice.
+func cp(a []int) []int {
+	if a == nil {
+		return nil
+	}
+	result := make([]int, len(a))
+	copy(result, a)
+	return result
+}
