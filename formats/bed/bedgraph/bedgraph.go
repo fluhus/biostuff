@@ -1,6 +1,8 @@
 // Handles bed-graph file representation and parsing.
 package bedgraph
 
+// TODO(amit): Overhaul package.
+
 import (
 	"fmt"
 	"strconv"

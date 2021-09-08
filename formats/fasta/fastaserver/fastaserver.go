@@ -1,4 +1,4 @@
-// A server that serves fasta sequences.
+// Command fastaserver is a server that serves fasta sequences.
 package main
 
 import (

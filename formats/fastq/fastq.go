@@ -1,6 +1,8 @@
 // Package fastq deals with Fastq reading and writing.
 package fastq
 
+// TODO(amit): Add writing.
+
 import (
 	"bufio"
 	"bytes"

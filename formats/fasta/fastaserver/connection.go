@@ -8,6 +8,10 @@ import (
 	"github.com/fluhus/golgi/formats/fasta"
 )
 
+// TODO(amit): Return error codes on error.
+// TODO(amit): Put sequences in a map.
+// TODO(amit): Change reportf to debug.
+
 // Handles sequence requests.
 func sequenceHandler(w http.ResponseWriter, req *http.Request) {
 	report("Got sequence request.")

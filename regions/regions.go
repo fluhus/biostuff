@@ -1,5 +1,7 @@
 package main
 
+// TODO(amit): Make this a reusable package.
+
 import (
 	"bufio"
 	"flag"

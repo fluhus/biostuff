@@ -12,7 +12,7 @@ import (
 	"github.com/fluhus/gostuff/csvdec"
 )
 
-// TODO(amit): Add marshaling.
+// TODO(amit): Add writing.
 
 // A raw structure for the initial parsing using csvdec.
 type samRaw struct {

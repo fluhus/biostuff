@@ -2,20 +2,13 @@
 //
 // Input Format
 //
-// The package uses the format described in:
+// This package uses the format described in:
 // https://en.wikipedia.org/wiki/FASTA_format
 //
-// A valid fasta can have plain bases:
-//
-//  AAAAAATTTTTTCCCCCCGGGGGG
-//
-// Or have names separating the sequences, starting with '>':
-//
-//  >sequence1
-//  AAAAAATTTTTTCCCCCCGGGGGG
-//  >sequence2
-//  AAAAAATTTTTTCCCCCCGGGGGG
+// This package does not validate sequence characters.
 package fasta
+
+// TODO(amit): Add writing.
 
 import (
 	"bufio"
@@ -33,7 +26,7 @@ type Reader struct {
 	r *bufio.Reader
 }
 
-// NewReader returns a new reader for the given input.
+// NewReader returns a new reader for the given stream.
 func NewReader(r io.Reader) *Reader {
 	return &Reader{bufio.NewReader(r)}
 }

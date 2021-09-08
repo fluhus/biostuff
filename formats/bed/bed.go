@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// TODO(amit): Overhaul the package.
+// TODO(amit): Add writing.
+
 // A simple genomic region notation.
 type Bed struct {
 	Chr   string
