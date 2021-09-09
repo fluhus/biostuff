@@ -1,6 +1,4 @@
-// Package fasta deals with fasta parsing and representation.
-//
-// Input Format
+// Package fasta handles fasta I/O.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/FASTA_format
@@ -8,11 +6,15 @@
 // This package does not validate sequence characters.
 package fasta
 
-// TODO(amit): Add writing.
-
 import (
 	"bufio"
+	"bytes"
+	"fmt"
 	"io"
+)
+
+const (
+	textLineLen = 80
 )
 
 // Fasta is a single sequence in a fasta file.
@@ -21,12 +23,32 @@ type Fasta struct {
 	Sequence []byte // Sequence
 }
 
+// Text returns the textual representation of f in fasta format. Includes a trailing
+// new line. Always includes a name line, even for empty names. Sequence gets broken
+// down into lines of length 80.
+func (f *Fasta) Text() []byte {
+	n := 2 + len(f.Name) + len(f.Sequence) + (len(f.Sequence)+textLineLen-1)/textLineLen
+	buf := bytes.NewBuffer(make([]byte, 0, n))
+	fmt.Fprintf(buf, ">%s\n", f.Name)
+	for i := 0; i < len(f.Sequence); i += textLineLen {
+		to := i + textLineLen
+		if to > len(f.Sequence) {
+			to = len(f.Sequence)
+		}
+		fmt.Fprintf(buf, "%s\n", f.Sequence[i:to])
+	}
+	if buf.Len() != n {
+		panic(fmt.Sprintf("bad len: %v want %v", buf.Len(), n))
+	}
+	return buf.Bytes()
+}
+
 // A Reader reads sequences from a fasta stream.
 type Reader struct {
 	r *bufio.Reader
 }
 
-// NewReader returns a new reader for the given stream.
+// NewReader returns a new fasta reader that reads from r.
 func NewReader(r io.Reader) *Reader {
 	return &Reader{bufio.NewReader(r)}
 }

@@ -1,6 +1,8 @@
 package fasta
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"reflect"
 	"strings"
@@ -64,5 +66,26 @@ func TestNext_multiple(t *testing.T) {
 	}
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("ForEach(%q)=%v, want %v", input, got, want)
+	}
+}
+
+func TestText(t *testing.T) {
+	tests := []struct {
+		input *Fasta
+		want  string
+	}{
+		{&Fasta{[]byte("Hello"), []byte("ATGGCC")}, ">Hello\nATGGCC\n"},
+		{&Fasta{[]byte("Bye"), nil}, ">Bye\n"},
+		{&Fasta{[]byte("Howdy"), bytes.Repeat([]byte("AATTGGCC"), 25)},
+			fmt.Sprintf(">Howdy\n%s\n%s\n%s\n",
+				strings.Repeat("AATTGGCC", 10),
+				strings.Repeat("AATTGGCC", 10),
+				strings.Repeat("AATTGGCC", 5),
+			)},
+	}
+	for _, test := range tests {
+		if got := string(test.input.Text()); got != test.want {
+			t.Errorf("%v.Text()=%v, want %v", test.input, got, test.want)
+		}
 	}
 }

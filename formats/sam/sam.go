@@ -1,4 +1,7 @@
-// Package sam handles SAM files.
+// Package sam handles SAM I/O.
+//
+// This package uses the format described in:
+// https://en.wikipedia.org/wiki/SAM_(file_format)
 package sam
 
 import (
@@ -6,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -30,7 +34,7 @@ type samRaw struct {
 	Extra []string
 }
 
-// SAM represents a single SAM line.
+// SAM is a single line (alignment) in a SAM file.
 type SAM struct {
 	Qname string                 // Query name
 	Flag  int                    // Bitwise flag
@@ -44,6 +48,21 @@ type SAM struct {
 	Seq   string                 // Sequence
 	Qual  string                 // Phred qualities (ASCII)
 	Tags  map[string]interface{} // Typed optional tags.
+}
+
+// Text returns the textual representation of s in SAM format.
+// Includes a trailing new line.
+func (s *SAM) Text() string {
+	// TODO(amit): This can probably be optimized by avoiding Sprint and using
+	// specific convertion functions where needed.
+	fields := toStrings(
+		s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar, s.Rnext,
+		s.Pnext, s.Tlen, s.Seq, s.Qual, tagsToText(s.Tags),
+	)
+	if len(s.Tags) == 0 {
+		fields = fields[:len(fields)-1]
+	}
+	return strings.Join(fields, "\t") + "\n"
 }
 
 // Converts a raw SAM struct to an exported SAM struct.
@@ -76,7 +95,7 @@ type Reader struct {
 	h bool // Indicates that we are done reading the header.
 }
 
-// NewReader returns a new SAM reader.
+// NewReader returns a new SAM reader that reads from r.
 func NewReader(r io.Reader) *Reader {
 	var b *bufio.Reader
 	switch r := r.(type) {
@@ -188,4 +207,41 @@ func parseTags(values []string) (map[string]interface{}, error) {
 		}
 	}
 	return result, nil
+}
+
+// Returns the given tags in SAM format, sorted and tab-separated.
+func tagsToText(tags map[string]interface{}) string {
+	texts := make([]string, 0, len(tags))
+	for tag, val := range tags {
+		texts = append(texts, tagToText(tag, val))
+	}
+	sort.Strings(texts)
+	return strings.Join(texts, "\t")
+}
+
+// Returns the SAM format representation of the given tag.
+func tagToText(tag string, val interface{}) string {
+	switch val := val.(type) {
+	case byte:
+		return fmt.Sprintf("%v:A:%c", tag, val)
+	case int:
+		return fmt.Sprintf("%v:i:%v", tag, val)
+	case float64:
+		return fmt.Sprintf("%v:f:%v", tag, val)
+	case string:
+		return fmt.Sprintf("%v:Z:%v", tag, val)
+	case []byte:
+		return fmt.Sprintf("%v:H:%x", tag, val)
+	default:
+		panic(fmt.Sprintf("unsupported type for value %v", val))
+	}
+}
+
+// Converts arbitrary values to strings.
+func toStrings(a ...interface{}) []string {
+	result := make([]string, len(a))
+	for i := range a {
+		result[i] = fmt.Sprint(a[i])
+	}
+	return result
 }

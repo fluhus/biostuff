@@ -1,7 +1,10 @@
-// Package fastq deals with Fastq reading and writing.
+// Package fastq handles fastq I/O.
+//
+// This package uses the format described in:
+// https://en.wikipedia.org/wiki/FASTQ_format
+//
+// This package does not validate sequence and quality characters.
 package fastq
-
-// TODO(amit): Add writing.
 
 import (
 	"bufio"
@@ -10,19 +13,25 @@ import (
 	"io"
 )
 
-// Fastq represents a single Fastq entry.
+// Fastq is a single sequence in a fastq file.
 type Fastq struct {
 	Name     []byte // Entry name (without the '@')
 	Sequence []byte // Sequence as received
 	Quals    []byte // Qualities as received
 }
 
-// A Reader reads text from an input and returns Fastq objects.
+// Text returns the textual representation of f in fastq format.
+// Includes a trailing new line.
+func (f *Fastq) Text() []byte {
+	return []byte(fmt.Sprintf("@%s\n%s\n+\n%s\n", f.Name, f.Sequence, f.Quals))
+}
+
+// A Reader reads sequences from a fastq stream.
 type Reader struct {
 	s *bufio.Scanner
 }
 
-// NewReader returns a new Fastq reader.
+// NewReader returns a new fastq reader that reads from r.
 func NewReader(r io.Reader) *Reader {
 	return &Reader{s: bufio.NewScanner(r)}
 }

@@ -53,3 +53,11 @@ func TestNext_many(t *testing.T) {
 		t.Fatalf("ForEach(%q)=%v, want %v", input, got, want)
 	}
 }
+
+func TestText(t *testing.T) {
+	input := &Fastq{[]byte("Hello"), []byte("AGAGAG"), []byte("!@##@!")}
+	want := "@Hello\nAGAGAG\n+\n!@##@!\n"
+	if got := string(input.Text()); got != want {
+		t.Fatalf("%v.Text()=%v want %v", input, got, want)
+	}
+}

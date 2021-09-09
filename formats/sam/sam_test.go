@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -121,5 +122,19 @@ func TestDecoder_tags(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Next()=%v, want %v", got, want)
+	}
+}
+
+func TestText(t *testing.T) {
+	input := "GGCGTT\t0\tbvu:BVU_3729\t38\t255\t24M\t*\t0\t0\t" +
+		"FADFNAKNNKKNLHDCNEYMNNDE\t*AS:i:44\tMD:Z:14G3C5\tNM:i:2\t" +
+		"ZE:f:1.07e-05\tZF:i:-3\tZI:i:91\tZL:i:116\tZR:i:104\tZS:i:72\n"
+	r := NewReader(strings.NewReader(input))
+	sm, err := r.Next()
+	if err != nil {
+		t.Fatalf("Next() failed: %v", err)
+	}
+	if got := sm.Text(); got != input {
+		t.Fatalf("%v.Text()=%v want %v", sm, got, input)
 	}
 }
