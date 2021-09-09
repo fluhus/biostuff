@@ -5,12 +5,13 @@
 package bed
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
 
-// TODO(amit): Overhaul the package.
 // TODO(amit): Add writing.
 
 const (
@@ -19,6 +20,7 @@ const (
 	NoStrand    = "."
 )
 
+// BED is a single line in a BED file.
 type BED struct {
 	Chrom       string
 	ChromStart  int
@@ -34,6 +36,7 @@ type BED struct {
 	BlockStarts []int
 }
 
+// Parses textual fields into a struct. Returns the number of parsed fields.
 func parseLine(fields []string) (*BED, int, error) {
 	n := len(fields)
 	if n < 3 || n > 12 {
@@ -125,4 +128,27 @@ func parseLine(fields []string) (*BED, int, error) {
 	}
 
 	return bed, n, nil
+}
+
+// A Reader reads and parses BED lines.
+type Reader struct {
+	r *csv.Reader
+}
+
+// NewReader returns a new BED reader that reads from r.
+func NewReader(r io.Reader) *Reader {
+	cr := csv.NewReader(r)
+	cr.Comma = '\t'
+	return &Reader{cr}
+}
+
+// Next returns the next BED line, and the number of fields that were found.
+// That number of fields will be populated in the result BED, by order of appearance.
+// The rest will have zero values.
+func (r *Reader) Next() (*BED, int, error) {
+	line, err := r.r.Read()
+	if err != nil {
+		return nil, 0, err
+	}
+	return parseLine(line)
 }

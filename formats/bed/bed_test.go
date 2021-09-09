@@ -1,7 +1,9 @@
 package bed
 
 import (
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -72,5 +74,25 @@ func TestParseLine_bad(t *testing.T) {
 	cp[10] += ",200" // Bad block starts
 	if got, _, err := parseLine(cp); err == nil {
 		t.Fatalf("parseLine(%v)=%v want error", cp, got)
+	}
+}
+
+func TestReader(t *testing.T) {
+	input := "chr1\t10\t20\tHello\t150\t+\t11\t13\t50,100,150\t2\t40,60\t100,200\n"
+	want := &BED{"chr1", 10, 20, "Hello", 150, "+", 11, 13, [3]byte{50, 100, 150},
+		2, []int{40, 60}, []int{100, 200}}
+	r := NewReader(strings.NewReader(input))
+	got, n, err := r.Next()
+	if err != nil {
+		t.Fatalf("Next() failed: %v", err)
+	}
+	if n != 12 {
+		t.Errorf("Next() n=%v want %v", n, 12)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Next()=%v want %v", got, want)
+	}
+	if got, n, err := r.Next(); err != io.EOF {
+		t.Errorf("Next()=%v %v %v want EOF", got, n, err)
 	}
 }
