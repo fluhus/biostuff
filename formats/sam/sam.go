@@ -88,7 +88,7 @@ func fromRaw(raw *samRaw) (*SAM, error) {
 	return result, nil
 }
 
-// Reader reads and parses SAM lines.
+// A Reader reads and parses SAM lines.
 type Reader struct {
 	r *bufio.Reader
 	d *csvdec.Decoder
