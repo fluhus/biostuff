@@ -14,6 +14,7 @@ import (
 
 // TODO(amit): Add writing.
 
+// Valid values for the strand field.
 const (
 	PlusStrand  = "+"
 	MinusStrand = "-"

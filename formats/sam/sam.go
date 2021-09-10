@@ -54,7 +54,7 @@ type SAM struct {
 // Includes a trailing new line.
 func (s *SAM) Text() string {
 	// TODO(amit): This can probably be optimized by avoiding Sprint and using
-	// specific convertion functions where needed.
+	// specific conversion functions where needed.
 	fields := toStrings(
 		s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar, s.Rnext,
 		s.Pnext, s.Tlen, s.Seq, s.Qual, tagsToText(s.Tags),
