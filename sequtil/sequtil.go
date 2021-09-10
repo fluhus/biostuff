@@ -43,49 +43,6 @@ func Iton(num int) byte {
 	}
 }
 
-// NgramCounts returns the n-gram count vector for the given sequence.
-func NgramCounts(n int, sequence []byte) []int {
-	// Check input.
-	if n < 1 || n > 10 {
-		panic(fmt.Sprintf("Bad n: %d", n))
-	}
-
-	// Calculate size of result.
-	rsize := 1
-	for i := 0; i < n; i++ {
-		rsize *= 4 // For 4 letters in DNA
-	}
-
-	// Initialize result.
-	result := make([]int, rsize)
-
-	// Count n-grams.
-	ngram := 0
-	lastBad := n // Distance to last bad nucleotide
-	for i := range sequence {
-		// Nucleotide index.
-		ntoi := Ntoi(sequence[i])
-
-		// Check if bad.
-		if ntoi == -1 {
-			lastBad = 0
-			ntoi = 0
-		}
-
-		// n-gram index.
-		ngram = (ngram*4)%rsize + Ntoi(sequence[i])
-
-		// Increment only if went over a whole n-gram and no bad nucleotide.
-		if i >= (n-1) && lastBad >= n {
-			result[ngram]++
-		}
-
-		lastBad++
-	}
-
-	return result
-}
-
 // ReverseComplement writes to dst the reverse complement of src.
 // Characters not in "aAcCgGtTnN" will cause a panic.
 func ReverseComplement(dst, src []byte) {
