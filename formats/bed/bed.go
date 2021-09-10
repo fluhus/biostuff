@@ -1,5 +1,7 @@
 // Package bed handles BED I/O.
 //
+// Format
+//
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/BED_(file_format)
 package bed
@@ -24,8 +26,8 @@ const (
 // BED is a single line in a BED file.
 type BED struct {
 	Chrom       string
-	ChromStart  int
-	ChromEnd    int
+	ChromStart  int // 0-based
+	ChromEnd    int // 0-based exclusive
 	Name        string
 	Score       int
 	Strand      string
@@ -33,8 +35,8 @@ type BED struct {
 	ThickEnd    int
 	ItemRGB     [3]byte
 	BlockCount  int
-	BlockSizes  []int
-	BlockStarts []int
+	BlockSizes  []int // Length should match BlockCount
+	BlockStarts []int // Length should match BlockCount
 }
 
 // Parses textual fields into a struct. Returns the number of parsed fields.
