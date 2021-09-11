@@ -1,4 +1,4 @@
-// Package fasta handles fasta I/O.
+// Package fasta parses fasta files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/FASTA_format

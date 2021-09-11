@@ -1,4 +1,4 @@
-// Package fastq handles fastq I/O.
+// Package fastq parses fastq files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/FASTQ_format

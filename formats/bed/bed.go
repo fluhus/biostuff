@@ -1,6 +1,4 @@
-// Package bed handles BED I/O.
-//
-// Format
+// Package bed parses BED files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/BED_(file_format)

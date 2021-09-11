@@ -1,7 +1,7 @@
-// Package sam handles SAM I/O.
+// Package sam parses SAM files.
 //
-// This package uses the format described in
-// https://en.wikipedia.org/wiki/SAM_(file_format).
+// This package uses the format described in:
+// https://en.wikipedia.org/wiki/SAM_(file_format)
 package sam
 
 import (
