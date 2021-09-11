@@ -8,32 +8,19 @@ import (
 	"github.com/fluhus/golgi/formats/fasta"
 )
 
-// TODO(amit): Return error codes on error.
 // TODO(amit): Put sequences in a map.
-// TODO(amit): Change reportf to debug.
 
 // Handles sequence requests.
 func sequenceHandler(w http.ResponseWriter, req *http.Request) {
-	report("Got sequence request.")
-
 	chr := req.FormValue("chr")
 	startS := req.FormValue("start")
 	lengthS := req.FormValue("length")
 
+	report("Got sequence request", req.Form)
+
 	if chr == "" {
-		fmt.Fprintf(w, "Error: Empty chromosome name.")
-		return
-	}
-
-	start, err := strconv.Atoi(startS)
-	if err != nil {
-		fmt.Fprintf(w, "Error: Bad start position: '%s'", startS)
-		return
-	}
-
-	length, err := strconv.Atoi(lengthS)
-	if err != nil {
-		fmt.Fprintf(w, "Error: Bad length: '%s'", lengthS)
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error: empty chromosome name")
 		return
 	}
 
@@ -42,40 +29,65 @@ func sequenceHandler(w http.ResponseWriter, req *http.Request) {
 	for _, e := range fa {
 		if string(e.Name) == chr {
 			entry = e
+			break
 		}
 	}
 
 	if entry == nil {
-		fmt.Fprintf(w, "Error: No such chromosome: '%s'.", chr)
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, "Error: no such chromosome: %q", chr)
 		return
 	}
 
-	// Check positions.
+	start := 0
+	if startS != "" {
+		var err error
+		start, err = strconv.Atoi(startS)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, "Error: bad start position: %q", startS)
+			return
+		}
+	}
+
+	if start >= len(entry.Sequence) || start < 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error: start %d exceeds chromosome bounds (max %d)",
+			start, len(entry.Sequence))
+		return
+	}
+
+	length := len(entry.Sequence) - start
+	if lengthS != "" {
+		var err error
+		length, err = strconv.Atoi(lengthS)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, "Error: bad length: %q", lengthS)
+			return
+		}
+	}
+
 	if length < 1 {
-		fmt.Fprintf(w, "Error: Invalid length: %d.", length)
-		return
-	}
-
-	if start < 0 {
-		fmt.Fprintf(w, "Error: Invalid start position: %d.", start)
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error: invalid length: %d", length)
 		return
 	}
 
 	if start+length > len(entry.Sequence) {
-		fmt.Fprintf(w, "Error: Position exceeds chromosome length (max %d).",
-			len(entry.Sequence))
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error: start %d + length %d exceed chromosome length "+
+			"(max %d)", start, length, len(entry.Sequence))
 		return
 	}
 
-	// Everything is ok!
-	reportf("chr=%s start=%d len=%d\n", chr, start, length)
 	seq := entry.Sequence[start : start+length]
 	w.Write(seq)
 }
 
 // Handles metadata requests.
 func metaHandler(w http.ResponseWriter, req *http.Request) {
-	reportf("Got meta request.")
+	reportf("Got meta request")
 	for _, entry := range fa {
 		fmt.Fprintf(w, "%s: %d\n", entry.Name, len(entry.Sequence))
 	}

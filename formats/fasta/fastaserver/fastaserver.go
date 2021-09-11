@@ -1,10 +1,18 @@
-// Command fastaserver is a server that serves fasta sequences.
+// Command fastaserver is a server that serves sequences from a fasta file.
+//
+// Requests to /meta return the available sequences and their lengths.
+//
+// Requests to /sequence return sequences. Parameters are:
+//  chr: chromosome name (required)
+//  start: sequence start position, 0-based (default: 0)
+//  length: number of bases from start to return (default: all)
 package main
 
 import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -12,68 +20,51 @@ import (
 	"github.com/fluhus/golgi/formats/fasta"
 )
 
+var (
+	port    = flag.String("p", "", "Port number to listen on.")
+	verbose = flag.Bool("v", false, "Log incoming requests.")
+	file    = flag.String("f", "", "Input fasta file.")
+)
+
 func main() {
-	// Handle command-line arguments.
-	if len(os.Args) == 1 { // No arguments
-		fmt.Println("A server for querying fasta files.")
-		fmt.Println("\nUsage:\nfastaserver [options] myfile.fasta")
-		fmt.Println("\nOptions:")
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-	parseArguments()
-	if args.err != nil {
-		fmt.Println("Error parsing arguments:", args.err)
+	if err := parseArguments(); err != nil {
+		fmt.Println("Error parsing arguments:", err)
 		os.Exit(1)
 	}
 
 	// Read fasta file.
-	fmt.Println("Reading fasta...")
+	log.Println("Reading fasta...")
 	now := time.Now()
 	var err error
-	fa, err = readFastaFile(args.file)
+	fa, err = readFastaFile(*file)
 	if err != nil {
 		fmt.Println("Error reading fasta:", err)
 		os.Exit(2)
 	}
-	reportf("Took %v.\n", time.Since(now))
+	log.Println("Took", time.Since(now))
 
-	fmt.Print("Ready! Listening on port ", *args.port, ". Hit ctrl+C to"+
-		" exit.\n")
+	log.Println("Ready! Listening on port", *port)
+	log.Println("Hit ctrl+C to exit")
 
 	// Listen on port.
 	http.HandleFunc("/sequence", sequenceHandler)
 	http.HandleFunc("/meta", metaHandler)
-	err = http.ListenAndServe(":"+*args.port, nil)
+	err = http.ListenAndServe(":"+*port, nil)
 	if err != nil {
 		fmt.Println("Error listening:", err)
 	}
 }
 
-var args struct {
-	port    *string
-	verbose *bool
-	file    string
-	err     error
-}
-
-// Parses command-line arguments and places everything in args.
-// args.err will be non-nil if a parsing error occurred.
-func parseArguments() {
-	args.port = flag.String("port", "1912", "Port number to listen on.")
-	args.verbose = flag.Bool("v", false, "Print out lots of stuff.")
+// Parses command-line arguments.
+func parseArguments() error {
 	flag.Parse()
-
-	if len(flag.Args()) == 0 {
-		args.err = fmt.Errorf("no fasta input given")
-		return
+	if *file == "" {
+		return fmt.Errorf("no fasta input given")
 	}
-	if len(flag.Args()) == 0 {
-		args.err = fmt.Errorf("too many arguments")
-		return
+	if *port == "" {
+		return fmt.Errorf("no port given")
 	}
-
-	args.file = flag.Arg(0)
+	return nil
 }
 
 // Returns a fasta object from the given file.
@@ -99,16 +90,16 @@ func readFastaFile(file string) ([]*fasta.Fasta, error) {
 // All fasta data will be here.
 var fa []*fasta.Fasta
 
-// Print if verbose.
+// Log if verbose.
 func report(a ...interface{}) {
-	if *args.verbose {
-		fmt.Println(a...)
+	if *verbose {
+		log.Println(a...)
 	}
 }
 
-// Printf if verbose.
+// Logf if verbose.
 func reportf(s string, a ...interface{}) {
-	if *args.verbose {
-		fmt.Printf(s, a...)
+	if *verbose {
+		log.Printf(s, a...)
 	}
 }
