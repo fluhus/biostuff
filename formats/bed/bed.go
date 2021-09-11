@@ -2,17 +2,20 @@
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/BED_(file_format)
+//
+// Limitations
+//
+// Currently BED headers are not supported.
 package bed
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 )
-
-// TODO(amit): Add writing.
 
 // Valid values for the strand field.
 const (
@@ -35,6 +38,74 @@ type BED struct {
 	BlockCount  int
 	BlockSizes  []int // Length should match BlockCount
 	BlockStarts []int // Length should match BlockCount
+}
+
+// Returns the first n fields as strings.
+func (b *BED) toStrings(n int) (fields []string) {
+	fields = make([]string, n)
+	fields[0] = b.Chrom
+	fields[1] = fmt.Sprint(b.ChromStart)
+	fields[2] = fmt.Sprint(b.ChromEnd)
+	if n == 3 {
+		return
+	}
+	fields[3] = b.Name
+	if n == 4 {
+		return
+	}
+	fields[4] = fmt.Sprint(b.Score)
+	if n == 5 {
+		return
+	}
+	fields[5] = b.Strand
+	if n == 6 {
+		return
+	}
+	fields[6] = fmt.Sprint(b.ThickStart)
+	if n == 7 {
+		return
+	}
+	fields[7] = fmt.Sprint(b.ThickEnd)
+	if n == 8 {
+		return
+	}
+	fields[8] = fmt.Sprintf("%v,%v,%v", b.ItemRGB[0], b.ItemRGB[1], b.ItemRGB[2])
+	if n == 9 {
+		return
+	}
+	fields[9] = fmt.Sprint(b.BlockCount)
+	if n == 10 {
+		return
+	}
+	strs := make([]string, len(b.BlockSizes))
+	for i := range strs {
+		strs[i] = fmt.Sprint(b.BlockSizes[i])
+	}
+	fields[10] = strings.Join(strs, ",")
+	if n == 11 {
+		return
+	}
+	strs = make([]string, len(b.BlockStarts))
+	for i := range strs {
+		strs[i] = fmt.Sprint(b.BlockStarts[i])
+	}
+	fields[11] = strings.Join(strs, ",")
+	return
+}
+
+// Text returns the textual representation of b in BED format. Encodes the first n
+// fields, where n is between 3 and 12. Includes a trailing new line.
+func (b *BED) Text(n int) []byte {
+	if n < 3 || n > 12 {
+		panic(fmt.Sprintf("bad n: %v, should be 3-12", n))
+	}
+	strs := b.toStrings(n)
+	buf := bytes.NewBuffer(nil)
+	w := csv.NewWriter(buf)
+	w.Comma = '\t'
+	w.Write(strs)
+	w.Flush()
+	return buf.Bytes()
 }
 
 // Parses textual fields into a struct. Returns the number of parsed fields.
@@ -140,13 +211,17 @@ type Reader struct {
 func NewReader(r io.Reader) *Reader {
 	cr := csv.NewReader(r)
 	cr.Comma = '\t'
+	cr.Comment = '#'
 	return &Reader{cr}
 }
 
-// Next returns the next BED line, and the number of fields that were found.
-// That number of fields will be populated in the result BED, by order of appearance.
-// The rest will have zero values.
-func (r *Reader) Next() (*BED, int, error) {
+// Next returns the next BED line, and n as the number of fields that were found.
+// The first n fields will be populated in the result BED, the rest will have zero
+// values. n is always between 3 and 12.
+//
+// For example if n=5, then the populated fields are Chrom, ChromStart, ChromEnd,
+// Name and Score.
+func (r *Reader) Next() (b *BED, n int, err error) {
 	line, err := r.r.Read()
 	if err != nil {
 		return nil, 0, err

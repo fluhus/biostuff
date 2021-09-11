@@ -96,3 +96,15 @@ func TestReader(t *testing.T) {
 		t.Errorf("Next()=%v %v %v want EOF", got, n, err)
 	}
 }
+
+func TestText(t *testing.T) {
+	want := "chr1\t10\t20\tHello\t150\t+\t11\t13\t50,100,150\t2\t40,60\t100,200\n"
+	input := &BED{"chr1", 10, 20, "Hello", 150, "+", 11, 13, [3]byte{50, 100, 150},
+		2, []int{40, 60}, []int{100, 200}}
+	if got := input.Text(12); string(got) != want {
+		t.Fatalf("%v.Text(12)=%q, want %q", input, got, want)
+	}
+	if got := input.Text(6); string(got) != want[:22]+"\n" {
+		t.Fatalf("%v.Text(6)=%q, want %q", input, got, want[:22]+"\n")
+	}
+}
