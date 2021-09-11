@@ -75,15 +75,18 @@ func (t *Trie) Delete(b []byte) bool {
 	return true
 }
 
+// A trie with exported fields for marshaling.
 type marshalTrie struct {
 	M map[byte]*Trie
 }
 
+// MarshalJSON implements the json.Marshaler interface.
 func (t *Trie) MarshalJSON() ([]byte, error) {
 	m := marshalTrie{t.m}
 	return json.Marshal(m)
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (t *Trie) UnmarshalJSON(data []byte) error {
 	m := marshalTrie{t.m}
 	err := json.Unmarshal(data, &m)
