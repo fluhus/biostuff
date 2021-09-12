@@ -24,8 +24,8 @@
 // The U Nucleotide
 //
 // This package currently ignores the existence of uracil. Adding support for uracil
-// means increasing the complexity of the API without adding new capabilities. Users
-// can substitute U's with T's before calling the functions in this package.
+// means increasing the complexity of the API without adding new capabilities. The
+// current solution is to substitute U's with T's before calling this package.
 package sequtil
 
 import (
