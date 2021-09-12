@@ -1,4 +1,31 @@
-// Package sequtil provides genetic sequence processing functions.
+// Package sequtil provides functions for processing genetic sequences.
+//
+// Data Type For Sequences
+//
+// In this repository, sequences are represented as byte slices. This is meant
+// to keep them familiar and predictable. This package provides a buffet of functions
+// for manipulating sequences, rather than having a dedicated sequence type with
+// methods.
+//
+// Mutating Sequences
+//
+// Mutations can be made using basic slice operations.
+//  // Substitution
+//  seq[4] = 'G'
+//
+//  // Deletion of bases 10-12 (including 12)
+//  copy(seq[10:], seq[13:])
+//  seq = seq[:len(seq)-3]
+//
+//  // Insertion at position 4
+//  insert := []byte{...}
+//  seq = append(append(append([]byte{}, seq[:4]...), insert...), seq[4:]...)
+//
+// The U Nucleotide
+//
+// This package currently ignores the existence of uracil. Adding support for uracil
+// means increasing the complexity of the API without adding new capabilities. Users
+// can substitute U's with T's before calling the functions in this package.
 package sequtil
 
 import (
