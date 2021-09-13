@@ -160,9 +160,9 @@ func (r *Reader) Next() (*SAM, error) {
 func parseTags(values []string) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 	for _, f := range values {
-		parts := strings.SplitN(f, ":", 3)
-		if len(parts) < 3 {
-			return nil, fmt.Errorf("tag doesn't have at least 3 colons: %v", f)
+		parts, err := splitTag(f)
+		if err != nil {
+			return nil, err
 		}
 		switch parts[1] {
 		case "A":
@@ -206,6 +206,29 @@ func parseTags(values []string) (map[string]interface{}, error) {
 				parts[1], f)
 		}
 	}
+	return result, nil
+}
+
+// Splits a SAM tag by colon. Used instead of strings.SpliN for performance.
+func splitTag(tag string) ([3]string, error) {
+	colon1, colon2 := -1, -1
+	for i, c := range tag {
+		if c == ':' {
+			if colon1 == -1 {
+				colon1 = i
+			} else {
+				colon2 = i
+				break
+			}
+		}
+	}
+	var result [3]string
+	if colon2 == -1 {
+		return result, fmt.Errorf("tag doesn't have at least 3 colons: %q", tag)
+	}
+	result[0] = tag[:colon1]
+	result[1] = tag[colon1+1 : colon2]
+	result[2] = tag[colon2+1:]
 	return result, nil
 }
 
