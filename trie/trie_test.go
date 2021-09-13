@@ -9,7 +9,7 @@ import (
 )
 
 func TestTrie(t *testing.T) {
-	tr := NewTrie()
+	tr := New()
 	tr.Add([]byte("amit"))
 	tr.Add([]byte("amut"))
 	tr.Add([]byte("lavon"))
@@ -31,7 +31,7 @@ func TestTrie(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	tr := NewTrie()
+	tr := New()
 	tr.Add([]byte("amit"))
 	tr.Add([]byte("amut"))
 	tr.Add([]byte("lavon"))
@@ -62,14 +62,14 @@ func TestDelete(t *testing.T) {
 }
 
 func TestJSON(t *testing.T) {
-	tr := NewTrie()
+	tr := New()
 	tr.Add([]byte("Hello"))
 	tr.Add([]byte("Henno"))
 	j, err := json.Marshal(tr)
 	if err != nil {
 		t.Fatalf("Marshal(%v) failed: %v", tr, err)
 	}
-	got := NewTrie()
+	got := New()
 	if err := json.Unmarshal(j, got); err != nil {
 		t.Fatalf("Unmarshal(%s) failed: %v", j, err)
 	}
@@ -82,7 +82,7 @@ func TestJSON(t *testing.T) {
 func BenchmarkAdd(b *testing.B) {
 	for _, k := range []int{10, 20} {
 		b.Run(fmt.Sprint(k), func(b *testing.B) {
-			tr := NewTrie()
+			tr := New()
 			data := make([]byte, k*b.N)
 			rand.Read(data)
 			b.ResetTimer()
@@ -94,7 +94,7 @@ func BenchmarkAdd(b *testing.B) {
 }
 
 func BenchmarkHas(b *testing.B) {
-	tr := NewTrie()
+	tr := New()
 	text := []byte("aaaaaaaaaaaaaaaaaaa")
 	tr.Add(text)
 	b.ResetTimer()

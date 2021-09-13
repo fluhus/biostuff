@@ -8,13 +8,13 @@ package trie
 import "encoding/json"
 
 // A Trie is a prefix tree that supports lookups.
-// A zero value trie is invalid; use NewTrie to create a new instance.
+// A zero value trie is invalid; use New to create a new instance.
 type Trie struct {
 	m map[byte]*Trie
 }
 
-// NewTrie returns an empty trie.
-func NewTrie() *Trie {
+// New returns an empty trie.
+func New() *Trie {
 	return &Trie{m: map[byte]*Trie{}}
 }
 
@@ -25,7 +25,7 @@ func (t *Trie) Add(b []byte) {
 	for len(b) > 0 {
 		next := cur.m[b[0]]
 		if next == nil {
-			next = NewTrie()
+			next = New()
 			cur.m[b[0]] = next
 		}
 		cur = next
