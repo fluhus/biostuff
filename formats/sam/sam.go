@@ -55,14 +55,13 @@ type SAM struct {
 func (s *SAM) Text() string {
 	// TODO(amit): This can probably be optimized by avoiding Sprint and using
 	// specific conversion functions where needed.
-	fields := toStrings(
-		s.Qname, s.Flag, s.Rname, s.Pos, s.Mapq, s.Cigar, s.Rnext,
-		s.Pnext, s.Tlen, s.Seq, s.Qual, tagsToText(s.Tags),
-	)
-	if len(s.Tags) == 0 {
-		fields = fields[:len(fields)-1]
+	fields := []string{
+		s.Qname, strconv.Itoa(s.Flag), s.Rname, strconv.Itoa(s.Pos),
+		strconv.Itoa(s.Mapq), s.Cigar, s.Rnext, strconv.Itoa(s.Pnext),
+		strconv.Itoa(s.Tlen), s.Seq, s.Qual,
 	}
-	return strings.Join(fields, "\t") + "\n"
+	tags := tagsToText(s.Tags)
+	return strings.Join(append(fields, tags...), "\t") + "\n"
 }
 
 // Converts a raw SAM struct to an exported SAM struct.
@@ -233,38 +232,29 @@ func splitTag(tag string) ([3]string, error) {
 }
 
 // Returns the given tags in SAM format, sorted and tab-separated.
-func tagsToText(tags map[string]interface{}) string {
+func tagsToText(tags map[string]interface{}) []string {
 	texts := make([]string, 0, len(tags))
 	for tag, val := range tags {
 		texts = append(texts, tagToText(tag, val))
 	}
 	sort.Strings(texts)
-	return strings.Join(texts, "\t")
+	return texts
 }
 
 // Returns the SAM format representation of the given tag.
 func tagToText(tag string, val interface{}) string {
 	switch val := val.(type) {
 	case byte:
-		return fmt.Sprintf("%v:A:%c", tag, val)
+		return tag + ":A:" + strconv.Itoa(int(val))
 	case int:
-		return fmt.Sprintf("%v:i:%v", tag, val)
+		return tag + ":i:" + strconv.Itoa(val)
 	case float64:
-		return fmt.Sprintf("%v:f:%v", tag, val)
+		return tag + ":f:" + strconv.FormatFloat(val, 'e', -1, 64)
 	case string:
-		return fmt.Sprintf("%v:Z:%v", tag, val)
+		return tag + ":Z:" + val
 	case []byte:
-		return fmt.Sprintf("%v:H:%x", tag, val)
+		return tag + ":H:" + hex.EncodeToString(val)
 	default:
 		panic(fmt.Sprintf("unsupported type for value %v", val))
 	}
-}
-
-// Converts arbitrary values to strings.
-func toStrings(a ...interface{}) []string {
-	result := make([]string, len(a))
-	for i := range a {
-		result[i] = fmt.Sprint(a[i])
-	}
-	return result
 }

@@ -138,3 +138,17 @@ func TestText(t *testing.T) {
 		t.Fatalf("%v.Text()=%v want %v", sm, got, input)
 	}
 }
+
+func BenchmarkText(b *testing.B) {
+	text := "GGCGTT\t0\tbvu:BVU_3729\t38\t255\t24M\t*\t0\t0\t" +
+		"FADFNAKNNKKNLHDCNEYMNNDE\t*AS:i:44\tMD:Z:14G3C5\tNM:i:2\t" +
+		"ZE:f:1.07e-05\tZF:i:-3\tZI:i:91\tZL:i:116\tZR:i:104\tZS:i:72\n"
+	sm, err := NewReader(strings.NewReader(text)).Next()
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		sm.Text()
+	}
+}
