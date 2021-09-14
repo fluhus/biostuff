@@ -157,7 +157,7 @@ func (r *Reader) Next() (*SAM, error) {
 
 // Returns a map from tag name to its parsed (typed) value.
 func parseTags(values []string) (map[string]interface{}, error) {
-	result := map[string]interface{}{}
+	result := make(map[string]interface{}, len(values))
 	for _, f := range values {
 		parts, err := splitTag(f)
 		if err != nil {
