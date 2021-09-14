@@ -3,8 +3,8 @@
 // Data Type For Sequences
 //
 // In this repository, sequences are represented as byte slices. This is meant
-// to keep them familiar and predictable. This package provides a buffet of functions
-// for manipulating sequences, rather than having a dedicated sequence type with
+// to keep them familiar and predictable. This design favors having a buffet of
+// functions for manipulating basic types, over having a dedicated sequence type with
 // methods.
 //
 // Mutating Sequences
@@ -26,6 +26,8 @@
 // This package currently ignores the existence of uracil. Adding support for uracil
 // means increasing the complexity of the API without adding new capabilities. The
 // current solution is to substitute U's with T's before calling this package.
+//
+// This may change in the future, keeping backward compatibility.
 package sequtil
 
 import (
@@ -48,13 +50,13 @@ func init() {
 }
 
 // Ntoi converts a nucleotide to an int.
-// Returns -1 for unknown nucleotides.
+// Aa:0 Cc:1 Gg:2 Tt:3. Other values return -1.
 func Ntoi(nuc byte) int {
 	return ntoi[nuc]
 }
 
 // Iton converts an int to a nucleotide character.
-// Returns 'N' for any value not in {0,1,2,3}.
+// 0:A 1:C 2:G 3:T. Other values return N.
 func Iton(num int) byte {
 	switch num {
 	case 0:
