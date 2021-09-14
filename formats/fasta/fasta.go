@@ -29,13 +29,16 @@ type Fasta struct {
 func (f *Fasta) Text() []byte {
 	n := 2 + len(f.Name) + len(f.Sequence) + (len(f.Sequence)+textLineLen-1)/textLineLen
 	buf := bytes.NewBuffer(make([]byte, 0, n))
-	fmt.Fprintf(buf, ">%s\n", f.Name)
+	buf.WriteByte('>')
+	buf.Write(f.Name)
+	buf.WriteByte('\n')
 	for i := 0; i < len(f.Sequence); i += textLineLen {
 		to := i + textLineLen
 		if to > len(f.Sequence) {
 			to = len(f.Sequence)
 		}
-		fmt.Fprintf(buf, "%s\n", f.Sequence[i:to])
+		buf.Write(f.Sequence[i:to])
+		buf.WriteByte('\n')
 	}
 	if buf.Len() != n {
 		panic(fmt.Sprintf("bad len: %v want %v", buf.Len(), n))

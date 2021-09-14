@@ -89,3 +89,12 @@ func TestText(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkText(b *testing.B) {
+	fa := &Fasta{Name: []byte("bla bla bla bla bla bla"),
+		Sequence: bytes.Repeat([]byte("a"), 1000)}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fa.Text()
+	}
+}
