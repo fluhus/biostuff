@@ -5,6 +5,8 @@
 //
 // Limitations
 //
+// Currently only tab delimiters are supported.
+//
 // Currently BED headers are not supported.
 package bed
 
