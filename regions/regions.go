@@ -49,8 +49,8 @@ func NewIndex(starts, ends []int) *Index {
 	return &Index{intervals}
 }
 
-// At returns the intervals at position i. Returned values are the serial numbers of
-// the start-end pairs for which start[n] <= i < end[n].
+// At returns the intervals that overlap with position i. Returned values are the
+// serial numbers of the start-end pairs for which starts[x] <= i < ends[x].
 func (idx *Index) At(i int) []int {
 	at := sort.Search(len(idx.idx), func(j int) bool {
 		return idx.idx[j].start > i
