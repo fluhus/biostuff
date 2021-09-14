@@ -23,7 +23,19 @@ type Fastq struct {
 // Text returns the textual representation of f in fastq format.
 // Includes a trailing new line.
 func (f *Fastq) Text() []byte {
-	return []byte(fmt.Sprintf("@%s\n%s\n+\n%s\n", f.Name, f.Sequence, f.Quals))
+	n := 6 + len(f.Name) + len(f.Sequence) + len(f.Quals)
+	buf := bytes.NewBuffer(make([]byte, 0, n))
+	buf.WriteByte('@')
+	buf.Write(f.Name)
+	buf.WriteByte('\n')
+	buf.Write(f.Sequence)
+	buf.WriteString("\n+\n")
+	buf.Write(f.Quals)
+	buf.WriteByte('\n')
+	if buf.Len() != n {
+		panic(fmt.Sprintf("bad length: %v expected %v", buf.Len(), n))
+	}
+	return buf.Bytes()
 }
 
 // A Reader reads sequences from a fastq stream.
