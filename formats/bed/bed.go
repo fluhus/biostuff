@@ -217,13 +217,13 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{cr}
 }
 
-// Next returns the next BED line, and n as the number of fields that were found.
+// Read returns the next BED line, and n as the number of fields that were found.
 // The first n fields will be populated in the result BED, the rest will have zero
 // values. n is always between 3 and 12.
 //
 // For example if n=5, then the populated fields are Chrom, ChromStart, ChromEnd,
 // Name and Score.
-func (r *Reader) Next() (b *BED, n int, err error) {
+func (r *Reader) Read() (b *BED, n int, err error) {
 	line, err := r.r.Read()
 	if err != nil {
 		return nil, 0, err

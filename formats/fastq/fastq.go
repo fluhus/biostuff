@@ -48,10 +48,10 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{s: bufio.NewScanner(r)}
 }
 
-// Next reads the next fastq entry from the reader.
+// Read reads the next fastq entry from the reader.
 // Returns a non-nil error if reading fails, or io.EOF if encountered end of
 // file. When EOF is returned, no fastq is available.
-func (r *Reader) Next() (*Fastq, error) {
+func (r *Reader) Read() (*Fastq, error) {
 	// Read name.
 	if !r.s.Scan() {
 		if r.s.Err() == nil {

@@ -82,7 +82,7 @@ func TestReader(t *testing.T) {
 	want := &BED{"chr1", 10, 20, "Hello", 150, "+", 11, 13, [3]byte{50, 100, 150},
 		2, []int{40, 60}, []int{100, 200}}
 	r := NewReader(strings.NewReader(input))
-	got, n, err := r.Next()
+	got, n, err := r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestReader(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Next()=%v want %v", got, want)
 	}
-	if got, n, err := r.Next(); err != io.EOF {
+	if got, n, err := r.Read(); err != io.EOF {
 		t.Errorf("Next()=%v %v %v want EOF", got, n, err)
 	}
 }

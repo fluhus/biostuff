@@ -10,7 +10,7 @@ import (
 func TestNext_simple(t *testing.T) {
 	input := "@hello\nAAATTTGG\n+\n!!!@@@!!"
 	want := &Fastq{[]byte("hello"), []byte("AAATTTGG"), []byte("!!!@@@!!")}
-	got, err := NewReader(strings.NewReader(input)).Next()
+	got, err := NewReader(strings.NewReader(input)).Read()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -27,7 +27,7 @@ func TestNext_bad(t *testing.T) {
 		"@hello\nAAA\n-\n!!!",
 	}
 	for _, input := range inputs {
-		if got, err := NewReader(strings.NewReader(input)).Next(); err == nil {
+		if got, err := NewReader(strings.NewReader(input)).Read(); err == nil {
 			t.Errorf("Next(%q)=%v, want fail", input, got)
 		}
 	}
@@ -43,7 +43,7 @@ func TestNext_many(t *testing.T) {
 	r := NewReader(strings.NewReader(input))
 	var fq *Fastq
 	var err error
-	for fq, err = r.Next(); err == nil; fq, err = r.Next() {
+	for fq, err = r.Read(); err == nil; fq, err = r.Read() {
 		got = append(got, fq)
 	}
 	if err != nil && err != io.EOF {

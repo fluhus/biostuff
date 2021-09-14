@@ -142,8 +142,8 @@ func (r *Reader) NextHeader() (string, error) {
 	return "@" + string(line), nil
 }
 
-// Next returns the next SAM line.
-func (r *Reader) Next() (*SAM, error) {
+// Read returns the next SAM line.
+func (r *Reader) Read() (*SAM, error) {
 	for !r.h {
 		r.NextHeader()
 	}

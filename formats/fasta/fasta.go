@@ -56,9 +56,9 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{bufio.NewReader(r)}
 }
 
-// Next reads a single fasta sequence from a stream. Returns EOF only if
+// Read reads a single fasta sequence from a stream. Returns EOF only if
 // nothing was read.
-func (r *Reader) Next() (*Fasta, error) {
+func (r *Reader) Read() (*Fasta, error) {
 	// States of the reader.
 	const (
 		stateStart    = iota // Beginning of input

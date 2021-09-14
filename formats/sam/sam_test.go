@@ -39,7 +39,7 @@ func TestReader(t *testing.T) {
 		"c", 2, "d", 5, 30, "32M", "e", 40, 50, "AAAA", "FFFF",
 		map[string]interface{}{},
 	}
-	got, err := r.Next()
+	got, err := r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestReader(t *testing.T) {
 		"f", 6, "g", 10, 60, "4D", "h", 70, 80, "TCTC", "!!!!",
 		map[string]interface{}{},
 	}
-	got, err = r.Next()
+	got, err = r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("Next()=%v, want %v", got, want)
 	}
 
-	_, err = r.Next()
+	_, err = r.Read()
 	if err != io.EOF {
 		t.Fatalf("Next() error=%v, want EOF", err)
 	}
@@ -75,7 +75,7 @@ func TestReader_skipHeader(t *testing.T) {
 		"c", 2, "d", 5, 30, "32M", "e", 40, 50, "AAAA", "FFFF",
 		map[string]interface{}{},
 	}
-	got, err := r.Next()
+	got, err := r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestReader_skipHeader(t *testing.T) {
 		"f", 6, "g", 10, 60, "4D", "h", 70, 80, "TCTC", "!!!!",
 		map[string]interface{}{},
 	}
-	got, err = r.Next()
+	got, err = r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestReader_skipHeader(t *testing.T) {
 		t.Fatalf("Next()=%v, want %v", got, want)
 	}
 
-	_, err = r.Next()
+	_, err = r.Read()
 	if err != io.EOF {
 		t.Fatalf("Next() error=%v, want EOF", err)
 	}
@@ -116,7 +116,7 @@ func TestDecoder_tags(t *testing.T) {
 		},
 	}
 
-	got, err := r.Next()
+	got, err := r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestText(t *testing.T) {
 		"FADFNAKNNKKNLHDCNEYMNNDE\t*AS:i:44\tMD:Z:14G3C5\tNM:i:2\t" +
 		"ZE:f:1.07e-05\tZF:i:-3\tZI:i:91\tZL:i:116\tZR:i:104\tZS:i:72\n"
 	r := NewReader(strings.NewReader(input))
-	sm, err := r.Next()
+	sm, err := r.Read()
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
@@ -143,7 +143,7 @@ func BenchmarkText(b *testing.B) {
 	text := "GGCGTT\t0\tbvu:BVU_3729\t38\t255\t24M\t*\t0\t0\t" +
 		"FADFNAKNNKKNLHDCNEYMNNDE\t*AS:i:44\tMD:Z:14G3C5\tNM:i:2\t" +
 		"ZE:f:1.07e-05\tZF:i:-3\tZI:i:91\tZL:i:116\tZR:i:104\tZS:i:72\n"
-	sm, err := NewReader(strings.NewReader(text)).Next()
+	sm, err := NewReader(strings.NewReader(text)).Read()
 	if err != nil {
 		b.Fatal(err)
 	}

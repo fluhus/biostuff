@@ -78,7 +78,7 @@ func readFastaFile(file string) ([]*fasta.Fasta, error) {
 
 	var fas []*fasta.Fasta
 	var fa *fasta.Fasta
-	for fa, err = r.Next(); err == nil; fa, err = r.Next() {
+	for fa, err = r.Read(); err == nil; fa, err = r.Read() {
 		fas = append(fas, fa)
 	}
 	if err != io.EOF {

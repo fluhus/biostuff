@@ -12,7 +12,7 @@ import (
 func TestNext_simple(t *testing.T) {
 	input := ">foo\nAaTtGnNngcCaN"
 	want := &Fasta{[]byte("foo"), []byte("AaTtGnNngcCaN")}
-	got, err := NewReader(strings.NewReader(input)).Next()
+	got, err := NewReader(strings.NewReader(input)).Read()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -24,7 +24,7 @@ func TestNext_simple(t *testing.T) {
 func TestNext_noName(t *testing.T) {
 	input := "AaTtGngcCaN"
 	want := &Fasta{nil, []byte("AaTtGngcCaN")}
-	got, err := NewReader(strings.NewReader(input)).Next()
+	got, err := NewReader(strings.NewReader(input)).Read()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -36,7 +36,7 @@ func TestNext_noName(t *testing.T) {
 func TestNext_multiline(t *testing.T) {
 	input := ">foo\nAaTtGngcCaN\nGGgg\n>foo"
 	want := &Fasta{[]byte("foo"), []byte("AaTtGngcCaNGGgg")}
-	got, err := NewReader(strings.NewReader(input)).Next()
+	got, err := NewReader(strings.NewReader(input)).Read()
 	if err != nil {
 		t.Fatalf("Next(%q) failed: %v", input, err)
 	}
@@ -55,7 +55,7 @@ func TestNext_multiple(t *testing.T) {
 	var got []*Fasta
 	var err error
 	var fa *Fasta
-	for fa, err = r.Next(); err == nil; fa, err = r.Next() {
+	for fa, err = r.Read(); err == nil; fa, err = r.Read() {
 		got = append(got, fa)
 	}
 	if err != io.EOF {
