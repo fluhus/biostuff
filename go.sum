@@ -1,2 +1,4 @@
-github.com/fluhus/gostuff v0.1.7 h1:0CeW8veFHq9AnjssCuQ+yN4jtUaXLk0t1pkAd5wbtH0=
-github.com/fluhus/gostuff v0.1.7/go.mod h1:hBPSTrO+sLA6Z5gs6RFaFkotRu+45CtM9K1qnKNrjRE=
+github.com/agonopol/go-stem v0.0.0-20150630113328-985885018250/go.mod h1:JpR7ykfRJUCcS6aOUCB6dPImrYufY0NoBCDg/wqeIIo=
+github.com/fluhus/gostuff v0.1.9 h1:aD+DzxE6y8e2zZWwXD29W4VYHVR2i4OVqpaevvL1IW4=
+github.com/fluhus/gostuff v0.1.9/go.mod h1:NSv0ajGDf/Ig/p/P36gPerZoTTXldX7WZixdqOMwaeA=
+github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=

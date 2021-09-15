@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fluhus/golgi/formats/fasta"
+	"github.com/fluhus/biostuff/formats/fasta"
 )
 
 // TODO(amit): Put sequences in a map.

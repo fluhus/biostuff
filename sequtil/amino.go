@@ -6,6 +6,12 @@ import (
 	"fmt"
 )
 
+const (
+	// AminoAcids holds the single-letter amino acid symbols.
+	// These are the valid inputs to AminoName.
+	AminoAcids = "ABCDEFGHIKLMNPQRSTVWXYZ*"
+)
+
 // Translate translates the nucleotides in src to amino acids and writes the result
 // to dst. Nucleotides should be in "aAcCgGtT". Length of src should be a multiple of
 // 3. Length of dst should be at least len(src)/3.

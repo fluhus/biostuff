@@ -17,7 +17,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fluhus/golgi/formats/fasta"
+	"github.com/fluhus/biostuff/formats/fasta"
 )
 
 var (
