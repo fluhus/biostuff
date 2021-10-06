@@ -1,9 +1,11 @@
 // Package align provides functionality for aligning sequences.
-package align
-
-import "fmt"
-
-// A Step is an alignment of one character from each sequence.
+//
+// Alignment Steps
+//
+// Alignments are represented as Steps. Each step when aligning two sequences can be
+// either taking a character from each sequence and aligning them together, or
+// taking only one character and aligning it with a gap. The match step covers the
+// case of a mismatch as well.
 //
 // For example, the alignment of "blablab" and "blrblbr":
 //  blablab-
@@ -11,6 +13,11 @@ import "fmt"
 //  blrbl-br
 // Can be represented in steps as:
 //  [match, match, match, match, match, deletion, match, insertion]
+package align
+
+import "fmt"
+
+// A Step is an alignment of one character from each sequence.
 type Step byte
 
 // Possible values of a step.
@@ -42,8 +49,8 @@ const Gap = 255
 // general cost of opening a gap (gap-open). A matrix may be asymmetrical.
 type SubstitutionMatrix map[[2]byte]int
 
-// Get returns the value of aligning a with b. Panics if the pair [a,b] is not in the
-// matrix.
+// Get returns the value of aligning a with b. Either argument may have the value
+// Gap. Panics if the pair [a,b] is not in the matrix.
 func (m SubstitutionMatrix) Get(a, b byte) int {
 	s, ok := m[[2]byte{a, b}]
 	if !ok {
