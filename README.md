@@ -21,10 +21,12 @@ Package Overview
 * Nucleotide & amino-acid sequence utilities
   * [sequtil](https://pkg.go.dev/github.com/fluhus/biostuff/sequtil)
 * Algorithms & data structures
-  * [trie](https://pkg.go.dev/github.com/fluhus/biostuff/trie)
-    a prefix tree for sequence lookups
+  * [align](https://pkg.go.dev/github.com/fluhus/biostuff/align)
+    sequence alignment logic
   * [regions](https://pkg.go.dev/github.com/fluhus/biostuff/regions)
     an index for interval (genes, etc.) overlap lookup
+  * [trie](https://pkg.go.dev/github.com/fluhus/biostuff/trie)
+    a prefix tree for sequence lookups
 
 Help or Get Help
 ----------------
