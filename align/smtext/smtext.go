@@ -90,8 +90,8 @@ func extractSingleChar(s string) (byte, error) {
 	return s[0], nil
 }
 
-// Source returns a Go-literal of the given matrix.
-func Source(m align.SubstitutionMatrix) []byte {
+// GoString returns a Go-literal of the given matrix.
+func GoString(m align.SubstitutionMatrix) []byte {
 	buf := bytes.NewBuffer(nil)
 	fmt.Fprintln(buf, "SubstitutionMatrix{")
 	var sorted [][]byte

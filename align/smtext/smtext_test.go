@@ -57,7 +57,7 @@ func TestReadNCBI_bad(t *testing.T) {
 	}
 }
 
-func TestSource(t *testing.T) {
+func TestGoString(t *testing.T) {
 	input := align.SubstitutionMatrix{
 		{'a', 'b'}:             1,
 		{'a', 'c'}:             16,
@@ -74,7 +74,7 @@ func TestSource(t *testing.T) {
 		"{'b','b'}:4,\n{'b','c'}:25,\n{'b',Gap}:64,\n" +
 		"{Gap,'b'}:9,\n{Gap,'c'}:36,\n{Gap,Gap}:81,\n" +
 		"}\n"
-	if got := Source(input); string(got) != want {
-		t.Fatalf("%v.Source=%q, want %q", input, got, want)
+	if got := GoString(input); string(got) != want {
+		t.Fatalf("%v.GoString=%q, want %q", input, got, want)
 	}
 }
