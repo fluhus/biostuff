@@ -66,11 +66,11 @@ func ReadNCBI(r io.Reader) (align.SubstitutionMatrix, error) {
 			return nil, err
 		}
 		for i, val := range valStrs[1:] {
-			x, err := strconv.ParseInt(val, 0, 0)
+			x, err := strconv.ParseFloat(val, 64)
 			if err != nil {
 				return nil, fmt.Errorf("could not parse score: %v", err)
 			}
-			m[[2]byte{c, chars[i]}] = int(x)
+			m[[2]byte{c, chars[i]}] = x
 		}
 	}
 	if sc.Err() != nil {

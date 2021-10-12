@@ -7,7 +7,7 @@ import (
 
 func TestDecideOnStep(t *testing.T) {
 	tests := []struct {
-		mch, del, ins int
+		mch, del, ins float64
 		want          block
 	}{
 		{1, 0, 0, block{step: Match, score: 1}},
@@ -27,7 +27,7 @@ func TestTraceAlignmentSteps(t *testing.T) {
 		blocks    []block
 		bn        int
 		want      []Step
-		wantScore int
+		wantScore float64
 	}{
 		{[]block{{}, {}, {}, {score: 5, step: Match}},
 			2, []Step{Match}, 5},
@@ -64,7 +64,7 @@ func TestGlobal(t *testing.T) {
 	tests := []struct {
 		a, b      []byte
 		want      []Step
-		wantScore int
+		wantScore float64
 	}{
 		{[]byte("aba"), []byte("aba"), []Step{Match, Match, Match}, 3},
 		{[]byte("aba"), []byte("aa"), []Step{Match, Deletion, Match}, 1},
@@ -118,7 +118,7 @@ func TestSymmetrical_bad(t *testing.T) {
 func TestLevenshtein(t *testing.T) {
 	tests := []struct {
 		a, b string
-		want int
+		want float64
 	}{
 		{"kitten", "sitten", -1},
 		{"sittin", "sitting", -1},

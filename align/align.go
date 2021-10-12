@@ -47,11 +47,11 @@ const Gap = 255
 // A SubstitutionMatrix is a map from character pair p to the score of aligning p[0]
 // with p[1]. Character 255 is reserved for gap. The pair [Gap,Gap] represents the
 // general cost of opening a gap (gap-open). A matrix may be asymmetrical.
-type SubstitutionMatrix map[[2]byte]int
+type SubstitutionMatrix map[[2]byte]float64
 
 // Get returns the value of aligning a with b. Either argument may have the value
 // Gap. Panics if the pair [a,b] is not in the matrix.
-func (m SubstitutionMatrix) Get(a, b byte) int {
+func (m SubstitutionMatrix) Get(a, b byte) float64 {
 	s, ok := m[[2]byte{a, b}]
 	if !ok {
 		panic(fmt.Sprintf("pair (%v,%v) is not in the substitution-matrix",
@@ -80,7 +80,7 @@ func (m SubstitutionMatrix) Symmetrical() SubstitutionMatrix {
 
 // A single element in the dynamic-programming table of the alignment algorithm.
 type block struct {
-	score int
+	score float64
 	step  Step
 }
 
@@ -89,7 +89,7 @@ type block struct {
 // to a. Time and space complexities are O(len(a)*len(b)).
 //
 // Uses the Needleman-Wunsch algorithm.
-func Global(a, b []byte, m SubstitutionMatrix) ([]Step, int) {
+func Global(a, b []byte, m SubstitutionMatrix) ([]Step, float64) {
 	an, bn := len(a)+1, len(b)+1
 	blocks := make([]block, an*bn)
 	for i := range blocks {
@@ -133,7 +133,7 @@ func Global(a, b []byte, m SubstitutionMatrix) ([]Step, int) {
 }
 
 // Returns a block with the highest scoring step.
-func decideOnStep(mch, del, ins int) block {
+func decideOnStep(mch, del, ins float64) block {
 	if mch >= del && mch >= ins {
 		return block{score: mch, step: Match}
 	} else if del >= ins {
@@ -145,7 +145,7 @@ func decideOnStep(mch, del, ins int) block {
 
 // Reproduces the alignment steps that lead to the final highest score.
 // Returns the steps and their score.
-func traceAlignmentSteps(blocks []block, bn int) ([]Step, int) {
+func traceAlignmentSteps(blocks []block, bn int) ([]Step, float64) {
 	steps := make([]Step, 0, bn+len(blocks)/bn)
 	i := len(blocks) - 1
 	for i > 0 {
