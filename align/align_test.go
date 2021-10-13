@@ -133,3 +133,25 @@ func TestLevenshtein(t *testing.T) {
 		}
 	}
 }
+
+func TestGoString(t *testing.T) {
+	input := SubstitutionMatrix{
+		{'a', 'b'}: 1,
+		{'a', 'c'}: 16,
+		{'a', Gap}: 49,
+		{'b', 'b'}: 4,
+		{'b', 'c'}: 25,
+		{'b', Gap}: 64,
+		{Gap, 'b'}: 9,
+		{Gap, 'c'}: 36,
+		{Gap, Gap}: 81,
+	}
+	want := "SubstitutionMatrix{\n" +
+		"{'a','b'}:1,\n{'a','c'}:16,\n{'a',Gap}:49,\n" +
+		"{'b','b'}:4,\n{'b','c'}:25,\n{'b',Gap}:64,\n" +
+		"{Gap,'b'}:9,\n{Gap,'c'}:36,\n{Gap,Gap}:81,\n" +
+		"}\n"
+	if got := input.GoString(); got != want {
+		t.Fatalf("%v.GoString=%q, want %q", input, got, want)
+	}
+}

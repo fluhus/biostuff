@@ -23,11 +23,9 @@ package smtext
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"regexp"
-	"sort"
 	"strconv"
 
 	"github.com/fluhus/biostuff/align"
@@ -88,31 +86,4 @@ func extractSingleChar(s string) (byte, error) {
 		return align.Gap, nil
 	}
 	return s[0], nil
-}
-
-// GoString returns a Go-literal of the given matrix.
-func GoString(m align.SubstitutionMatrix) []byte {
-	buf := bytes.NewBuffer(nil)
-	fmt.Fprintln(buf, "SubstitutionMatrix{")
-	var sorted [][]byte
-	for k := range m {
-		sorted = append(sorted, []byte{k[0], k[1]})
-	}
-	sort.Slice(sorted, func(i, j int) bool {
-		return bytes.Compare(sorted[i], sorted[j]) < 0
-	})
-	for _, k := range sorted {
-		fmt.Fprintf(buf, "{%s,%s}:%v,\n",
-			charOrGap(k[0]), charOrGap(k[1]), m.Get(k[0], k[1]))
-	}
-	fmt.Fprintln(buf, "}")
-	return buf.Bytes()
-}
-
-// Returns a quoted char, or the constant Gap for a gap.
-func charOrGap(c byte) string {
-	if c == align.Gap {
-		return "Gap"
-	}
-	return fmt.Sprintf("%q", c)
 }

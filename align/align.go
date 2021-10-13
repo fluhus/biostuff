@@ -15,7 +15,12 @@
 //  [match, match, match, match, match, deletion, match, insertion]
 package align
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"sort"
+	"strings"
+)
 
 // A Step is an alignment of one character from each sequence.
 type Step byte
@@ -167,4 +172,31 @@ func traceAlignmentSteps(blocks []block, bn int) ([]Step, float64) {
 		steps[i], steps[len(steps)-1-i] = steps[len(steps)-1-i], steps[i]
 	}
 	return steps, blocks[len(blocks)-1].score
+}
+
+// GoString implements the fmt.GoStringer interface.
+func (m SubstitutionMatrix) GoString() string {
+	buf := &strings.Builder{}
+	fmt.Fprintln(buf, "SubstitutionMatrix{")
+	var sorted [][]byte
+	for k := range m {
+		sorted = append(sorted, []byte{k[0], k[1]})
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return bytes.Compare(sorted[i], sorted[j]) < 0
+	})
+	for _, k := range sorted {
+		fmt.Fprintf(buf, "{%s,%s}:%v,\n",
+			charOrGap(k[0]), charOrGap(k[1]), m.Get(k[0], k[1]))
+	}
+	fmt.Fprintln(buf, "}")
+	return buf.String()
+}
+
+// Returns a quoted char, or the constant Gap for a gap.
+func charOrGap(c byte) string {
+	if c == Gap {
+		return "Gap"
+	}
+	return fmt.Sprintf("%q", c)
 }

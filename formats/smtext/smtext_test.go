@@ -56,25 +56,3 @@ func TestReadNCBI_bad(t *testing.T) {
 		}
 	}
 }
-
-func TestGoString(t *testing.T) {
-	input := align.SubstitutionMatrix{
-		{'a', 'b'}:             1,
-		{'a', 'c'}:             16,
-		{'a', align.Gap}:       49,
-		{'b', 'b'}:             4,
-		{'b', 'c'}:             25,
-		{'b', align.Gap}:       64,
-		{align.Gap, 'b'}:       9,
-		{align.Gap, 'c'}:       36,
-		{align.Gap, align.Gap}: 81,
-	}
-	want := "SubstitutionMatrix{\n" +
-		"{'a','b'}:1,\n{'a','c'}:16,\n{'a',Gap}:49,\n" +
-		"{'b','b'}:4,\n{'b','c'}:25,\n{'b',Gap}:64,\n" +
-		"{Gap,'b'}:9,\n{Gap,'c'}:36,\n{Gap,Gap}:81,\n" +
-		"}\n"
-	if got := GoString(input); string(got) != want {
-		t.Fatalf("%v.GoString=%q, want %q", input, got, want)
-	}
-}
