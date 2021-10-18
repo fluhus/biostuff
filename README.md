@@ -17,6 +17,7 @@ Package Overview
   * [bed](https://pkg.go.dev/github.com/fluhus/biostuff/formats/bed)
   * [fasta](https://pkg.go.dev/github.com/fluhus/biostuff/formats/fasta)
   * [fastq](https://pkg.go.dev/github.com/fluhus/biostuff/formats/fastq)
+  * [newick](https://pkg.go.dev/github.com/fluhus/biostuff/formats/newick)
   * [sam](https://pkg.go.dev/github.com/fluhus/biostuff/formats/sam)
 * Nucleotide & amino-acid sequence utilities
   * [sequtil](https://pkg.go.dev/github.com/fluhus/biostuff/sequtil)
