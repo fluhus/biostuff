@@ -80,6 +80,9 @@ func TestReader(t *testing.T) {
 		{":4;", &Node{"", 4, nil}},
 		{"AAA;", &Node{"AAA", 0, nil}},
 		{"AAA:1.23;", &Node{"AAA", 1.23, nil}},
+		{"(A,(B,C))D;", &Node{"D", 0, []*Node{
+			{"A", 0, nil}, {"", 0, []*Node{{"B", 0, nil}, {"C", 0, nil}}},
+		}}},
 		{"(A,BB,CCC);", &Node{"", 0,
 			[]*Node{{"A", 0, nil}, {"BB", 0, nil}, {"CCC", 0, nil}}}},
 		{"  (aaa:11,(    ( B)bb: 23,  bbbb:25):22,  c:33  )  ;  ",

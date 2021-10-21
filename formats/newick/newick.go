@@ -94,7 +94,7 @@ loop:
 			cur.Children = append(cur.Children, node)
 			stack = append(stack, node)
 		case ")":
-			if state == afterColon || state == afterChildren {
+			if state == afterColon {
 				return nil, fmt.Errorf("unexpected ')'")
 			}
 			if len(stack) == 1 {
