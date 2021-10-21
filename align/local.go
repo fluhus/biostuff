@@ -90,7 +90,7 @@ func traceAlignmentStepsLocal(blocks []block, bn int) ([]Step, int, float64) {
 	if i < 0 {
 		panic(fmt.Sprintf("bad i: %v, expected 0", i))
 	}
-	// Check placed here and not in the begining to go allow checks.
+	// Check placed here and not in the beginning to go allow checks.
 	if blocks[imax].score == 0 {
 		return nil, 0, 0
 	}
