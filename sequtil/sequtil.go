@@ -72,41 +72,38 @@ func Iton(num int) byte {
 	}
 }
 
-// ReverseComplement writes to dst the reverse complement of src.
-// Characters not in "aAcCgGtTnN" will cause a panic.
-func ReverseComplement(dst, src []byte) {
-	if len(dst) < len(src) {
-		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
-			len(dst), len(src)))
-	}
-
+// ReverseComplement appends to dst the reverse complement of src and returns
+// the new dst. Characters not in "aAcCgGtTnN" will cause a panic.
+func ReverseComplement(dst, src []byte) []byte {
 	// Complement
-	for i, b := range src {
+	for i := len(src) - 1; i >= 0; i-- {
+		b := src[i]
 		switch b {
 		case 'a':
-			dst[len(src)-1-i] = 't'
+			dst = append(dst, 't')
 		case 'c':
-			dst[len(src)-1-i] = 'g'
+			dst = append(dst, 'g')
 		case 'g':
-			dst[len(src)-1-i] = 'c'
+			dst = append(dst, 'c')
 		case 't':
-			dst[len(src)-1-i] = 'a'
+			dst = append(dst, 'a')
 		case 'A':
-			dst[len(src)-1-i] = 'T'
+			dst = append(dst, 'T')
 		case 'C':
-			dst[len(src)-1-i] = 'G'
+			dst = append(dst, 'G')
 		case 'G':
-			dst[len(src)-1-i] = 'C'
+			dst = append(dst, 'C')
 		case 'T':
-			dst[len(src)-1-i] = 'A'
+			dst = append(dst, 'A')
 		case 'N':
-			dst[len(src)-1-i] = 'N'
+			dst = append(dst, 'N')
 		case 'n':
-			dst[len(src)-1-i] = 'n'
+			dst = append(dst, 'n')
 		default:
 			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
 		}
 	}
+	return dst
 }
 
 // ReverseComplementString returns the reverse complement of s.

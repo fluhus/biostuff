@@ -5,6 +5,28 @@ import (
 	"testing"
 )
 
+func TestReverseComplement(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"A", "T"},
+		{"AAA", "TTT"},
+		{"aaa", "ttt"},
+		{"AACTTGGG", "CCCAAGTT"},
+		{"TGTGTG", "CACACA"},
+		{"", ""},
+	}
+	var got []byte
+	for _, test := range tests {
+		got = ReverseComplement(got[:0], []byte(test.input))
+		if string(got) != test.want {
+			t.Errorf("ReverseComplement(%q)=%q, want %q",
+				test.input, got, test.want)
+		}
+	}
+}
+
 func TestReverseComplementString(t *testing.T) {
 	tests := []struct {
 		input string
