@@ -32,6 +32,7 @@ package sequtil
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Maps nucleotide byte value to its int value.
@@ -75,7 +76,6 @@ func Iton(num int) byte {
 // ReverseComplement appends to dst the reverse complement of src and returns
 // the new dst. Characters not in "aAcCgGtTnN" will cause a panic.
 func ReverseComplement(dst, src []byte) []byte {
-	// Complement
 	for i := len(src) - 1; i >= 0; i-- {
 		b := src[i]
 		switch b {
@@ -109,9 +109,36 @@ func ReverseComplement(dst, src []byte) []byte {
 // ReverseComplementString returns the reverse complement of s.
 // Characters not in "aAcCgGtTnN" will cause a panic.
 func ReverseComplementString(s string) string {
-	result := make([]byte, len(s))
-	ReverseComplement(result, []byte(s))
-	return string(result)
+	builder := &strings.Builder{}
+	builder.Grow(len(s))
+	for i := len(s) - 1; i >= 0; i-- {
+		b := s[i]
+		switch b {
+		case 'a':
+			builder.WriteByte('t')
+		case 'c':
+			builder.WriteByte('g')
+		case 'g':
+			builder.WriteByte('c')
+		case 't':
+			builder.WriteByte('a')
+		case 'A':
+			builder.WriteByte('T')
+		case 'C':
+			builder.WriteByte('G')
+		case 'G':
+			builder.WriteByte('C')
+		case 'T':
+			builder.WriteByte('A')
+		case 'N':
+			builder.WriteByte('N')
+		case 'n':
+			builder.WriteByte('n')
+		default:
+			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
+		}
+	}
+	return builder.String()
 }
 
 // DNATo2Bit writes to dst the 2-bit representation of the DNA sequence in src.
