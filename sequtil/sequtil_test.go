@@ -86,19 +86,18 @@ func TestDNAFrom2Bit(t *testing.T) {
 
 func BenchmarkDNATo2Bit(b *testing.B) {
 	dna := []byte("acgtacgtacgtacgtacgtacgtacgtacgt")
-	twobit := make([]byte, len(dna)/4)
+	var twobit []byte
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		DNATo2Bit(twobit, dna)
+		twobit = DNATo2Bit(twobit[:0], dna)
 	}
 }
 
 func BenchmarkDNAFrom2Bit(b *testing.B) {
 	dna := []byte("acgtacgtacgtacgtacgtacgtacgtacgt")
-	twobit := make([]byte, len(dna)/4)
-	DNATo2Bit(twobit, dna)
+	twobit := DNATo2Bit(nil, dna)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		DNAFrom2Bit(dna, twobit)
+		dna = DNAFrom2Bit(dna[:0], twobit)
 	}
 }
