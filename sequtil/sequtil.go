@@ -141,19 +141,16 @@ func ReverseComplementString(s string) string {
 	return builder.String()
 }
 
-// DNATo2Bit writes to dst the 2-bit representation of the DNA sequence in src.
-// Any character not in "aAcCgGtT" will cause a panic.
-func DNATo2Bit(dst, src []byte) {
-	if len(dst) < (len(src)+3)/4 {
-		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
-			len(dst), (len(src)+3)/4))
-	}
+// DNATo2Bit appends to dst the 2-bit representation of the DNA sequence in src,
+// and returns the new dst. Characters not in "aAcCgGtT" will cause a panic.
+func DNATo2Bit(dst, src []byte) []byte {
+	dn := len(dst)
 	for i, b := range src {
-		di := i / 4
+		di := dn + i/4
 		shift := 6 - i%4*2 // Make the first character the most significant.
 		if shift == 6 {
-			// Reset byte value before or'ing.
-			dst[di] = 0
+			// Starting a new byte.
+			dst = append(dst, 0)
 		}
 		dbInt := Ntoi(b)
 		if dbInt == -1 {
@@ -162,18 +159,16 @@ func DNATo2Bit(dst, src []byte) {
 		db := byte(dbInt) << shift
 		dst[di] |= db
 	}
+	return dst
 }
 
-// DNAFrom2Bit writes to dst the nucleotides represented in 2-bit in src.
-// Only outputs characters in "ACGT".
-func DNAFrom2Bit(dst, src []byte) {
-	if len(dst) < len(src)*4-3 {
-		panic(fmt.Sprintf("dst is too short: %v, want at least %v",
-			len(dst), len(src)*4-3))
-	}
+// DNAFrom2Bit appends to dst the nucleotides represented in 2-bit in src and
+// returns the new dst. Only outputs characters in "ACGT".
+func DNAFrom2Bit(dst, src []byte) []byte {
 	for i := 0; i < len(src); i++ {
-		copy(dst[i*4:], dnaFrom2bit[src[i]][:])
+		dst = append(dst, dnaFrom2bit[src[i]][:]...)
 	}
+	return dst
 }
 
 // Maps 2-bit value to its expanded representation.
