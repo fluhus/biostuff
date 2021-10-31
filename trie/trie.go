@@ -94,8 +94,9 @@ func (t *Trie) UnmarshalJSON(data []byte) error {
 }
 
 // ForEach calls f for each final sequence (leaf) in the trie. A final sequence
-// is a sequence that is not a prefix of a longer sequence.
-// f should return whether or not the iteration should continue.
+// is a sequence that is not a prefix of a longer sequence. f should return
+// whether or not the iteration should continue. f's input slice may be
+// overwritten by subsequent iterations.
 func (t *Trie) ForEach(f func([]byte) bool) {
 	stack := []*forEachStep{{t, t.keys(), 0}}
 	var cur []byte
