@@ -12,17 +12,13 @@ const (
 	AminoAcids = "ABCDEFGHIKLMNPQRSTVWXYZ*"
 )
 
-// Translate translates the nucleotides in src to amino acids and writes the result
-// to dst. Nucleotides should be in "aAcCgGtT". Length of src should be a multiple of
-// 3. Length of dst should be at least len(src)/3.
-func Translate(dst, src []byte) {
+// Translate translates the nucleotides in src to amino acids, appends the result to
+// dst and returns the new slice. Nucleotides should be in "aAcCgGtT". Length of src
+// should be a multiple of 3.
+func Translate(dst, src []byte) []byte {
 	if len(src)%3 != 0 {
 		panic(fmt.Sprintf("length of src should be a multiple of 3, got %v",
 			len(src)))
-	}
-	if len(dst) < len(src)/3 {
-		panic(fmt.Sprintf("length of dst should be at least %v, got %v",
-			len(src)/3, len(dst)))
 	}
 	var buf [3]byte
 	for i := 0; i < len(src); i += 3 {
@@ -36,8 +32,9 @@ func Translate(dst, src []byte) {
 		if aa == 0 {
 			panic(fmt.Sprintf("bad codon at position %v: %q", i, src[i:i+3]))
 		}
-		dst[i/3] = aa
+		dst = append(dst, aa)
 	}
+	return dst
 }
 
 // TranslateReadingFrames returns the translation of the 3 reading frames of seq.
@@ -47,8 +44,7 @@ func TranslateReadingFrames(seq []byte) [3][]byte {
 	for i := 0; i < 3; i++ {
 		sub := seq[i:]
 		sub = sub[:len(sub)/3*3]
-		result[i] = make([]byte, len(sub)/3)
-		Translate(result[i], sub)
+		result[i] = Translate(nil, sub)
 	}
 	return result
 }

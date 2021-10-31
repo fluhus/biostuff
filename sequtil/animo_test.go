@@ -8,8 +8,7 @@ import (
 func TestTranslate(t *testing.T) {
 	input := "AGAcatTGGgat"
 	want := "RHWD"
-	got := make([]byte, 4)
-	Translate(got, []byte(input))
+	got := Translate(nil, []byte(input))
 	if string(got) != want {
 		t.Fatalf("Translate(%q)=%q, want %q", input, got, want)
 	}
@@ -18,14 +17,14 @@ func TestTranslate(t *testing.T) {
 func TestTranslate_badBase(t *testing.T) {
 	defer func() { recover() }()
 	input := "AGAcatTGGgad"
-	Translate(make([]byte, 4), []byte(input))
+	Translate(nil, []byte(input))
 	t.Fatalf("Translate(%q) succeeded, want panic", input)
 }
 
 func TestTranslate_badLength(t *testing.T) {
 	defer func() { recover() }()
 	input := "AGAcatTGGgatt"
-	Translate(make([]byte, 5), []byte(input))
+	Translate(nil, []byte(input))
 	t.Fatalf("Translate(%q) succeeded, want panic", input)
 }
 
