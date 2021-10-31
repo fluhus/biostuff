@@ -79,6 +79,61 @@ func TestJSON(t *testing.T) {
 	}
 }
 
+func TestForEach(t *testing.T) {
+	tr := New()
+	tr.Add([]byte("alice"))
+	tr.Add([]byte("alicey"))
+	tr.Add([]byte("alicie"))
+	tr.Add([]byte("bob"))
+	tr.Add([]byte("boris"))
+	tr.Add([]byte("charles"))
+
+	want := map[string]struct{}{
+		"alicey":  {},
+		"alicie":  {},
+		"bob":     {},
+		"boris":   {},
+		"charles": {},
+	}
+	got := map[string]struct{}{}
+	tr.ForEach(func(b []byte) bool {
+		got[string(b)] = struct{}{}
+		return true
+	})
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Trie.ForEach()=%v, want %v", got, want)
+	}
+}
+
+func TestForEach_empty(t *testing.T) {
+	tr := New()
+	tr.ForEach(func(b []byte) bool {
+		t.Errorf("Trie.ForEach yields %v, want nothing", b)
+		return true
+	})
+}
+
+func TestForEach_false(t *testing.T) {
+	tr := New()
+	tr.Add([]byte("alice"))
+	tr.Add([]byte("alicey"))
+	tr.Add([]byte("alicie"))
+	tr.Add([]byte("bob"))
+	tr.Add([]byte("boris"))
+	tr.Add([]byte("charles"))
+
+	for i := 0; i < 10; i++ {
+		var got string
+		tr.ForEach(func(b []byte) bool {
+			got = string(b)
+			return got != "bob"
+		})
+		if got != "bob" {
+			t.Errorf("Trie.ForEach=%q, want %q", got, "bob")
+		}
+	}
+}
+
 func BenchmarkAdd(b *testing.B) {
 	for _, k := range []int{10, 20} {
 		b.Run(fmt.Sprint(k), func(b *testing.B) {

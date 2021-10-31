@@ -1,8 +1,7 @@
 // Package trie provides a prefix tree implementation.
 //
-// Operations on a trie are linear in query length, regardless of the size of the
-// trie. All operations are non-recursive except for marshaling. Marshaling
-// recursiveness depends on the standard library implementation.
+// Add, Has and Delete operations are linear in query length, regardless of the
+// size of the trie. All operations are non-recursive except for marshaling.
 package trie
 
 import "encoding/json"
@@ -77,7 +76,7 @@ func (t *Trie) Delete(b []byte) bool {
 
 // A trie with exported fields for marshaling.
 type marshalTrie struct {
-	M map[byte]*Trie
+	M map[byte]*Trie `json:"m"`
 }
 
 // MarshalJSON implements the json.Marshaler interface.
@@ -92,4 +91,50 @@ func (t *Trie) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &m)
 	t.m = m.M
 	return err
+}
+
+// ForEach calls f for each final sequence (leaf) in the trie. A final sequence
+// is a sequence that is not a prefix of a longer sequence.
+// f should return whether or not the iteration should continue.
+func (t *Trie) ForEach(f func([]byte) bool) {
+	stack := []*forEachStep{{t, t.keys(), 0}}
+	var cur []byte
+	for {
+		step := stack[len(stack)-1]
+		if len(step.t.m) == 0 { // Reached a leaf.
+			if len(cur) > 0 && !f(cur) {
+				break
+			}
+		}
+		if step.i == len(step.t.m) { // Finished with this branch.
+			stack = stack[:len(stack)-1]
+			if len(stack) == 0 { // Done.
+				break
+			}
+			cur = cur[:len(cur)-1]
+			continue
+		}
+		// Handle next child.
+		key := step.k[step.i]
+		child := step.t.m[key]
+		stack = append(stack, &forEachStep{child, child.keys(), 0})
+		step.i++
+		cur = append(cur, key)
+	}
+}
+
+// Returns the keys of a trie.
+func (t *Trie) keys() []byte {
+	result := make([]byte, 0, len(t.m))
+	for k := range t.m {
+		result = append(result, k)
+	}
+	return result
+}
+
+// A step in the for-each stack.
+type forEachStep struct {
+	t *Trie  // Current trie
+	k []byte // Trie's keys
+	i int    // Current key
 }
