@@ -20,9 +20,9 @@ type Fastq struct {
 	Quals    []byte // Qualities as received
 }
 
-// Text returns the textual representation of f in fastq format.
+// MarshalText returns the textual representation of f in fastq format.
 // Includes a trailing new line.
-func (f *Fastq) Text() []byte {
+func (f *Fastq) MarshalText() ([]byte, error) {
 	n := 6 + len(f.Name) + len(f.Sequence) + len(f.Quals)
 	buf := bytes.NewBuffer(make([]byte, 0, n))
 	buf.WriteByte('@')
@@ -35,7 +35,7 @@ func (f *Fastq) Text() []byte {
 	if buf.Len() != n {
 		panic(fmt.Sprintf("bad length: %v expected %v", buf.Len(), n))
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 // A Reader reads sequences from a fastq stream.

@@ -19,12 +19,12 @@ type Node struct {
 	Children []*Node // Child nodes. Can be nil.
 }
 
-// Newick returns a condensed Newick-format representation of this node.
-func (n *Node) Newick() []byte {
+// MarshalText returns a condensed Newick-format representation of this node.
+func (n *Node) MarshalText() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	n.newick(buf)
 	buf.WriteByte(';')
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 // Writes a single node/subtree to the buffer.

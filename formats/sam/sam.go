@@ -6,12 +6,12 @@ package sam
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/fluhus/gostuff/csvdec"
 )
@@ -50,18 +50,20 @@ type SAM struct {
 	Tags  map[string]interface{} // Typed optional tags.
 }
 
-// Text returns the textual representation of s in SAM format.
+// MarshalText returns the textual representation of s in SAM format.
 // Includes a trailing new line.
-func (s *SAM) Text() string {
-	// TODO(amit): This can probably be optimized by avoiding Sprint and using
-	// specific conversion functions where needed.
-	fields := []string{
-		s.Qname, strconv.Itoa(s.Flag), s.Rname, strconv.Itoa(s.Pos),
-		strconv.Itoa(s.Mapq), s.Cigar, s.Rnext, strconv.Itoa(s.Pnext),
-		strconv.Itoa(s.Tlen), s.Seq, s.Qual,
+func (s *SAM) MarshalText() ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	fmt.Fprintf(buf, "%s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%s",
+		s.Qname, s.Flag, s.Rname, s.Pos,
+		s.Mapq, s.Cigar, s.Rnext, s.Pnext,
+		s.Tlen, s.Seq, s.Qual,
+	)
+	for _, tag := range tagsToText(s.Tags) {
+		fmt.Fprintf(buf, "\t%s", tag)
 	}
-	tags := tagsToText(s.Tags)
-	return strings.Join(append(fields, tags...), "\t") + "\n"
+	buf.WriteByte('\n')
+	return buf.Bytes(), nil
 }
 
 // Converts a raw SAM struct to an exported SAM struct.

@@ -54,10 +54,10 @@ func TestNext_many(t *testing.T) {
 	}
 }
 
-func TestText(t *testing.T) {
+func TestMarshalTextText(t *testing.T) {
 	input := &Fastq{[]byte("Hello"), []byte("AGAGAG"), []byte("!@##@!")}
 	want := "@Hello\nAGAGAG\n+\n!@##@!\n"
-	if got := string(input.Text()); got != want {
-		t.Fatalf("%v.Text()=%v want %v", input, got, want)
+	if got, err := input.MarshalText(); err != nil || string(got) != want {
+		t.Fatalf("%v.Text()=%v,%v want %v", input, got, err, want)
 	}
 }

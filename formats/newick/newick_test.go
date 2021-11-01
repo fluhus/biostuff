@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestNewick(t *testing.T) {
+func TestMarshalText(t *testing.T) {
 	tests := []struct {
 		input *Node
 		want  string
@@ -25,8 +25,9 @@ func TestNewick(t *testing.T) {
 		}}, "(aaa:11,((B)bb:23,bbbb:25):22,c:33);"},
 	}
 	for _, test := range tests {
-		if got := test.input.Newick(); string(got) != test.want {
-			t.Errorf("%v.Newick()=%q, want %q", test.input, got, test.want)
+		if got, err := test.input.MarshalText(); err != nil ||
+			string(got) != test.want {
+			t.Errorf("%v.Newick()=%q,%v, want %q", test.input, got, err, test.want)
 		}
 	}
 }

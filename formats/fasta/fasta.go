@@ -23,11 +23,12 @@ type Fasta struct {
 	Sequence []byte // Sequence
 }
 
-// Text returns the textual representation of f in fasta format. Includes a trailing
-// new line. Always includes a name line, even for empty names. Sequence gets broken
-// down into lines of length 80.
-func (f *Fasta) Text() []byte {
-	n := 2 + len(f.Name) + len(f.Sequence) + (len(f.Sequence)+textLineLen-1)/textLineLen
+// MarshalText returns the textual representation of f in fasta format. Includes a
+// trailing new line. Always includes a name line, even for empty names. Sequence
+// gets broken down into lines of length 80.
+func (f *Fasta) MarshalText() ([]byte, error) {
+	n := 2 + len(f.Name) + len(f.Sequence) +
+		(len(f.Sequence)+textLineLen-1)/textLineLen
 	buf := bytes.NewBuffer(make([]byte, 0, n))
 	buf.WriteByte('>')
 	buf.Write(f.Name)
@@ -43,7 +44,7 @@ func (f *Fasta) Text() []byte {
 	if buf.Len() != n {
 		panic(fmt.Sprintf("bad len: %v want %v", buf.Len(), n))
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 // A Reader reads sequences from a fasta stream.

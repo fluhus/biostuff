@@ -69,7 +69,7 @@ func TestNext_multiple(t *testing.T) {
 	}
 }
 
-func TestText(t *testing.T) {
+func TestMarshalText(t *testing.T) {
 	tests := []struct {
 		input *Fasta
 		want  string
@@ -84,17 +84,18 @@ func TestText(t *testing.T) {
 			)},
 	}
 	for _, test := range tests {
-		if got := string(test.input.Text()); got != test.want {
-			t.Errorf("%v.Text()=%v, want %v", test.input, got, test.want)
+		if got, err := test.input.MarshalText(); err != nil ||
+			string(got) != test.want {
+			t.Errorf("%v.Text()=%v,%v, want %v", test.input, got, err, test.want)
 		}
 	}
 }
 
-func BenchmarkText(b *testing.B) {
+func BenchmarkMarshalText(b *testing.B) {
 	fa := &Fasta{Name: []byte("bla bla bla bla bla bla"),
 		Sequence: bytes.Repeat([]byte("a"), 1000)}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		fa.Text()
+		fa.MarshalText()
 	}
 }

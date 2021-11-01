@@ -134,8 +134,8 @@ func TestText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Next() failed: %v", err)
 	}
-	if got := sm.Text(); got != input {
-		t.Fatalf("%v.Text()=%v want %v", sm, got, input)
+	if got, err := sm.MarshalText(); err != nil || string(got) != input {
+		t.Fatalf("%v.Text()=%v,%v want %v", sm, got, err, input)
 	}
 }
 
@@ -149,6 +149,6 @@ func BenchmarkText(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		sm.Text()
+		sm.MarshalText()
 	}
 }
