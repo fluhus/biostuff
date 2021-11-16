@@ -10,7 +10,10 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 )
+
+// BUG(amit): Comments are currently not supported.
 
 // A Node is a single node in a tree, along with the subtree that is under it.
 type Node struct {
@@ -39,7 +42,7 @@ func (n *Node) newick(buf *bytes.Buffer) {
 		}
 		buf.WriteByte(')')
 	}
-	buf.WriteString(n.Name)
+	buf.WriteString(nameToText(n.Name))
 	if n.Distance != 0 {
 		fmt.Fprint(buf, ":", n.Distance)
 	}
@@ -133,7 +136,7 @@ loop:
 			}
 			cur := stack[len(stack)-1]
 			if state == beforeNode || state == afterChildren {
-				cur.Name = token
+				cur.Name = nameFromText(token)
 				state = afterName
 				break
 			}
@@ -154,6 +157,9 @@ loop:
 // Reads a single token from the input stream.
 func (r *Reader) nextToken() (string, error) {
 	r.b.Reset()
+	quote := false
+	afterQuote := false
+
 loop:
 	for {
 		b, err := r.r.ReadByte()
@@ -163,7 +169,26 @@ loop:
 			}
 			return "", err
 		}
+
+		if quote {
+			if b == '\'' {
+				afterQuote = !afterQuote
+			} else if afterQuote {
+				// End of quoted string.
+				r.r.UnreadByte()
+				break
+			}
+			r.b.WriteByte(b)
+			continue
+		}
+
 		switch b {
+		case '\'':
+			if r.b.Len() > 0 {
+				return "", fmt.Errorf("unexpected ' after %q", r.b.String())
+			}
+			quote = true
+			r.b.WriteByte(b)
 		case '(', ')', ',', ':', ';':
 			if r.b.Len() > 0 {
 				r.r.UnreadByte()
@@ -179,4 +204,25 @@ loop:
 		}
 	}
 	return r.b.String(), nil
+}
+
+// Converts a possibly quoted name from newick format to regular string.
+func nameFromText(s string) string {
+	if quoted(s) {
+		return strings.ReplaceAll(s[1:len(s)-1], "''", "'")
+	}
+	return strings.ReplaceAll(s, "_", " ")
+}
+
+// Converts a name to newick format.
+func nameToText(s string) string {
+	if strings.ContainsAny(s, "(),:;'_\t") {
+		return "'" + strings.ReplaceAll(s, "'", "''") + "'"
+	}
+	return strings.ReplaceAll(s, " ", "_")
+}
+
+// Checks if a newick-formatted name is in quotes.
+func quoted(s string) bool {
+	return len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\''
 }

@@ -23,6 +23,9 @@ func TestMarshalText(t *testing.T) {
 			}},
 			{"c", 33, nil},
 		}}, "(aaa:11,((B)bb:23,bbbb:25):22,c:33);"},
+		{&Node{"g(bb)", 0, []*Node{
+			{"AAA", 0, nil}, {"A b", 0, nil},
+		}}, "(AAA,A_b)'g(bb)';"},
 	}
 	for _, test := range tests {
 		if got, err := test.input.MarshalText(); err != nil ||
@@ -42,6 +45,8 @@ func TestNextToken(t *testing.T) {
 		{"( (  (", []string{"(", "(", "("}},
 		{"AAAA", []string{"AAAA"}},
 		{"AA(BB", []string{"AA", "(", "BB"}},
+		{"AA 'BB GG':'abc))''def(:'",
+			[]string{"AA", "'BB GG'", ":", "'abc))''def(:'"}},
 		{
 			"(a:3.14,B,:6)GGG;", []string{
 				"(", "a", ":", "3.14", ",", "B", ",", ":", "6", ")", "GGG", ";"},
@@ -80,6 +85,9 @@ func TestReader(t *testing.T) {
 		{"();", &Node{"", 0, []*Node{{}}}},
 		{":4;", &Node{"", 4, nil}},
 		{"AAA;", &Node{"AAA", 0, nil}},
+		{"(AAA,A_b)'g(bb)';", &Node{"g(bb)", 0, []*Node{
+			{"AAA", 0, nil}, {"A b", 0, nil},
+		}}},
 		{"AAA:1.23;", &Node{"AAA", 1.23, nil}},
 		{"(A,(B,C))D;", &Node{"D", 0, []*Node{
 			{"A", 0, nil}, {"", 0, []*Node{{"B", 0, nil}, {"C", 0, nil}}},
@@ -146,6 +154,46 @@ func TestReader_bad(t *testing.T) {
 		got, err := NewReader(strings.NewReader(input)).Read()
 		if err == nil {
 			t.Errorf("Read(%q)=%v, want error", input, got)
+		}
+	}
+}
+
+func TestNameFromText(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"A", "A"},
+		{"A_b", "A b"},
+		{"A_b__c_", "A b  c "},
+		{"'A'", "A"},
+		{"'A_b'", "A_b"},
+		{"'A_b '' g(5)'", "A_b ' g(5)"},
+	}
+	for _, test := range tests {
+		if got := nameFromText(test.input); got != test.want {
+			t.Errorf("nameFromText(%q)=%q, want %q",
+				test.input, got, test.want)
+		}
+	}
+}
+
+func TestNameToText(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"A", "A"},
+		{"A b", "A_b"},
+		{"A b  c ", "A_b__c_"},
+		{"A_b", "'A_b'"},
+		{"A'b", "'A''b'"},
+		{"A_b ' g(5)", "'A_b '' g(5)'"},
+	}
+	for _, test := range tests {
+		if got := nameToText(test.input); got != test.want {
+			t.Errorf("nameToText(%q)=%q, want %q",
+				test.input, got, test.want)
 		}
 	}
 }
