@@ -1,12 +1,15 @@
 # BioStuff
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/fluhus/biostuff.svg)](https://pkg.go.dev/github.com/fluhus/biostuff)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fluhus/biostuff)](https://goreportcard.com/report/github.com/fluhus/biostuff)
+
 Computational biology packages for Go, with emphasis on minimialism.
 
 ```
 go get github.com/fluhus/biostuff/...
 ```
 
-### *Another* computational biology library?
+## *Another* computational biology library?
 
 Yes.
 
@@ -15,7 +18,7 @@ straightforward solutions where they are not required to learn new things.
 It is also optimized for performance, as long as the optimization does not
 complicate the API.
 
-### Package overview
+## Package overview
 
 * Data formats
   * [bed](https://pkg.go.dev/github.com/fluhus/biostuff/formats/bed)
@@ -32,3 +35,16 @@ complicate the API.
     an index for interval (genes, etc.) overlap lookup
   * [trie](https://pkg.go.dev/github.com/fluhus/biostuff/trie)
     a prefix tree for sequence lookups
+
+## Help or get help
+
+I'd love to hear from you!
+[Open an issue](https://github.com/fluhus/biostuff/issues/new)
+if you find a bug or have any feedback or question.
+
+# t1
+## t2
+### t3
+#### t4
+##### t5
+
