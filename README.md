@@ -4,11 +4,11 @@ biostuff
 [![Go Reference](https://pkg.go.dev/badge/github.com/fluhus/biostuff.svg)](https://pkg.go.dev/github.com/fluhus/biostuff)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fluhus/biostuff)](https://goreportcard.com/report/github.com/fluhus/biostuff)
 
+Computational biology packages for Go, with emphasis on minimialism.
+
 ```
 go get github.com/fluhus/biostuff/...
 ```
-
-Pure Go packages for handling biological data. Minimal and efficient.
 
 Package Overview
 ----------------
