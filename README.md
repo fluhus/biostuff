@@ -32,6 +32,6 @@ Package Overview
 Help or Get Help
 ----------------
 
-I'd love to hear from you.
-[Open an issue](https://github.com/fluhus/biostuff/issues/new)
-if you find a bug or have any feedback or question.
+Found a bug? Got feedback? Questions? Feel free to
+[open an issue](https://github.com/fluhus/biostuff/issues/new)
+and let me know!
