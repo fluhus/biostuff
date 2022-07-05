@@ -9,10 +9,11 @@ go get github.com/fluhus/biostuff/...
 
 ## *Another* computational biology library?
 
-Yes.
+Well... Yes.
+Every library puts its emphasis on a certain audience and certain use cases.
 
 This one is optimized for API simplicity. It helps those who need quick,
-straightforward solutions where they are not required to learn new things.
+straightforward solutions where they are not required to learn new concepts.
 It is also optimized for performance, as long as the optimization does not
 complicate the API.
 
