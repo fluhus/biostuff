@@ -1,4 +1,4 @@
-// Package bed parses BED files.
+// Package bed decodes and encodes BED files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/BED_(file_format)

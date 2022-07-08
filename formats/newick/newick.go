@@ -1,4 +1,4 @@
-// Package newick handles reading and writing Newick-formatted trees.
+// Package newick decodes and encodes Newick-formatted trees.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/Newick_format

@@ -1,4 +1,4 @@
-// Package fasta parses fasta files.
+// Package fasta decodes and encodes fasta files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/FASTA_format

@@ -1,4 +1,4 @@
-// Package sam parses SAM files.
+// Package sam decodes and encodes SAM files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/SAM_(file_format)
@@ -15,8 +15,6 @@ import (
 
 	"github.com/fluhus/gostuff/csvdec"
 )
-
-// TODO(amit): Add writing.
 
 // A raw structure for the initial parsing using csvdec.
 type samRaw struct {
@@ -144,7 +142,7 @@ func (r *Reader) NextHeader() (string, error) {
 	return "@" + string(line), nil
 }
 
-// Read returns the next SAM line.
+// Read returns the next SAM line, skipping any unread header lines.
 func (r *Reader) Read() (*SAM, error) {
 	for !r.h {
 		r.NextHeader()
@@ -260,3 +258,19 @@ func tagToText(tag string, val interface{}) string {
 		panic(fmt.Sprintf("unsupported type for value %v", val))
 	}
 }
+
+// Bit values of the flag field.
+const (
+	FlagMultiple           = 1 << iota // Template having multiple segments in sequencing
+	FlagEach                           // Each segment properly aligned according to the aligner
+	FlagUnmapped                       // Segment unmapped
+	FlagUnmapped2                      // Next segment in the template unmapped
+	FlagReverseComplement              // SEQ being reverse complemented
+	FlagReverseComplement2             // SEQ of the next segment in the template being reverse complemented
+	FlagFirst                          // The first segment in the template
+	FlagLast                           // The last segment in the template
+	FlagSecondary                      // Secondary alignment
+	FlagNotPassing                     // Not passing filters, such as platform/vendor quality controls
+	FlagDuplicate                      // PCR or optical duplicate
+	FlagSupplementary                  // Supplementary alignment
+)

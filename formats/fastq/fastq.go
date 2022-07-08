@@ -1,4 +1,4 @@
-// Package fastq parses fastq files.
+// Package fastq decodes and encodes fastq files.
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/FASTQ_format
