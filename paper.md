@@ -54,7 +54,7 @@ without an extensive background in programming or in Go.
 It has been shown that error-proneness increases with API complexity
 [@Cataldo:2014], so minimizing the API can also contribute to reliability.
 Simplifying *biostuff*'s API is achieved by:
-1\) preferring use of builtin types as much as possible over introduction of
+1\) preferring use of builtin types when possible over introduction of
 new types,
 2\) allowing configuration of functionality only when absolutely needed, making
 the default behavior good for general use, and
