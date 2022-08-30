@@ -100,7 +100,7 @@ func ReverseComplement(dst, src []byte) []byte {
 		case 'n':
 			dst = append(dst, 'n')
 		default:
-			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
+			panic(fmt.Sprintf("Unexpected base value: %q, want aAcCgGtTnN", b))
 		}
 	}
 	return dst
@@ -135,7 +135,7 @@ func ReverseComplementString(s string) string {
 		case 'n':
 			builder.WriteByte('n')
 		default:
-			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtTnN", b))
+			panic(fmt.Sprintf("Unexpected base value: %q, want aAcCgGtTnN", b))
 		}
 	}
 	return builder.String()
@@ -154,7 +154,7 @@ func DNATo2Bit(dst, src []byte) []byte {
 		}
 		dbInt := Ntoi(b)
 		if dbInt == -1 {
-			panic(fmt.Sprintf("Unexpected base value: %v, want aAcCgGtT", b))
+			panic(fmt.Sprintf("Unexpected base value: %q, want aAcCgGtT", b))
 		}
 		db := byte(dbInt) << shift
 		dst[di] |= db
