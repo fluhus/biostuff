@@ -3,6 +3,8 @@ package sequtil
 import (
 	"reflect"
 	"testing"
+
+	"golang.org/x/exp/slices"
 )
 
 func TestReverseComplement(t *testing.T) {
@@ -100,4 +102,17 @@ func BenchmarkDNAFrom2Bit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		dna = DNAFrom2Bit(dna[:0], twobit)
 	}
+}
+
+func FuzzDNA2Bit(f *testing.F) {
+	f.Add([]byte{})
+	f.Fuzz(func(t *testing.T, a []byte) {
+		aa := slices.Clone(a)
+		b := DNAFrom2Bit(nil, a)
+		c := DNATo2Bit(nil, b)
+		if !slices.Equal(aa, c) {
+			t.Errorf("DNATo2Bit(DNAFrom2Bit(...)) before=%q after=%q",
+				aa, c)
+		}
+	})
 }
