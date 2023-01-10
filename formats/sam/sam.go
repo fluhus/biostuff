@@ -118,6 +118,9 @@ func (r *Reader) NextHeader() (string, error) {
 	}
 	b, err := r.r.ReadByte()
 	if err != nil {
+		if err == io.EOF {
+			r.h = true
+		}
 		return "", err
 	}
 	if b != '@' {
