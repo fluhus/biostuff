@@ -31,6 +31,7 @@
 package sequtil
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -183,5 +184,26 @@ func init() {
 			val[3-j] = Iton((i >> (2 * j)) & 3)
 		}
 		copy(dnaFrom2bit[i][:], val)
+	}
+}
+
+// CanonicalSubsequences iterates over canonical k-long subsequences of seq.
+// A canonical sequence is the lexicographically lesser out of a sequence and
+// its reverse complement.
+// Calls foreach on each canonical subsequence.
+// The function should return whether the iteration should continue.
+// Makes one call to ReverseComplement.
+func CanonicalSubsequences(seq []byte, k int, foreach func([]byte) bool) {
+	rc := ReverseComplement(make([]byte, 0, len(seq)), seq)
+	nk := len(seq) - k + 1
+	for i := 0; i < nk; i++ {
+		kmer := seq[i : i+k]
+		kmerRC := rc[len(rc)-i-k : len(rc)-i]
+		if bytes.Compare(kmer, kmerRC) == 1 {
+			kmer = kmerRC
+		}
+		if !foreach(kmer) {
+			break
+		}
 	}
 }
