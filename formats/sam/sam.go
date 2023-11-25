@@ -106,6 +106,7 @@ func NewReader(r io.Reader) *Reader {
 	d := csvdec.NewDecoder(b)
 	d.Comma = '\t'
 	d.FieldsPerRecord = -1 // Allow variable number of fields.
+	d.LazyQuotes = true
 	return &Reader{b, d, false}
 }
 
