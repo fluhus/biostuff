@@ -1,8 +1,8 @@
 module github.com/fluhus/biostuff
 
-go 1.19
+go 1.21
 
 require (
-	github.com/fluhus/gostuff v0.1.13
-	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
+	github.com/fluhus/gostuff v0.4.0
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )

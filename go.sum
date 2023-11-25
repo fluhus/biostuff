@@ -1,4 +1,4 @@
-github.com/fluhus/gostuff v0.1.13 h1:ILUOwWiGE9cV7AiNMqW4I22cLeKE96FZDIKTY4f+m4k=
-github.com/fluhus/gostuff v0.1.13/go.mod h1:mvYCW5Wz5macktd7g1gQ54L6gTfhpbrs48Yx6rQgpOg=
-golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 h1:tnebWN09GYg9OLPss1KXj8txwZc6X6uMr6VFdcGNbHw=
-golang.org/x/exp v0.0.0-20220827204233-334a2380cb91/go.mod h1:cyybsKvd6eL0RnXn6p/Grxp8F5bW7iYuBgsNCOHpMYE=
+github.com/fluhus/gostuff v0.4.0 h1:uFzP7Uw2QAUBybd6hh7c7gLhaYrVftZw0iQkorZnWXA=
+github.com/fluhus/gostuff v0.4.0/go.mod h1:vR4cGqPneT1ztSCl8PM1yIqzPJpT54wckwPAxfMs3e0=
+golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa h1:FRnLl4eNAQl8hwxVVC17teOw8kdjVDVAiFMtgUdTSRQ=
+golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa/go.mod h1:zk2irFbV9DP96SEBUUAy67IdHUaZuSnrz1n472HUCLE=
