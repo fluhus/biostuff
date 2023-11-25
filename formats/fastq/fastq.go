@@ -84,8 +84,8 @@ func (r *Reader) Read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	plus := copyBytes(r.s.Bytes())
-	if !bytes.Equal(plus, []byte("+")) {
+	plus := r.s.Bytes()
+	if !bytes.HasPrefix(plus, []byte("+")) {
 		return nil, fmt.Errorf("fastq read: expected '+' at beginning of"+
 			" line: %q", string(plus))
 	}
