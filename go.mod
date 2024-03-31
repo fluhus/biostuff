@@ -1,6 +1,6 @@
 module github.com/fluhus/biostuff
 
-go 1.21
+go 1.22
 
 require (
 	github.com/fluhus/gostuff v0.4.0
