@@ -111,11 +111,20 @@ func NewReader(r io.Reader) *Reader {
 }
 
 // NextHeader returns the next header line as a raw string, including the '@'.
-// Returns EOF when out of header lines, then Next can be called for the
+// Returns EOF when out of header lines, then Read can be called for the
 // data lines.
+//
+// Deprecated: use ReadHeader.
 func (r *Reader) NextHeader() (string, error) {
+	return r.ReadHeader()
+}
+
+// ReadHeader returns the next header line as a raw string, including the '@'.
+// Returns EOF when out of header lines, then Read can be called for the
+// data lines.
+func (r *Reader) ReadHeader() (string, error) {
 	if r.h {
-		panic("Cannot read header after reading alignments.")
+		panic("cannot read header after reading alignments.")
 	}
 	b, err := r.r.ReadByte()
 	if err != nil {
