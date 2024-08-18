@@ -1,5 +1,3 @@
-//go:build go1.22
-
 package fasta
 
 import (
@@ -36,8 +34,7 @@ func IterFile(file string) iter.Seq2[*Fasta, error] {
 			return
 		}
 		defer f.Close()
-		r := NewReader(f)
-		for fa, err := range r.Iter() {
+		for fa, err := range NewReader(f).Iter() {
 			if !yield(fa, err) {
 				break
 			}
