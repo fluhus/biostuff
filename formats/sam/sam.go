@@ -258,7 +258,7 @@ func tagsToText(tags map[string]interface{}) []string {
 func tagToText(tag string, val interface{}) string {
 	switch val := val.(type) {
 	case byte:
-		return tag + ":A:" + strconv.Itoa(int(val))
+		return tag + ":A:" + string(val)
 	case int:
 		return tag + ":i:" + strconv.Itoa(val)
 	case float64:
