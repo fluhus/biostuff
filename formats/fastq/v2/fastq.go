@@ -4,8 +4,6 @@
 // https://en.wikipedia.org/wiki/FASTQ_format
 //
 // This package does not validate sequence and quality characters.
-//
-// Deprecated: use v2.
 package fastq
 
 import (
@@ -13,13 +11,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"slices"
 )
 
 // Fastq is a single sequence in a fastq file.
 type Fastq struct {
-	Name     []byte // Entry name (without the '@')
-	Sequence []byte // Sequence as received
-	Quals    []byte // Qualities as received
+	Name     []byte // Entry name (without the '@').
+	Sequence []byte // Sequence.
+	Quals    []byte // Qualities as ASCII characters.
 }
 
 // MarshalText returns the textual representation of f in fastq format.
@@ -27,33 +26,34 @@ type Fastq struct {
 func (f *Fastq) MarshalText() ([]byte, error) {
 	n := 6 + len(f.Name) + len(f.Sequence) + len(f.Quals)
 	buf := bytes.NewBuffer(make([]byte, 0, n))
-	buf.WriteByte('@')
-	buf.Write(f.Name)
-	buf.WriteByte('\n')
-	buf.Write(f.Sequence)
-	buf.WriteString("\n+\n")
-	buf.Write(f.Quals)
-	buf.WriteByte('\n')
+	f.Write(buf)
 	if buf.Len() != n {
 		panic(fmt.Sprintf("bad length: %v expected %v", buf.Len(), n))
 	}
 	return buf.Bytes(), nil
 }
 
-// A Reader reads sequences from a fastq stream.
-type Reader struct {
+// Write writes this entry in textual Fastq format to the given writer.
+// Includes a trailing new line.
+func (f *Fastq) Write(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "@%s\n%s\n+\n%s\n", f.Name, f.Sequence, f.Quals)
+	return err
+}
+
+// A reader reads sequences from a fastq stream.
+type reader struct {
 	s *bufio.Scanner
 }
 
-// NewReader returns a new fastq reader that reads from r.
-func NewReader(r io.Reader) *Reader {
-	return &Reader{s: bufio.NewScanner(r)}
+// Returns a new fastq reader that reads from r.
+func newReader(r io.Reader) *reader {
+	return &reader{s: bufio.NewScanner(r)}
 }
 
-// Read reads the next fastq entry from the reader.
+// Reads the next fastq entry from the reader.
 // Returns a non-nil error if reading fails, or io.EOF if encountered end of
 // file. When EOF is returned, no fastq is available.
-func (r *Reader) Read() (*Fastq, error) {
+func (r *reader) read() (*Fastq, error) {
 	// Read name.
 	if !r.s.Scan() {
 		if r.s.Err() == nil {
@@ -61,7 +61,7 @@ func (r *Reader) Read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	name := copyBytes(r.s.Bytes())
+	name := slices.Clone(r.s.Bytes())
 
 	// Handle name.
 	if len(name) == 0 || name[0] != '@' {
@@ -77,7 +77,7 @@ func (r *Reader) Read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	seq := copyBytes(r.s.Bytes())
+	seq := slices.Clone(r.s.Bytes())
 
 	// Read plus
 	if !r.s.Scan() {
@@ -99,18 +99,11 @@ func (r *Reader) Read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	quals := copyBytes(r.s.Bytes())
+	quals := slices.Clone(r.s.Bytes())
 	if len(quals) != len(seq) {
 		return nil, fmt.Errorf("fastq read: sequence and qualities have"+
 			" different lengths: %v and %v", len(seq), len(quals))
 	}
 
 	return &Fastq{name, seq, quals}, nil
-}
-
-// Copies the given bytes to a newly allocated slice.
-func copyBytes(src []byte) []byte {
-	b := make([]byte, len(src))
-	copy(b, src)
-	return b
 }

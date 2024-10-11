@@ -3,11 +3,13 @@
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/BED_(file_format)
 //
-// Limitations
+// # Limitations
 //
 // Currently only tab delimiters are supported.
 //
 // Currently BED headers are not supported.
+//
+// Deprecated: use v2.
 package bed
 
 import (

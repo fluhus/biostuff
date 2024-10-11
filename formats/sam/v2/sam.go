@@ -2,8 +2,6 @@
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/SAM_(file_format)
-//
-// Deprecated: use v2.
 package sam
 
 import (
@@ -37,7 +35,7 @@ type samRaw struct {
 // SAM is a single line (alignment) in a SAM file.
 type SAM struct {
 	Qname string                 // Query name
-	Flag  int                    // Bitwise flag
+	Flag  Flag                   // Bitwise flag
 	Rname string                 // Reference sequence name
 	Pos   int                    // Mapping position (1-based)
 	Mapq  int                    // Mapping quality
@@ -54,23 +52,37 @@ type SAM struct {
 // Includes a trailing new line.
 func (s *SAM) MarshalText() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	fmt.Fprintf(buf, "%s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%s",
+	s.Write(buf)
+	return buf.Bytes(), nil
+}
+
+// Write writes this entry in textual SAM format to the given writer.
+// Includes a trailing new line.
+func (s *SAM) Write(w io.Writer) error {
+	if _, err := fmt.Fprintf(w,
+		"%s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%s",
 		s.Qname, s.Flag, s.Rname, s.Pos,
 		s.Mapq, s.Cigar, s.Rnext, s.Pnext,
 		s.Tlen, s.Seq, s.Qual,
-	)
-	for _, tag := range tagsToText(s.Tags) {
-		fmt.Fprintf(buf, "\t%s", tag)
+	); err != nil {
+		return err
 	}
-	buf.WriteByte('\n')
-	return buf.Bytes(), nil
+	for _, tag := range tagsToText(s.Tags) {
+		if _, err := fmt.Fprintf(w, "\t%s", tag); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(w, "\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Converts a raw SAM struct to an exported SAM struct.
 func fromRaw(raw *samRaw) (*SAM, error) {
 	result := &SAM{}
 	result.Qname = raw.Qname
-	result.Flag = raw.Flag
+	result.Flag = Flag(raw.Flag)
 	result.Rname = raw.Rname
 	result.Pos = raw.Pos
 	result.Mapq = raw.Mapq
@@ -89,15 +101,15 @@ func fromRaw(raw *samRaw) (*SAM, error) {
 	return result, nil
 }
 
-// A Reader reads and parses SAM lines.
-type Reader struct {
+// A reader reads and parses SAM lines.
+type reader struct {
 	r *bufio.Reader
 	d *csvdec.Decoder
 	h bool // Indicates that we are done reading the header.
 }
 
-// NewReader returns a new SAM reader that reads from r.
-func NewReader(r io.Reader) *Reader {
+// newReader returns a new SAM reader that reads from r.
+func newReader(r io.Reader) *reader {
 	var b *bufio.Reader
 	switch r := r.(type) {
 	case *bufio.Reader:
@@ -109,22 +121,13 @@ func NewReader(r io.Reader) *Reader {
 	d.Comma = '\t'
 	d.FieldsPerRecord = -1 // Allow variable number of fields.
 	d.LazyQuotes = true
-	return &Reader{b, d, false}
-}
-
-// NextHeader returns the next header line as a raw string, including the '@'.
-// Returns EOF when out of header lines, then Read can be called for the
-// data lines.
-//
-// Deprecated: use ReadHeader.
-func (r *Reader) NextHeader() (string, error) {
-	return r.ReadHeader()
+	return &reader{b, d, false}
 }
 
 // ReadHeader returns the next header line as a raw string, including the '@'.
 // Returns EOF when out of header lines, then Read can be called for the
 // data lines.
-func (r *Reader) ReadHeader() (string, error) {
+func (r *reader) ReadHeader() (string, error) {
 	if r.h {
 		panic("cannot read header after reading alignments.")
 	}
@@ -157,10 +160,10 @@ func (r *Reader) ReadHeader() (string, error) {
 	return "@" + string(line), nil
 }
 
-// Read returns the next SAM line, skipping any unread header lines.
-func (r *Reader) Read() (*SAM, error) {
+// read returns the next SAM line, skipping any unread header lines.
+func (r *reader) read() (*SAM, error) {
 	for !r.h {
-		r.NextHeader()
+		r.ReadHeader()
 	}
 	raw := &samRaw{}
 	err := r.d.Decode(raw)
@@ -273,19 +276,3 @@ func tagToText(tag string, val interface{}) string {
 		panic(fmt.Sprintf("unsupported type for value %v", val))
 	}
 }
-
-// Bit values of the flag field.
-const (
-	FlagMultiple           = 1 << iota // Template having multiple segments in sequencing
-	FlagEach                           // Each segment properly aligned according to the aligner
-	FlagUnmapped                       // Segment unmapped
-	FlagUnmapped2                      // Next segment in the template unmapped
-	FlagReverseComplement              // SEQ being reverse complemented
-	FlagReverseComplement2             // SEQ of the next segment in the template being reverse complemented
-	FlagFirst                          // The first segment in the template
-	FlagLast                           // The last segment in the template
-	FlagSecondary                      // Secondary alignment
-	FlagNotPassing                     // Not passing filters, such as platform/vendor quality controls
-	FlagDuplicate                      // PCR or optical duplicate
-	FlagSupplementary                  // Supplementary alignment
-)
