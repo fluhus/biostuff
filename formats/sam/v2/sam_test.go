@@ -139,6 +139,88 @@ func TestText(t *testing.T) {
 	}
 }
 
+func TestFlag(t *testing.T) {
+	s := &SAM{}
+	if got := s.Flag.Multiple(); got {
+		t.Errorf("SAM{}.Multiple()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Each(); got {
+		t.Errorf("SAM{}.Each()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Unmapped(); got {
+		t.Errorf("SAM{}.Unmapped()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Unmapped2(); got {
+		t.Errorf("SAM{}.Unmapped2()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.ReverseComplement(); got {
+		t.Errorf("SAM{}.ReverseComplement()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.ReverseComplement2(); got {
+		t.Errorf("SAM{}.ReverseComplement2()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.First(); got {
+		t.Errorf("SAM{}.First()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Last(); got {
+		t.Errorf("SAM{}.Last()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Secondary(); got {
+		t.Errorf("SAM{}.Secondary()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.NotPassing(); got {
+		t.Errorf("SAM{}.NotPassing()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Duplicate(); got {
+		t.Errorf("SAM{}.Duplicate()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Supplementary(); got {
+		t.Errorf("SAM{}.Supplementary()=true, want false. flag=%v", s.Flag)
+	}
+
+	s.Flag.SetEach(true)
+	s.Flag.SetNotPassing(false)
+	s.Flag.SetUnmapped2(true)
+	s.Flag.SetSupplementary(false)
+
+	if got := s.Flag.Multiple(); got {
+		t.Errorf("SAM{}.Multiple()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Each(); !got {
+		t.Errorf("SAM{}.Each()=false, want true. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Unmapped(); got {
+		t.Errorf("SAM{}.Unmapped()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Unmapped2(); !got {
+		t.Errorf("SAM{}.Unmapped2()=false, want true. flag=%v", s.Flag)
+	}
+	if got := s.Flag.ReverseComplement(); got {
+		t.Errorf("SAM{}.ReverseComplement()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.ReverseComplement2(); got {
+		t.Errorf("SAM{}.ReverseComplement2()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.First(); got {
+		t.Errorf("SAM{}.First()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Last(); got {
+		t.Errorf("SAM{}.Last()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Secondary(); got {
+		t.Errorf("SAM{}.Secondary()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.NotPassing(); got {
+		t.Errorf("SAM{}.NotPassing()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Duplicate(); got {
+		t.Errorf("SAM{}.Duplicate()=true, want false. flag=%v", s.Flag)
+	}
+	if got := s.Flag.Supplementary(); got {
+		t.Errorf("SAM{}.Supplementary()=true, want false. flag=%v", s.Flag)
+	}
+}
+
 func BenchmarkText(b *testing.B) {
 	text := "GGCGTT\t0\tbvu:BVU_3729\t38\t255\t24M\t*\t0\t0\t" +
 		"FADFNAKNNKKNLHDCNEYMNNDE\t*AS:i:44\tMD:Z:14G3C5\tNM:i:2\t" +
