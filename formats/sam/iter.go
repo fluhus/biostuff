@@ -10,6 +10,7 @@ import (
 	"github.com/fluhus/gostuff/iterx"
 )
 
+// ReaderHeader iterates over SAM or header entries in a reader.
 func ReaderHeader(r io.Reader) iter.Seq2[SAMOrHeader, error] {
 	return func(yield func(SAMOrHeader, error) bool) {
 		csvReader := iterx.CSVReader(r, func(r *csv.Reader) {
@@ -42,7 +43,7 @@ func ReaderHeader(r io.Reader) iter.Seq2[SAMOrHeader, error] {
 	}
 }
 
-// Reader returns an iterator over SAM entries in a reader.
+// Reader iterates over SAM entries in a reader.
 func Reader(r io.Reader) iter.Seq2[*SAM, error] {
 	return func(yield func(*SAM, error) bool) {
 		for sh, err := range ReaderHeader(r) {
@@ -62,7 +63,7 @@ func Reader(r io.Reader) iter.Seq2[*SAM, error] {
 	}
 }
 
-// File returns an iterator over SAM entries in a file.
+// File iterates over SAM entries in a file.
 func File(file string) iter.Seq2[*SAM, error] {
 	return func(yield func(*SAM, error) bool) {
 		f, err := aio.Open(file)
@@ -79,6 +80,7 @@ func File(file string) iter.Seq2[*SAM, error] {
 	}
 }
 
+// FileHeader iterates over SAM or header entries in a file.
 func FileHeader(file string) iter.Seq2[SAMOrHeader, error] {
 	return func(yield func(SAMOrHeader, error) bool) {
 		f, err := aio.Open(file)
@@ -95,7 +97,10 @@ func FileHeader(file string) iter.Seq2[SAMOrHeader, error] {
 	}
 }
 
+// SAMOrHeader holds either a SAM or a header entry from a SAM-formatted
+// input.
+// If there is no error, exactly one of the fields will be non-nil.
 type SAMOrHeader struct {
-	H *string
-	S *SAM
+	H *string // Header line, including the '@' sign.
+	S *SAM    // SAM entry.
 }
