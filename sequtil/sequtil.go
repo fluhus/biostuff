@@ -34,14 +34,18 @@ package sequtil
 import (
 	"bytes"
 	"fmt"
+	"iter"
 	"strings"
 )
 
 // Maps nucleotide byte value to its int value.
 var ntoi []int
 
+// Maps nucleotide byte value to its complement.
+var complementBytes []byte
+
 func init() {
-	// Initialize ntoi values.
+	// Initialize ntoi.
 	ntoi = make([]int, 256)
 	for i := range ntoi {
 		ntoi[i] = -1
@@ -50,6 +54,14 @@ func init() {
 	ntoi['c'], ntoi['C'] = 1, 1
 	ntoi['g'], ntoi['G'] = 2, 2
 	ntoi['t'], ntoi['T'] = 3, 3
+
+	// Initialize complementBytes.
+	complementBytes = make([]byte, 256)
+	complementBytes['a'], complementBytes['A'] = 't', 'T'
+	complementBytes['c'], complementBytes['C'] = 'g', 'G'
+	complementBytes['g'], complementBytes['G'] = 'c', 'C'
+	complementBytes['t'], complementBytes['T'] = 'a', 'A'
+	complementBytes['n'], complementBytes['N'] = 'n', 'N'
 }
 
 // Ntoi converts a nucleotide to an int.
@@ -75,35 +87,20 @@ func Iton(num int) byte {
 	}
 }
 
+// Converts a single base to its complement.
+func complementByte(b byte) byte {
+	rc := complementBytes[b]
+	if rc == 0 {
+		panic(fmt.Sprintf("unexpected base value: %q, want aAcCgGtTnN", b))
+	}
+	return rc
+}
+
 // ReverseComplement appends to dst the reverse complement of src and returns
 // the new dst. Characters not in "aAcCgGtTnN" will cause a panic.
 func ReverseComplement(dst, src []byte) []byte {
 	for i := len(src) - 1; i >= 0; i-- {
-		b := src[i]
-		switch b {
-		case 'a':
-			dst = append(dst, 't')
-		case 'c':
-			dst = append(dst, 'g')
-		case 'g':
-			dst = append(dst, 'c')
-		case 't':
-			dst = append(dst, 'a')
-		case 'A':
-			dst = append(dst, 'T')
-		case 'C':
-			dst = append(dst, 'G')
-		case 'G':
-			dst = append(dst, 'C')
-		case 'T':
-			dst = append(dst, 'A')
-		case 'N':
-			dst = append(dst, 'N')
-		case 'n':
-			dst = append(dst, 'n')
-		default:
-			panic(fmt.Sprintf("Unexpected base value: %q, want aAcCgGtTnN", b))
-		}
+		dst = append(dst, complementByte(src[i]))
 	}
 	return dst
 }
@@ -114,31 +111,7 @@ func ReverseComplementString(s string) string {
 	builder := &strings.Builder{}
 	builder.Grow(len(s))
 	for i := len(s) - 1; i >= 0; i-- {
-		b := s[i]
-		switch b {
-		case 'a':
-			builder.WriteByte('t')
-		case 'c':
-			builder.WriteByte('g')
-		case 'g':
-			builder.WriteByte('c')
-		case 't':
-			builder.WriteByte('a')
-		case 'A':
-			builder.WriteByte('T')
-		case 'C':
-			builder.WriteByte('G')
-		case 'G':
-			builder.WriteByte('C')
-		case 'T':
-			builder.WriteByte('A')
-		case 'N':
-			builder.WriteByte('N')
-		case 'n':
-			builder.WriteByte('n')
-		default:
-			panic(fmt.Sprintf("Unexpected base value: %q, want aAcCgGtTnN", b))
-		}
+		builder.WriteByte(complementByte(s[i]))
 	}
 	return builder.String()
 }
@@ -156,7 +129,7 @@ func DNATo2Bit(dst, src []byte) []byte {
 		}
 		dbInt := Ntoi(b)
 		if dbInt == -1 {
-			panic(fmt.Sprintf("Unexpected base value: %q, want aAcCgGtT", b))
+			panic(fmt.Sprintf("unexpected base value: %q, want aAcCgGtT", b))
 		}
 		db := byte(dbInt) << shift
 		dst[di] |= db
@@ -192,11 +165,11 @@ func init() {
 // A canonical sequence is the lexicographically lesser out of a sequence and
 // its reverse complement.
 // Makes one call to ReverseComplement.
-func CanonicalSubsequences(seq []byte, k int) func(yield func([]byte) bool) {
+func CanonicalSubsequences(seq []byte, k int) iter.Seq[[]byte] {
 	return func(yield func([]byte) bool) {
 		rc := ReverseComplement(make([]byte, 0, len(seq)), seq)
 		nk := len(seq) - k + 1
-		for i := 0; i < nk; i++ {
+		for i := range nk {
 			kmer := seq[i : i+k]
 			kmerRC := rc[len(rc)-i-k : len(rc)-i]
 			if bytes.Compare(kmer, kmerRC) == 1 {
