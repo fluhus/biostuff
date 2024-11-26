@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"math"
 
-	"github.com/fluhus/biostuff/sequtil/v2"
+	"github.com/fluhus/biostuff/sequtil"
 	"github.com/fluhus/gostuff/minhash"
 	"github.com/spaolacci/murmur3"
 )

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/fluhus/biostuff/sequtil/v2"
+	"github.com/fluhus/biostuff/sequtil"
 )
 
 func TestSequences(t *testing.T) {

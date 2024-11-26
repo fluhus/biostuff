@@ -121,23 +121,9 @@ func TestCanonical(t *testing.T) {
 	input := "GATTACCA"
 	want := []string{"GA", "AT", "AA", "TA", "AC", "CC", "CA"}
 	var got []string
-	CanonicalSubsequences([]byte(input), 2, func(b []byte) bool {
-		got = append(got, string(b))
-		return true
-	})
-	if !slices.Equal(got, want) {
-		t.Fatalf("CanonicalSubsequences(%q)=%v, want %v", input, got, want)
+	for seq := range CanonicalSubsequences([]byte(input), 2) {
+		got = append(got, string(seq))
 	}
-}
-
-func TestCanonical_stop(t *testing.T) {
-	input := "GATTACCA"
-	want := []string{"GA", "AT", "AA"}
-	var got []string
-	CanonicalSubsequences([]byte(input), 2, func(b []byte) bool {
-		got = append(got, string(b))
-		return string(b) != "AA"
-	})
 	if !slices.Equal(got, want) {
 		t.Fatalf("CanonicalSubsequences(%q)=%v, want %v", input, got, want)
 	}
