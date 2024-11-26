@@ -8,8 +8,6 @@
 // Currently only tab delimiters are supported.
 //
 // Currently BED headers are not supported.
-//
-// Deprecated: use v2.
 package bed
 
 import (
@@ -30,6 +28,7 @@ const (
 
 // BED is a single line in a BED file.
 type BED struct {
+	N           int // Number of fields in this entry
 	Chrom       string
 	ChromStart  int // 0-based
 	ChromEnd    int // 0-based exclusive
@@ -44,133 +43,157 @@ type BED struct {
 	BlockStarts []int // Length should match BlockCount
 }
 
-// Returns the first n fields as strings.
-func (b *BED) toStrings(n int) (fields []string) {
-	fields = make([]string, n)
-	fields[0] = b.Chrom
-	fields[1] = fmt.Sprint(b.ChromStart)
-	fields[2] = fmt.Sprint(b.ChromEnd)
-	if n == 3 {
-		return
+// Write writer the textual BED format representation of b to w.
+// Encodes the first b.N fields, where b.N is between 3 and 12.
+// Includes a trailing new line.
+func (b *BED) Write(w io.Writer) error {
+	if b.N < 3 || b.N > 12 {
+		return fmt.Errorf("bad number of fields: %v, want 3-12", b.N)
 	}
-	fields[3] = b.Name
-	if n == 4 {
-		return
+	if _, err := fmt.Fprintf(w, "%v\t%v\t%v",
+		b.Chrom, b.ChromStart, b.ChromEnd); err != nil {
+		return err
 	}
-	fields[4] = fmt.Sprint(b.Score)
-	if n == 5 {
-		return
+	if b.N > 3 {
+		if _, err := fmt.Fprintf(w, "\t%v", b.Name); err != nil {
+			return err
+		}
 	}
-	fields[5] = b.Strand
-	if n == 6 {
-		return
+	if b.N > 4 {
+		if _, err := fmt.Fprintf(w, "\t%v", b.Score); err != nil {
+			return err
+		}
 	}
-	fields[6] = fmt.Sprint(b.ThickStart)
-	if n == 7 {
-		return
+	if b.N > 5 {
+		if _, err := fmt.Fprintf(w, "\t%v", b.Strand); err != nil {
+			return err
+		}
 	}
-	fields[7] = fmt.Sprint(b.ThickEnd)
-	if n == 8 {
-		return
+	if b.N > 6 {
+		if _, err := fmt.Fprintf(w, "\t%v", b.ThickStart); err != nil {
+			return err
+		}
 	}
-	fields[8] = fmt.Sprintf("%v,%v,%v", b.ItemRGB[0], b.ItemRGB[1], b.ItemRGB[2])
-	if n == 9 {
-		return
+	if b.N > 7 {
+		if _, err := fmt.Fprintf(w, "\t%v", b.ThickEnd); err != nil {
+			return err
+		}
 	}
-	fields[9] = fmt.Sprint(b.BlockCount)
-	if n == 10 {
-		return
+	if b.N > 8 {
+		if _, err := fmt.Fprintf(w, "\t%v,%v,%v",
+			b.ItemRGB[0], b.ItemRGB[1], b.ItemRGB[2]); err != nil {
+			return err
+		}
 	}
-	strs := make([]string, len(b.BlockSizes))
-	for i := range strs {
-		strs[i] = fmt.Sprint(b.BlockSizes[i])
+	if b.N > 9 {
+		if _, err := fmt.Fprintf(w, "\t%v", b.BlockCount); err != nil {
+			return err
+		}
 	}
-	fields[10] = strings.Join(strs, ",")
-	if n == 11 {
-		return
+	if b.N > 10 {
+		if _, err := fmt.Fprintf(w, "\t"); err != nil {
+			return err
+		}
+		for i, x := range b.BlockSizes {
+			txt := "%v"
+			if i > 0 {
+				txt = ",%v"
+			}
+			if _, err := fmt.Fprintf(w, txt, x); err != nil {
+				return err
+			}
+		}
 	}
-	strs = make([]string, len(b.BlockStarts))
-	for i := range strs {
-		strs[i] = fmt.Sprint(b.BlockStarts[i])
+	if b.N > 11 {
+		if _, err := fmt.Fprintf(w, "\t"); err != nil {
+			return err
+		}
+		for i, x := range b.BlockStarts {
+			txt := "%v"
+			if i > 0 {
+				txt = ",%v"
+			}
+			if _, err := fmt.Fprintf(w, txt, x); err != nil {
+				return err
+			}
+		}
 	}
-	fields[11] = strings.Join(strs, ",")
-	return
+	if _, err := fmt.Fprintf(w, "\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
-// Text returns the textual representation of b in BED format. Encodes the first n
-// fields, where n is between 3 and 12. Includes a trailing new line.
-func (b *BED) Text(n int) []byte {
-	if n < 3 || n > 12 {
-		panic(fmt.Sprintf("bad n: %v, should be 3-12", n))
-	}
-	strs := b.toStrings(n)
+// MarshalText returns the textual representation of b in BED format.
+// Encodes the first b.N fields, where b.N is between 3 and 12.
+// Includes a trailing new line.
+func (b *BED) MarshalText() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	w := csv.NewWriter(buf)
-	w.Comma = '\t'
-	w.Write(strs)
-	w.Flush()
-	return buf.Bytes()
+	if err := b.Write(buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // Parses textual fields into a struct. Returns the number of parsed fields.
-func parseLine(fields []string) (*BED, int, error) {
+func parseLine(fields []string) (*BED, error) {
 	n := len(fields)
 	if n < 3 || n > 12 {
-		return nil, 0, fmt.Errorf("bad number of fields: %v, want 3-12", n)
+		return nil, fmt.Errorf("bad number of fields: %v, want 3-12", n)
 	}
 
 	// Force 12 fields to make parsing easy.
 	fields = append(fields, make([]string, 12-n)...)
-	bed := &BED{}
+	bed := &BED{N: n}
 	var err error
 
 	// Mandatory fields.
 	bed.Chrom = fields[0]
 	if bed.ChromStart, err = strconv.Atoi(fields[1]); err != nil {
-		return nil, 0, fmt.Errorf("field 2: %v", err)
+		return nil, fmt.Errorf("field 2: %v", err)
 	}
 	if bed.ChromEnd, err = strconv.Atoi(fields[2]); err != nil {
-		return nil, 0, fmt.Errorf("field 3: %v", err)
+		return nil, fmt.Errorf("field 3: %v", err)
 	}
 
 	// Optional fields.
 	bed.Name = fields[3]
 	if fields[4] != "" {
 		if bed.Score, err = strconv.Atoi(fields[4]); err != nil {
-			return nil, 0, fmt.Errorf("field 5: %v", err)
+			return nil, fmt.Errorf("field 5: %v", err)
 		}
 	}
 	if fields[5] != "" && fields[5] != PlusStrand &&
 		fields[5] != MinusStrand && fields[5] != NoStrand {
-		return nil, 0, fmt.Errorf("field 6: bad strand: %q", fields[5])
+		return nil, fmt.Errorf("field 6: bad strand: %q", fields[5])
 	}
 	bed.Strand = fields[5]
 	if fields[6] != "" {
 		if bed.ThickStart, err = strconv.Atoi(fields[6]); err != nil {
-			return nil, 0, fmt.Errorf("field 7: %v", err)
+			return nil, fmt.Errorf("field 7: %v", err)
 		}
 	}
 	if fields[7] != "" {
 		if bed.ThickEnd, err = strconv.Atoi(fields[7]); err != nil {
-			return nil, 0, fmt.Errorf("field 8: %v", err)
+			return nil, fmt.Errorf("field 8: %v", err)
 		}
 	}
 	if fields[8] != "" {
 		rgb := strings.Split(fields[8], ",")
 		if len(rgb) != 3 {
-			return nil, 0, fmt.Errorf("field 9: bad RGB value: %q", fields[8])
+			return nil, fmt.Errorf("field 9: bad RGB value: %q", fields[8])
 		}
 		for i := range rgb {
 			a, err := strconv.ParseUint(rgb[i], 0, 8)
 			if err != nil {
-				return nil, 0, fmt.Errorf("field 9: bad RGB value: %q", fields[8])
+				return nil, fmt.Errorf("field 9: bad RGB value: %q", fields[8])
 			}
 			bed.ItemRGB[i] = byte(a)
 		}
 	}
 	if fields[9] != "" {
 		if bed.BlockCount, err = strconv.Atoi(fields[9]); err != nil {
-			return nil, 0, fmt.Errorf("field 10: %v", err)
+			return nil, fmt.Errorf("field 10: %v", err)
 		}
 	}
 	if fields[10] != "" {
@@ -179,7 +202,7 @@ func parseLine(fields []string) (*BED, int, error) {
 		for i := range sizes {
 			bed.BlockSizes[i], err = strconv.Atoi(sizes[i])
 			if err != nil {
-				return nil, 0, fmt.Errorf("field 11: %v", err)
+				return nil, fmt.Errorf("field 11: %v", err)
 			}
 		}
 	}
@@ -189,46 +212,46 @@ func parseLine(fields []string) (*BED, int, error) {
 		for i := range starts {
 			bed.BlockStarts[i], err = strconv.Atoi(starts[i])
 			if err != nil {
-				return nil, 0, fmt.Errorf("field 12: %v", err)
+				return nil, fmt.Errorf("field 12: %v", err)
 			}
 		}
 	}
 
 	if len(bed.BlockSizes) != bed.BlockCount {
-		return nil, 0, fmt.Errorf("blockSizes has %v values but blockCount is %v",
+		return nil, fmt.Errorf("blockSizes has %v values but blockCount is %v",
 			len(bed.BlockSizes), bed.BlockCount)
 	}
 	if len(bed.BlockStarts) != bed.BlockCount {
-		return nil, 0, fmt.Errorf("blockStarts has %v values but blockCount is %v",
+		return nil, fmt.Errorf("blockStarts has %v values but blockCount is %v",
 			len(bed.BlockStarts), bed.BlockCount)
 	}
 
-	return bed, n, nil
+	return bed, nil
 }
 
-// A Reader reads and parses BED lines.
-type Reader struct {
+// A reader reads and parses BED lines.
+type reader struct {
 	r *csv.Reader
 }
 
-// NewReader returns a new BED reader that reads from r.
-func NewReader(r io.Reader) *Reader {
+// newReader returns a new BED reader that reads from r.
+func newReader(r io.Reader) *reader {
 	cr := csv.NewReader(r)
 	cr.Comma = '\t'
 	cr.Comment = '#'
-	return &Reader{cr}
+	return &reader{cr}
 }
 
-// Read returns the next BED line, and n as the number of fields that were found.
+// read returns the next BED line, and n as the number of fields that were found.
 // The first n fields will be populated in the result BED, the rest will have zero
 // values. n is always between 3 and 12.
 //
 // For example if n=5, then the populated fields are Chrom, ChromStart, ChromEnd,
 // Name and Score.
-func (r *Reader) Read() (b *BED, n int, err error) {
+func (r *reader) read() (b *BED, err error) {
 	line, err := r.r.Read()
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	return parseLine(line)
 }

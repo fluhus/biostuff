@@ -61,7 +61,7 @@ func TestNextToken(t *testing.T) {
 		var got []string
 		var err error
 		var token string
-		r := NewReader(strings.NewReader(test.input))
+		r := newReader(strings.NewReader(test.input))
 		for token, err = r.nextToken(); err == nil; token, err = r.nextToken() {
 			got = append(got, token)
 		}
@@ -107,7 +107,7 @@ func TestReader(t *testing.T) {
 			}}},
 	}
 	for _, test := range tests {
-		got, err := NewReader(strings.NewReader(test.input)).Read()
+		got, err := newReader(strings.NewReader(test.input)).read()
 		if err != nil {
 			t.Fatalf("Read(%q) failed: %v", test.input, err)
 		}
@@ -127,8 +127,8 @@ func TestReader_multi(t *testing.T) {
 	var got []*Node
 	var node *Node
 	var err error
-	r := NewReader(strings.NewReader(input))
-	for node, err = r.Read(); err == nil; node, err = r.Read() {
+	r := newReader(strings.NewReader(input))
+	for node, err = r.read(); err == nil; node, err = r.read() {
 		got = append(got, node)
 	}
 	if err != io.EOF {
@@ -151,7 +151,7 @@ func TestReader_bad(t *testing.T) {
 		"AAA:123 AAA;",
 	}
 	for _, input := range inputs {
-		got, err := NewReader(strings.NewReader(input)).Read()
+		got, err := newReader(strings.NewReader(input)).read()
 		if err == nil {
 			t.Errorf("Read(%q)=%v, want error", input, got)
 		}

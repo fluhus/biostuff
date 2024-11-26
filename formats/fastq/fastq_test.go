@@ -1,25 +1,27 @@
 package fastq
 
 import (
-	"io"
 	"reflect"
 	"strings"
 	"testing"
 )
 
-func TestNext_simple(t *testing.T) {
+func TestReader_simple(t *testing.T) {
 	input := "@hello\nAAATTTGG\n+\n!!!@@@!!"
-	want := &Fastq{[]byte("hello"), []byte("AAATTTGG"), []byte("!!!@@@!!")}
-	got, err := NewReader(strings.NewReader(input)).Read()
-	if err != nil {
-		t.Fatalf("Next(%q) failed: %v", input, err)
+	want := []*Fastq{{[]byte("hello"), []byte("AAATTTGG"), []byte("!!!@@@!!")}}
+	var got []*Fastq
+	for fq, err := range Reader(strings.NewReader(input)) {
+		if err != nil {
+			t.Fatalf("Reader(%q) failed: %v", input, err)
+		}
+		got = append(got, fq)
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Next(%q)=%v, want %v", input, got, want)
+		t.Fatalf("Reader(%q)=%v, want %v", input, got, want)
 	}
 }
 
-func TestNext_bad(t *testing.T) {
+func TestReader_bad(t *testing.T) {
 	inputs := []string{
 		"@hello\nAAA\n+",
 		"@hello\nAAA\n+!!",
@@ -27,30 +29,30 @@ func TestNext_bad(t *testing.T) {
 		"@hello\nAAA\n-\n!!!",
 	}
 	for _, input := range inputs {
-		if got, err := NewReader(strings.NewReader(input)).Read(); err == nil {
-			t.Errorf("Next(%q)=%v, want fail", input, got)
+		for got, err := range Reader(strings.NewReader(input)) {
+			if err == nil {
+				t.Errorf("Reader(%q)=%v, want fail", input, got)
+			}
+			break
 		}
 	}
 }
 
-func TestNext_many(t *testing.T) {
+func TestReader_many(t *testing.T) {
 	input := "@a\nAA\n+\n!!\n@c\nCCC\n+\nKKK"
 	want := []*Fastq{
 		{[]byte("a"), []byte("AA"), []byte("!!")},
 		{[]byte("c"), []byte("CCC"), []byte("KKK")},
 	}
 	var got []*Fastq
-	r := NewReader(strings.NewReader(input))
-	var fq *Fastq
-	var err error
-	for fq, err = r.Read(); err == nil; fq, err = r.Read() {
+	for fq, err := range Reader(strings.NewReader(input)) {
+		if err != nil {
+			t.Fatalf("Reader(%q) failed: %v", input, err)
+		}
 		got = append(got, fq)
 	}
-	if err != nil && err != io.EOF {
-		t.Fatalf("ForEach(%q) failed: %v", input, err)
-	}
-	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("ForEach(%q)=%v, want %v", input, got, want)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Reader(%q)=%v, want %v", input, got, want)
 	}
 }
 

@@ -7,11 +7,11 @@ import (
 	"github.com/fluhus/gostuff/aio"
 )
 
-// Iter returns an iterator over fastq entries.
-func (r *Reader) Iter() iter.Seq2[*Fastq, error] {
+// Returns an iterator over fastq entries.
+func (r *reader) iter() iter.Seq2[*Fastq, error] {
 	return func(yield func(*Fastq, error) bool) {
 		for {
-			fq, err := r.Read()
+			fq, err := r.read()
 			if err != nil {
 				if err != io.EOF {
 					yield(nil, err)
@@ -25,8 +25,8 @@ func (r *Reader) Iter() iter.Seq2[*Fastq, error] {
 	}
 }
 
-// IterFile returns an iterator over fastq entries in a file.
-func IterFile(file string) iter.Seq2[*Fastq, error] {
+// File returns an iterator over fastq entries in a file.
+func File(file string) iter.Seq2[*Fastq, error] {
 	return func(yield func(*Fastq, error) bool) {
 		f, err := aio.Open(file)
 		if err != nil {
@@ -34,8 +34,19 @@ func IterFile(file string) iter.Seq2[*Fastq, error] {
 			return
 		}
 		defer f.Close()
-		for fq, err := range NewReader(f).Iter() {
+		for fq, err := range Reader(f) {
 			if !yield(fq, err) {
+				break
+			}
+		}
+	}
+}
+
+// Reader returns an iterator over fastq entries in a reader.
+func Reader(r io.Reader) iter.Seq2[*Fastq, error] {
+	return func(yield func(*Fastq, error) bool) {
+		for fa, err := range newReader(r).iter() {
+			if !yield(fa, err) {
 				break
 			}
 		}

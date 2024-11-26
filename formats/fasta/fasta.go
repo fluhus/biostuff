@@ -4,8 +4,6 @@
 // https://en.wikipedia.org/wiki/FASTA_format
 //
 // This package does not validate sequence characters.
-//
-// Deprecated: use v2.
 package fasta
 
 import (
@@ -32,36 +30,41 @@ func (f *Fasta) MarshalText() ([]byte, error) {
 	n := 2 + len(f.Name) + len(f.Sequence) +
 		(len(f.Sequence)+textLineLen-1)/textLineLen
 	buf := bytes.NewBuffer(make([]byte, 0, n))
-	buf.WriteByte('>')
-	buf.Write(f.Name)
-	buf.WriteByte('\n')
-	for i := 0; i < len(f.Sequence); i += textLineLen {
-		to := i + textLineLen
-		if to > len(f.Sequence) {
-			to = len(f.Sequence)
-		}
-		buf.Write(f.Sequence[i:to])
-		buf.WriteByte('\n')
-	}
+	f.Write(buf)
 	if buf.Len() != n {
 		panic(fmt.Sprintf("bad len: %v want %v", buf.Len(), n))
 	}
 	return buf.Bytes(), nil
 }
 
-// A Reader reads sequences from a fasta stream.
-type Reader struct {
+// Write writes this entry in textual Fasta format to the given writer.
+// Includes a trailing new line.
+func (f *Fasta) Write(w io.Writer) error {
+	if _, err := fmt.Fprintf(w, ">%s\n", f.Name); err != nil {
+		return err
+	}
+	for i := 0; i < len(f.Sequence); i += textLineLen {
+		to := min(i+textLineLen, len(f.Sequence))
+		if _, err := fmt.Fprintf(w, "%s\n", f.Sequence[i:to]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// A reader reads sequences from a fasta stream.
+type reader struct {
 	r *bufio.Reader
 }
 
-// NewReader returns a new fasta reader that reads from r.
-func NewReader(r io.Reader) *Reader {
-	return &Reader{bufio.NewReader(r)}
+// Returns a new fasta reader that reads from r.
+func newReader(r io.Reader) *reader {
+	return &reader{bufio.NewReader(r)}
 }
 
-// Read reads a single fasta sequence from a stream. Returns EOF only if
+// read reads a single fasta sequence from a stream. Returns EOF only if
 // nothing was read.
-func (r *Reader) Read() (*Fasta, error) {
+func (r *reader) read() (*Fasta, error) {
 	// States of the reader.
 	const (
 		stateStart    = iota // Beginning of input
@@ -120,9 +123,6 @@ loop:
 				// Just more sequence.
 				state = stateSequence
 				result.Sequence = append(result.Sequence, b)
-				if err != nil {
-					break loop
-				}
 			}
 		}
 	}

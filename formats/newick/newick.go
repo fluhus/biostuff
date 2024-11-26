@@ -2,8 +2,6 @@
 //
 // This package uses the format described in:
 // https://en.wikipedia.org/wiki/Newick_format
-//
-// Deprecated: use v2.
 package newick
 
 import (
@@ -11,17 +9,20 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"iter"
 	"strconv"
 	"strings"
+
+	"github.com/fluhus/gostuff/aio"
 )
 
 // BUG(amit): Comments are currently not supported.
 
 // A Node is a single node in a tree, along with the subtree that is under it.
 type Node struct {
-	Name     string  // Node name. Can be empty.
+	Name     string  // Node name. May be empty.
 	Distance float64 // Distance from parent. 0 is treated as none.
-	Children []*Node // Child nodes. Can be nil.
+	Children []*Node // Child nodes. May be nil.
 }
 
 // MarshalText returns a condensed Newick-format representation of this node.
@@ -30,6 +31,17 @@ func (n *Node) MarshalText() ([]byte, error) {
 	n.newick(buf)
 	buf.WriteByte(';')
 	return buf.Bytes(), nil
+}
+
+// Write writes a condensed Newick-format representation of this node
+// to w.
+func (n *Node) Write(w io.Writer) error {
+	txt, err := n.MarshalText()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(txt)
+	return err
 }
 
 // Writes a single node/subtree to the buffer.
@@ -50,20 +62,20 @@ func (n *Node) newick(buf *bytes.Buffer) {
 	}
 }
 
-// A Reader reads Newick-formatted trees.
-type Reader struct {
+// Reads Newick-formatted trees.
+type reader struct {
 	r *bufio.Reader
 	b *bytes.Buffer
 }
 
-// NewReader returns a Reader that reads from the given stream.
-func NewReader(r io.Reader) *Reader {
-	return &Reader{bufio.NewReader(r), &bytes.Buffer{}}
+// Returns a reader that reads from r.
+func newReader(r io.Reader) *reader {
+	return &reader{bufio.NewReader(r), &bytes.Buffer{}}
 }
 
-// Read reads a single tree from the input. Can be called multiple times to read
+// Reads a single tree from the input. Can be called multiple times to read
 // subsequent trees.
-func (r *Reader) Read() (*Node, error) {
+func (r *reader) read() (*Node, error) {
 	// TODO(amit): Break this down to subfunctions.
 
 	// Possible states.
@@ -157,7 +169,7 @@ loop:
 }
 
 // Reads a single token from the input stream.
-func (r *Reader) nextToken() (string, error) {
+func (r *reader) nextToken() (string, error) {
 	r.b.Reset()
 	quote := false
 	afterQuote := false
@@ -227,4 +239,41 @@ func nameToText(s string) string {
 // Checks if a newick-formatted name is in quotes.
 func quoted(s string) bool {
 	return len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\''
+}
+
+// Reader returns an iterator over trees in a reader.
+func Reader(r io.Reader) iter.Seq2[*Node, error] {
+	return func(yield func(*Node, error) bool) {
+		rd := newReader(r)
+		for {
+			n, err := rd.read()
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if !yield(n, nil) {
+				return
+			}
+		}
+	}
+}
+
+// File returns an iterator over trees in a file.
+func File(file string) iter.Seq2[*Node, error] {
+	return func(yield func(*Node, error) bool) {
+		f, err := aio.Open(file)
+		if err != nil {
+			yield(nil, err)
+			return
+		}
+		defer f.Close()
+		for n, err := range Reader(f) {
+			if !yield(n, err) {
+				return
+			}
+		}
+	}
 }
