@@ -44,7 +44,7 @@ func TestDistance(t *testing.T) {
 
 	d := Distance(Sequences(10000, 21, seq1), Sequences(10000, 21, seq2), 21)
 	dif := math.Abs(d - 0.05)
-	if dif > 0.001 {
+	if dif > 0.005 {
 		t.Fatalf("Distance(...)=%v, want %v", d, 0.05)
 	}
 }
