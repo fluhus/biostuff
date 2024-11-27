@@ -1,17 +1,17 @@
 // Package smtext handles text representations of substitution matrices.
 //
-// NCBI Format
+// # NCBI Format
 //
 // This is the format used in ftp://ftp.ncbi.nih.gov/blast/matrices/.
 // Example:
 //
-//  # Optional comment line.
-//  # Another optional comment line.
-//     A  C  G  T
-//  A  1 -2 -1 -2
-//  C -2  1 -2 -1
-//  G -1 -2  1 -2
-//  T -2 -1 -2  1
+//	# Optional comment line.
+//	# Another optional comment line.
+//	   A  C  G  T
+//	A  1 -2 -1 -2
+//	C -2  1 -2 -1
+//	G -1 -2  1 -2
+//	T -2 -1 -2  1
 //
 // Specifically:
 //

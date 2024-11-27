@@ -1,6 +1,6 @@
 // Package align provides functionality for aligning sequences.
 //
-// Alignment Steps
+// # Alignment Steps
 //
 // Alignments are represented as Steps. Each step when aligning two sequences can be
 // either taking a character from each sequence and aligning them together, or
@@ -8,11 +8,14 @@
 // case of a mismatch as well.
 //
 // For example, the alignment of "blablab" and "blrblbr":
-//  blablab-
-//  || || |
-//  blrbl-br
+//
+//	blablab-
+//	|| || |
+//	blrbl-br
+//
 // Can be represented in steps as:
-//  [match, match, match, match, match, deletion, match, insertion]
+//
+//	[match, match, match, match, match, deletion, match, insertion]
 package align
 
 import (
