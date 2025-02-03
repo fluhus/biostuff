@@ -11,6 +11,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"iter"
+
+	"github.com/fluhus/gostuff/aio"
 )
 
 const (
@@ -52,89 +55,99 @@ func (f *Fasta) Write(w io.Writer) error {
 	return nil
 }
 
-// A reader reads sequences from a fasta stream.
-type reader struct {
-	r *bufio.Reader
-}
+// Reader returns an iterator over fasta entries in a reader.
+func Reader(r io.Reader) iter.Seq2[*Fasta, error] {
+	return func(yield func(*Fasta, error) bool) {
+		br := bufio.NewReader(r)
+		buf := make([]byte, 4096)
 
-// Returns a new fasta reader that reads from r.
-func newReader(r io.Reader) *reader {
-	return &reader{bufio.NewReader(r)}
-}
+		// States of the reader.
+		const (
+			stateStart    = iota // Beginning of input
+			stateNewLine         // Beginning of new line
+			stateName            // Middle of name
+			stateSequence        // Middle sequence
+		)
+		state := stateStart
+		result := &Fasta{}
 
-// read reads a single fasta sequence from a stream. Returns EOF only if
-// nothing was read.
-func (r *reader) read() (*Fasta, error) {
-	// States of the reader.
-	const (
-		stateStart    = iota // Beginning of input
-		stateNewLine         // Beginning of new line
-		stateName            // Middle of name
-		stateSequence        // Middle sequence
-	)
-
-	// Start reading.
-	result := &Fasta{}
-	state := stateStart
-	var b byte
-	var err error
-	readAnything := false
-
-loop:
-	for b, err = r.r.ReadByte(); err == nil; b, err = r.r.ReadByte() {
-		readAnything = true
-		switch state {
-		case stateStart:
-			// '>' marks the name of the sequence.
-			if b == '>' {
-				state = stateName
-			} else {
-				// If no '>' then only sequence without name.
-				state = stateSequence
-				if b == '\n' || b == '\r' {
-					state = stateNewLine
-				} else {
-					result.Sequence = append(result.Sequence, b)
+		for {
+			n, err := br.Read(buf)
+			if err != nil && err != io.EOF {
+				yield(nil, err)
+				return
+			}
+			if n == 0 {
+				if len(result.Sequence) > 0 || len(result.Name) > 0 {
+					yield(result, nil)
 				}
+				return
 			}
 
-		case stateSequence:
-			if b == '\n' || b == '\r' {
-				state = stateNewLine
-			} else {
-				result.Sequence = append(result.Sequence, b)
-			}
+			for _, b := range buf[:n] {
+				switch state {
+				case stateStart:
+					// '>' marks the name of the sequence.
+					if b == '>' {
+						state = stateName
+					} else {
+						// If no '>' then only sequence without name.
+						state = stateSequence
+						if b == '\n' || b == '\r' {
+							state = stateNewLine
+						} else {
+							result.Sequence = append(result.Sequence, b)
+						}
+					}
 
-		case stateName:
-			if b == '\n' || b == '\r' {
-				state = stateNewLine
-			} else {
-				result.Name = append(result.Name, b)
-			}
+				case stateSequence:
+					if b == '\n' || b == '\r' {
+						state = stateNewLine
+					} else {
+						result.Sequence = append(result.Sequence, b)
+					}
 
-		case stateNewLine:
-			if b == '\n' || b == '\r' {
-				// Nothing. Move on to the next line.
-			} else if b == '>' {
-				// New sequence => done reading.
-				r.r.UnreadByte()
-				break loop
-			} else {
-				// Just more sequence.
-				state = stateSequence
-				result.Sequence = append(result.Sequence, b)
+				case stateName:
+					if b == '\n' || b == '\r' {
+						state = stateNewLine
+					} else {
+						result.Name = append(result.Name, b)
+					}
+
+				case stateNewLine:
+					if b == '\n' || b == '\r' {
+						// Nothing. Move on to the next line.
+					} else if b == '>' {
+						// New sequence => yield current.
+						state = stateName
+						if !yield(result, nil) {
+							return
+						}
+						result = &Fasta{}
+					} else {
+						// Just more sequence.
+						state = stateSequence
+						result.Sequence = append(result.Sequence, b)
+					}
+				}
 			}
 		}
 	}
+}
 
-	// Return EOF only if encountered before reading anything.
-	if !readAnything {
-		return nil, err
+// File returns an iterator over fasta entries in a file.
+func File(file string) iter.Seq2[*Fasta, error] {
+	return func(yield func(*Fasta, error) bool) {
+		f, err := aio.Open(file)
+		if err != nil {
+			yield(nil, err)
+			return
+		}
+		defer f.Close()
+		for fa, err := range Reader(f) {
+			if !yield(fa, err) {
+				break
+			}
+		}
 	}
-	// EOF will be returned on the next call to Next.
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-
-	return result, nil
 }
