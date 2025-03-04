@@ -1,0 +1,8 @@
+# Local vscode workspace.
+.vscode
+
+# Experimental stuff.
+x/
+
+# Still under consideration.
+CITATION.cff

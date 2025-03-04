@@ -1,11 +1,11 @@
 module github.com/fluhus/biostuff
 
-go 1.23
+go 1.24
 
 require (
-	github.com/fluhus/gostuff v1.0.1
+	github.com/fluhus/gostuff v1.1.0
 	github.com/spaolacci/murmur3 v1.1.0
-	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8
+	golang.org/x/exp v0.0.0-20250228200357-dead58393ab7
 )
 
-require github.com/klauspost/compress v1.17.9 // indirect
+require github.com/klauspost/compress v1.18.0 // indirect
