@@ -17,19 +17,18 @@ Package Overview
   * [bed](https://pkg.go.dev/github.com/fluhus/biostuff/formats/bed)
   * [fasta](https://pkg.go.dev/github.com/fluhus/biostuff/formats/fasta)
   * [fastq](https://pkg.go.dev/github.com/fluhus/biostuff/formats/fastq)
+  * [genbank](https://pkg.go.dev/github.com/fluhus/biostuff/formats/genbank)
   * [newick](https://pkg.go.dev/github.com/fluhus/biostuff/formats/newick)
   * [sam](https://pkg.go.dev/github.com/fluhus/biostuff/formats/sam)
 * Algorithms & data structures
   * [align](https://pkg.go.dev/github.com/fluhus/biostuff/align)
     sequence alignment logic
-  * [mash](https://pkg.go.dev/github.com/fluhus/biostuff/mash)
+  * [mash](https://pkg.go.dev/github.com/fluhus/biostuff/mash/v2)
     implementation of Mash distance
   * [rarefy](https://pkg.go.dev/github.com/fluhus/biostuff/rarefy)
     rarefaction by read count
   * [regions](https://pkg.go.dev/github.com/fluhus/biostuff/regions)
     an index for interval (genes, etc.) overlap lookup
-  * [trie](https://pkg.go.dev/github.com/fluhus/biostuff/trie)
-    a prefix tree for sequence lookups
 * Nucleotide & amino-acid sequence utilities
   * [sequtil](https://pkg.go.dev/github.com/fluhus/biostuff/sequtil)
 

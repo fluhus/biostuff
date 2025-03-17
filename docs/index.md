@@ -10,7 +10,7 @@ go get github.com/fluhus/biostuff/...
 ## *Another* computational biology library?
 
 Well... Yes.
-Every library puts its emphasis on a certain audience and certain use cases.
+Each library puts its emphasis on a certain audience and certain use cases.
 
 This one is optimized for API simplicity. It helps those who need quick,
 straightforward solutions where they are not required to learn new concepts.
@@ -23,17 +23,20 @@ complicate the API.
   * [bed](https://pkg.go.dev/github.com/fluhus/biostuff/formats/bed)
   * [fasta](https://pkg.go.dev/github.com/fluhus/biostuff/formats/fasta)
   * [fastq](https://pkg.go.dev/github.com/fluhus/biostuff/formats/fastq)
+  * [genbank](https://pkg.go.dev/github.com/fluhus/biostuff/formats/genbank)
   * [newick](https://pkg.go.dev/github.com/fluhus/biostuff/formats/newick)
   * [sam](https://pkg.go.dev/github.com/fluhus/biostuff/formats/sam)
-* Nucleotide & amino-acid sequence utilities
-  * [sequtil](https://pkg.go.dev/github.com/fluhus/biostuff/sequtil)
 * Algorithms & data structures
   * [align](https://pkg.go.dev/github.com/fluhus/biostuff/align)
     sequence alignment logic
+  * [mash](https://pkg.go.dev/github.com/fluhus/biostuff/mash/v2)
+    implementation of Mash distance
+  * [rarefy](https://pkg.go.dev/github.com/fluhus/biostuff/rarefy)
+    rarefaction by read count
   * [regions](https://pkg.go.dev/github.com/fluhus/biostuff/regions)
     an index for interval (genes, etc.) overlap lookup
-  * [trie](https://pkg.go.dev/github.com/fluhus/biostuff/trie)
-    a prefix tree for sequence lookups
+* Nucleotide & amino-acid sequence utilities
+  * [sequtil](https://pkg.go.dev/github.com/fluhus/biostuff/sequtil)
 
 ## Help or get help
 

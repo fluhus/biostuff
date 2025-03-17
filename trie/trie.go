@@ -2,6 +2,10 @@
 //
 // Add, Has and Delete operations are linear in query length, regardless of the
 // size of the trie. All operations are non-recursive except for marshaling.
+//
+// Deprecated: use the [prefixtree] package.
+//
+// [prefixtree]: https://pkg.go.dev/github.com/fluhus/gostuff/prefixtree
 package trie
 
 import "encoding/json"
