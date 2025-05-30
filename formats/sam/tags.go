@@ -9,11 +9,15 @@ import (
 
 // Returns a map from tag name to its parsed (typed) value.
 func parseTags(values []string) (map[string]any, error) {
-	result := make(map[string]interface{}, len(values))
+	result := make(map[string]any, len(values)*11/10)
 	for _, f := range values {
 		parts, err := splitTag(f)
 		if err != nil {
 			return nil, err
+		}
+		if len(parts[0]) != 2 {
+			return nil, fmt.Errorf("tag identifier %q should be 2-char long",
+				parts[0])
 		}
 		switch parts[1] {
 		case "A":
@@ -75,7 +79,7 @@ func splitTag(tag string) ([3]string, error) {
 	}
 	var result [3]string
 	if colon2 == -1 {
-		return result, fmt.Errorf("tag doesn't have at least 3 colons: %q", tag)
+		return result, fmt.Errorf("tag doesn't have at least 2 colons: %q", tag)
 	}
 	result[0] = tag[:colon1]
 	result[1] = tag[colon1+1 : colon2]
