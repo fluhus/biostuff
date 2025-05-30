@@ -11,7 +11,6 @@ import (
 	"github.com/fluhus/gostuff/gnum"
 	"github.com/fluhus/gostuff/snm"
 	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/maps"
 )
 
 // TODO(amit): Add support for min number of reads per species.
@@ -23,7 +22,7 @@ import (
 // readCounts has the number of reads per species.
 // step is the x-axis interval length.
 // nperms is the number of permutations to average on.
-func Rarefy(readCounts map[string]int, step, nperms int) ([]int, []int) {
+func Rarefy(readCounts []int, step, nperms int) ([]int, []int) {
 	// Dispatch the smallest possible integer, to reduce memory footprint.
 	if len(readCounts) < 1<<8 {
 		return rarefy[uint8](readCounts, step, nperms)
@@ -38,8 +37,8 @@ func Rarefy(readCounts map[string]int, step, nperms int) ([]int, []int) {
 }
 
 // Generic implementation.
-func rarefy[T constraints.Integer](readCounts map[string]int, step, nperms int) ([]int, []int) {
-	assn := make([]T, 0, gnum.Sum(maps.Values(readCounts)))
+func rarefy[T constraints.Integer](readCounts []int, step, nperms int) ([]int, []int) {
+	assn := make([]T, 0, gnum.Sum(readCounts))
 	i := T(0)
 	for _, c := range readCounts {
 		for range c {
