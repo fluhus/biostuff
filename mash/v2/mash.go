@@ -3,6 +3,7 @@ package mash
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"iter"
 	"math"
@@ -17,6 +18,13 @@ type Masher struct {
 	mh   *minhash.MinHash[uint64]
 	seed uint32
 	k    int
+}
+
+// Contains exported fields, for JSON i/o.
+type jsonMasher struct {
+	MH   *minhash.MinHash[uint64]
+	Seed uint32
+	K    int
 }
 
 // NewSeed returns a new Masher with n hashes, k-long subsequences
@@ -45,8 +53,8 @@ func (m *Masher) Add(seq []byte) *Masher {
 	return m
 }
 
-// AddIter adds the given sequences to the MinHash.
-func (m *Masher) AddIter(seqs iter.Seq[[]byte]) *Masher {
+// AddSeq adds the given sequences to the MinHash.
+func (m *Masher) AddSeq(seqs iter.Seq[[]byte]) *Masher {
 	h := hashx.NewSeed(m.seed)
 	for seq := range seqs {
 		for b := range sequtil.CanonicalSubsequences(bytes.ToUpper(seq), m.k) {
@@ -78,4 +86,28 @@ func FromJaccard(jac float64, k int) float64 {
 		return 1
 	}
 	return min(-math.Log(2*jac/(1+jac))/float64(k), 1)
+}
+
+// Distance returns the Mash distance between two sequences,
+// using n hashes and k-long subsequences.
+func Distance(n, k int, s1, s2 []byte) float64 {
+	return New(n, k).Add(s1).Distance(New(n, k).Add(s2))
+}
+
+// MarshalJSON implements the JSONMarshaler interface.
+func (m *Masher) MarshalJSON() ([]byte, error) {
+	return json.Marshal(jsonMasher{m.mh, m.seed, m.k})
+}
+
+// UnmarshalJSON implements the JSONUnmarshaler interface.
+func (m *Masher) UnmarshalJSON(data []byte) error {
+	var j jsonMasher
+	err := json.Unmarshal(data, &j)
+	if err != nil {
+		return err
+	}
+	m.mh = j.MH
+	m.seed = j.Seed
+	m.k = j.K
+	return nil
 }

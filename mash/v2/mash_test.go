@@ -15,7 +15,7 @@ func TestSequences(t *testing.T) {
 		[]byte("GCCCTATCTGGGGAGAAATCGTAGTGAGAGACCGAGGTGGCCCCACGCAC"),
 		[]byte("TACGACTGGAAGAGCCCATGCACGGATGCTGCTACTCGCATTGGTTTACG"),
 	}
-	m1 := New(5, 21).AddIter(slices.Values(seqs))
+	m1 := New(5, 21).AddSeq(slices.Values(seqs))
 	m2 := New(5, 21).Add(seqs[2])
 	m2.Add(seqs[1])
 	m2.Add(seqs[0])
