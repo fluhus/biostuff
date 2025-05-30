@@ -2,9 +2,10 @@ package sequtil
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
-	"golang.org/x/exp/slices"
+	"github.com/fluhus/gostuff/snm"
 )
 
 func TestReverseComplement(t *testing.T) {
@@ -126,5 +127,28 @@ func TestCanonical(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("CanonicalSubsequences(%q)=%v, want %v", input, got, want)
+	}
+}
+
+func TestSubsequencesWith(t *testing.T) {
+	tests := []struct {
+		input string
+		chars string
+		want  []string
+	}{
+		{"", "a", nil},
+		{"sdfsdfaafd", "a", []string{"aa"}},
+		{"sdfsdfaafd", "p", nil},
+		{"actattagcatcga", "atcg", []string{"actattagcatcga"}},
+		{"actattagcatcga", "atcgATCG", []string{"actattagcatcga"}},
+		{"actattagcatcga", "atc", []string{"actatta", "catc", "a"}},
+	}
+	for _, test := range tests {
+		gotBytes := slices.Collect(SubsequencesWith([]byte(test.input), test.chars))
+		got := snm.SliceToSlice(gotBytes, func(b []byte) string { return string(b) })
+		if !slices.Equal(got, test.want) {
+			t.Errorf("SubsequencesWith(%q,%q)=%q, want %q",
+				test.input, test.chars, got, test.want)
+		}
 	}
 }

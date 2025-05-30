@@ -181,3 +181,30 @@ func CanonicalSubsequences(seq []byte, k int) iter.Seq[[]byte] {
 		}
 	}
 }
+
+// SubsequencesWith iterates over slices of seq that contain only characters
+// from chars.
+func SubsequencesWith(seq []byte, chars string) iter.Seq[[]byte] {
+	if chars == "" {
+		panic("chars cannot be empty")
+	}
+	return func(yield func([]byte) bool) {
+		wl := make([]bool, 256)
+		for _, c := range chars {
+			wl[c] = true
+		}
+		start := 0
+		for i, b := range seq {
+			if wl[b] {
+				continue
+			}
+			if start < i && !yield(seq[start:i]) {
+				return
+			}
+			start = i + 1
+		}
+		if start < len(seq) {
+			yield(seq[start:])
+		}
+	}
+}
