@@ -9,6 +9,30 @@ import (
 	"github.com/fluhus/gostuff/iterx"
 )
 
+func TestSplitLine(t *testing.T) {
+	tests := []struct {
+		input, want1, want2 string
+	}{
+		{"", "", ""},
+		{"a", "a", ""},
+		{"aaa", "aaa", ""},
+		{"aaa    ", "aaa", ""},
+		{"aaa    bbbb", "aaa", "bbbb"},
+		{"aaa    bbbb c  df", "aaa", "bbbb c  df"},
+		{"  ORGANISM", "  ORGANISM", ""},
+		{"  ORGANISM    ", "  ORGANISM", ""},
+		{"  ORGANISM    ha hi ho", "  ORGANISM", "ha hi ho"},
+	}
+	for _, test := range tests {
+		got := splitLine(test.input, nil)
+		got1, got2 := got[1], got[2]
+		if got1 != test.want1 || got2 != test.want2 {
+			t.Errorf("splitLine(%q)=%q,%q want %q,%q",
+				test.input, got1, got2, test.want1, test.want2)
+		}
+	}
+}
+
 func TestReader(t *testing.T) {
 	tests := []struct {
 		input string
@@ -20,11 +44,11 @@ func TestReader(t *testing.T) {
 		{input4, want4},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		input, want := test.input, test.want
 		gots, err := iterx.CollectErr(Reader(strings.NewReader(input)))
 		if err != nil {
-			t.Fatalf("failed to parse: %v", err)
+			t.Fatalf("test #%d: failed to parse: %v", i+1, err)
 		}
 		if len(gots) != 1 {
 			t.Fatalf("expected one result, got %v", len(gots))

@@ -35,7 +35,7 @@ var want1 = &GenBank{
 			"JOURNAL": "Submitted (22-FEB-1996) Terry Roemer, Biology, Yale University, New Haven, CT, USA",
 		},
 	},
-	Features: []Feature{
+	Features: []*Feature{
 		{
 			Type: "source",
 			Fields: map[string]string{

@@ -26,7 +26,7 @@ var want3 = &GenBank{
 			"JOURNAL": "Submitted (09-SEP-1998) Biology, University of Utah, 257 S. 1400 East, Salt Lake City, UT 84112-0840, USA",
 		},
 	},
-	Features: []Feature{
+	Features: []*Feature{
 		{
 			Type: "source",
 			Fields: map[string]string{

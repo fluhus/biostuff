@@ -25,7 +25,7 @@ var want4 = &GenBank{
 			"PUBMED":  "1546326",
 		},
 	},
-	Features: []Feature{
+	Features: []*Feature{
 		{
 			Type: "source",
 			Fields: map[string]string{

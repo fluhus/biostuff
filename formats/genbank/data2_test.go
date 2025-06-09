@@ -27,7 +27,7 @@ var want2 = &GenBank{
 			"JOURNAL": "Submitted (06-JUL-1999) Biology, Inha University, Yonghyon-Dong 253, Inchon 402-751, Korea",
 		},
 	},
-	Features: []Feature{
+	Features: []*Feature{
 		{
 			Type: "source",
 			Fields: map[string]string{
