@@ -10,6 +10,7 @@ import "fmt"
 // Uses the Smith-Waterman algorithm.
 func Local(a, b []byte, m SubstitutionMatrix) (
 	steps []Step, ai, bi int, score float64) {
+	s := m.toArray()
 	an, bn := len(a)+1, len(b)+1
 	blocks := make([]block, an*bn)
 	for i := range blocks {
@@ -21,9 +22,9 @@ func Local(a, b []byte, m SubstitutionMatrix) (
 		}
 		if ai == 0 {
 			blocks[i].step = Insertion
-			blocks[i].score = blocks[i-1].score + m.Get(Gap, b[bi-1])
+			blocks[i].score = blocks[i-1].score + s.get(Gap, b[bi-1])
 			if bi == 1 { // New gap
-				blocks[i].score += m.Get(Gap, Gap)
+				blocks[i].score += s.get(Gap, Gap)
 			}
 			if blocks[i].score < 0 {
 				blocks[i] = block{0, 0}
@@ -32,9 +33,9 @@ func Local(a, b []byte, m SubstitutionMatrix) (
 		}
 		if bi == 0 {
 			blocks[i].step = Deletion
-			blocks[i].score = blocks[i-bn].score + m.Get(a[ai-1], Gap)
+			blocks[i].score = blocks[i-bn].score + s.get(a[ai-1], Gap)
 			if ai == 1 { // New gap
-				blocks[i].score += m.Get(Gap, Gap)
+				blocks[i].score += s.get(Gap, Gap)
 			}
 			if blocks[i].score < 0 {
 				blocks[i] = block{0, 0}
@@ -43,14 +44,14 @@ func Local(a, b []byte, m SubstitutionMatrix) (
 		}
 
 		// Middle of matrix. Calculate the score of each possible step.
-		mch := blocks[i-bn-1].score + m.Get(a[ai-1], b[bi-1])
-		del := blocks[i-bn].score + m.Get(a[ai-1], Gap)
+		mch := blocks[i-bn-1].score + s.get(a[ai-1], b[bi-1])
+		del := blocks[i-bn].score + s.get(a[ai-1], Gap)
 		if blocks[i-bn].step != Deletion {
-			del += m.Get(Gap, Gap)
+			del += s.get(Gap, Gap)
 		}
-		ins := blocks[i-1].score + m.Get(Gap, b[bi-1])
+		ins := blocks[i-1].score + s.get(Gap, b[bi-1])
 		if blocks[i-1].step != Insertion {
-			ins += m.Get(Gap, Gap)
+			ins += s.get(Gap, Gap)
 		}
 		blocks[i] = decideOnStep(mch, del, ins)
 		if blocks[i].score < 0 {

@@ -21,6 +21,7 @@ package align
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 )
@@ -57,8 +58,9 @@ const Gap = 255
 // general cost of opening a gap (gap-open). A matrix may be asymmetrical.
 type SubstitutionMatrix map[[2]byte]float64
 
-// Get returns the value of aligning a with b. Either argument may have the value
-// Gap. Panics if the pair [a,b] is not in the matrix.
+// Get returns the value of aligning a with b.
+// Either argument may have the value Gap.
+// Panics if the pair [a,b] is not in the matrix.
 func (m SubstitutionMatrix) Get(a, b byte) float64 {
 	s, ok := m[[2]byte{a, b}]
 	if !ok {
@@ -117,4 +119,34 @@ func charOrGap(c byte) string {
 		return "Gap"
 	}
 	return fmt.Sprintf("%q", c)
+}
+
+// A dense representation of a substitution matrix.
+// Helps improve lookup speed.
+type substitutionArray [256][256]float64
+
+// Returns the equivalent substitution array.
+func (m SubstitutionMatrix) toArray() *substitutionArray {
+	s := &substitutionArray{}
+	for i := range s {
+		for j := range s[i] {
+			s[i][j] = math.NaN()
+		}
+	}
+	for k, v := range m {
+		s[k[0]][k[1]] = v
+	}
+	return s
+}
+
+// Returns the value of aligning a with b.
+// Either argument may have the value Gap.
+// Panics if the pair [a,b] is not in the matrix.
+func (s *substitutionArray) get(a, b byte) float64 {
+	x := s[a][b]
+	if math.IsNaN(x) {
+		panic(fmt.Sprintf("pair (%d %s, %d %s) is not in the substitution-matrix",
+			a, charOrGap(a), b, charOrGap(b)))
+	}
+	return x
 }
