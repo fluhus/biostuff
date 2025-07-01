@@ -11,6 +11,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+
+	"github.com/fluhus/gostuff/snm"
 )
 
 // Fastq is a single sequence in a fastq file.
@@ -60,7 +62,7 @@ func (r *reader) read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	name := clone(r.s.Bytes())
+	name := snm.TightClone(r.s.Bytes())
 
 	// Handle name.
 	if len(name) == 0 || name[0] != '@' {
@@ -76,7 +78,7 @@ func (r *reader) read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	seq := clone(r.s.Bytes())
+	seq := snm.TightClone(r.s.Bytes())
 
 	// Read plus
 	if !r.s.Scan() {
@@ -98,16 +100,11 @@ func (r *reader) read() (*Fastq, error) {
 		}
 		return nil, fmt.Errorf("fastq read: %v", r.s.Err())
 	}
-	quals := clone(r.s.Bytes())
+	quals := snm.TightClone(r.s.Bytes())
 	if len(quals) != len(seq) {
 		return nil, fmt.Errorf("fastq read: sequence and qualities have"+
 			" different lengths: %v and %v", len(seq), len(quals))
 	}
 
 	return &Fastq{name, seq, quals}, nil
-}
-
-// More efficient than [slices.Clone].
-func clone[T any](a []T) []T {
-	return append(make([]T, 0, len(a)), a...)
 }
