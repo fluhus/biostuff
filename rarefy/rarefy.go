@@ -3,6 +3,7 @@ package rarefy
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"reflect"
 	"slices"
@@ -15,6 +16,15 @@ import (
 
 // TODO(amit): Add support for min number of reads per species.
 
+const (
+	// Use new calculation that doesn't do simulations,
+	// instead it calculates the expected numbers directly.
+	useNonIterativeRarefy = true
+
+	// Chunk assignment before iterating over it.
+	useChunkedIteration = true
+)
+
 // Rarefy returns a rarefaction curve for the given read counts.
 // Output is one slice of x values (number of reads)
 // and one slice of corresponding y values (species count).
@@ -23,6 +33,9 @@ import (
 // step is the x-axis interval length.
 // nperms is the number of permutations to average on.
 func Rarefy(readCounts []int, step, nperms int) ([]int, []int) {
+	if useNonIterativeRarefy {
+		return rarefy2(readCounts, step)
+	}
 	// Dispatch the smallest possible integer, to reduce memory footprint.
 	if len(readCounts) < 1<<8 {
 		return rarefy[uint8](readCounts, step, nperms)
@@ -57,21 +70,37 @@ func rarefy[T constraints.Integer](readCounts []int, step, nperms int) ([]int, [
 	for p := range nperms {
 		clear(found)
 		yy = yy[:0]
-		for i, a := range assn {
-			bits.Set(found, a, true)
-			if (i+1)%step == 0 {
+		if useChunkedIteration {
+			i := 0
+			for chunk := range slices.Chunk(assn, step) {
+				for _, a := range chunk {
+					bits.Set(found, a, true)
+				}
+				i += len(chunk)
 				if p == 0 {
-					xx = append(xx, i+1)
+					xx = append(xx, i)
 				}
 				// TODO(amit): Instead of Sum I can keep a counter.
 				// Should be faster.
 				yy = append(yy, bits.Sum(found))
 			}
+		} else {
+			for i, a := range assn {
+				bits.Set(found, a, true)
+				if (i+1)%step == 0 {
+					if p == 0 {
+						xx = append(xx, i+1)
+					}
+					// TODO(amit): Instead of Sum I can keep a counter.
+					// Should be faster.
+					yy = append(yy, bits.Sum(found))
+				}
+			}
+			if p == 0 {
+				xx = append(xx, len(assn))
+			}
+			yy = append(yy, bits.Sum(found))
 		}
-		if p == 0 {
-			xx = append(xx, len(assn))
-		}
-		yy = append(yy, bits.Sum(found))
 		if p == 0 {
 			yyy = make([]int, len(yy))
 		}
@@ -100,4 +129,62 @@ func chunkShuffle[T any](a []T) []T {
 	}
 	snm.Shuffle(chunks)
 	return slices.Concat(chunks...)
+}
+
+// A non-random implementation.
+// Calculates expected species counts directly instead
+// of simulating.
+func rarefy2(readCounts []int, step int) ([]int, []int) {
+	sum := gnum.Sum(readCounts)
+	var xx, yy []int
+	lfAll := logFactorial(sum)
+	lfCounts := snm.SliceToSlice(readCounts, func(i int) float64 {
+		return logFactorial(sum - i)
+	})
+	for x := range steps(sum, step) {
+		xx = append(xx, x)
+		y := 0.0
+		lfX := logFactorial(sum - x)
+		for i, c := range readCounts {
+			p := 0.0
+			if sum >= c+x {
+				// Hypergeometric probability for no species c in the first
+				// x reads.
+				p = math.Exp(lfCounts[i] + lfX - lfAll - logFactorial(sum-x-c))
+			}
+			// 1-p because we want the inverse probability (at least 1).
+			y += 1 - p
+		}
+		yy = append(yy, int(math.Round(y)))
+	}
+	return xx, yy
+}
+
+// Returns approximately log(n!), using Stirling's approximation.
+func logFactorial(n int) float64 {
+	if n < 0 {
+		panic(fmt.Sprintf("n cannot be negative: %v", n))
+	}
+	if n == 0 {
+		return 0
+	}
+	const halfLog2pi = 0x1.d67f1c864beb4p-01 // 0.5*math.Log(2*math.Pi)
+	fn := float64(n)
+	logn := math.Log(fn)
+	return halfLog2pi + 0.5*logn + fn*(logn-1)
+}
+
+// Yields multiples of step that are less than or equal
+// to sum, and also sum itself.
+func steps(sum, step int) iter.Seq[int] {
+	return func(yield func(int) bool) {
+		for i := step; i <= sum; i += step {
+			if !yield(i) {
+				return
+			}
+		}
+		if sum%step != 0 {
+			yield(sum)
+		}
+	}
 }

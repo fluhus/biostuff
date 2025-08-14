@@ -2,9 +2,11 @@ package rarefy
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"testing"
 
+	"github.com/fluhus/gostuff/gnum"
 	"github.com/fluhus/gostuff/snm"
 )
 
@@ -40,5 +42,38 @@ func BenchmarkChunkShuffle(b *testing.B) {
 				snm.Shuffle(a)
 			}
 		})
+	}
+}
+
+func TestSteps(t *testing.T) {
+	tests := []struct {
+		sum, step int
+		want      []int
+	}{
+		{50, 10, []int{10, 20, 30, 40, 50}},
+		{55, 10, []int{10, 20, 30, 40, 50, 55}},
+		{15, 10, []int{10, 15}},
+		{10, 10, []int{10}},
+		{7, 10, []int{7}},
+	}
+	for _, test := range tests {
+		got := slices.Collect(steps(test.sum, test.step))
+		if !slices.Equal(got, test.want) {
+			t.Errorf("steps(%v,%v)=%v, want %v",
+				test.sum, test.step, got, test.want)
+		}
+	}
+}
+
+func TestLogFactorial(t *testing.T) {
+	tests := [][]int{
+		{0, 1}, {1, 1}, {2, 2}, {3, 6}, {4, 24}, {5, 120}, {6, 720},
+	}
+	for _, test := range tests {
+		got := math.Exp(logFactorial(test[0]))
+		want := float64(test[1])
+		if gnum.Diff(got, want) > want*0.1 {
+			t.Errorf("lf(%v)=%v, want %v", test[0], got, test[1])
+		}
 	}
 }
