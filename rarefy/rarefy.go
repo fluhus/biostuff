@@ -33,6 +33,9 @@ const (
 // step is the x-axis interval length.
 // nperms is the number of permutations to average on.
 func Rarefy(readCounts []int, step, nperms int) ([]int, []int) {
+	if step < 1 {
+		panic(fmt.Sprintf("bad step: %v", step))
+	}
 	if useNonIterativeRarefy {
 		return rarefy2(readCounts, step)
 	}
@@ -137,20 +140,20 @@ func chunkShuffle[T any](a []T) []T {
 func rarefy2(readCounts []int, step int) ([]int, []int) {
 	sum := gnum.Sum(readCounts)
 	var xx, yy []int
-	lfAll := logFactorial(sum)
+	lfAll := gnum.LogFactorial(sum)
 	lfCounts := snm.SliceToSlice(readCounts, func(i int) float64 {
-		return logFactorial(sum - i)
+		return gnum.LogFactorial(sum - i)
 	})
 	for x := range steps(sum, step) {
 		xx = append(xx, x)
 		y := 0.0
-		lfX := logFactorial(sum - x)
+		lfX := gnum.LogFactorial(sum - x)
 		for i, c := range readCounts {
 			p := 0.0
 			if sum >= c+x {
 				// Hypergeometric probability for no species c in the first
 				// x reads.
-				p = math.Exp(lfCounts[i] + lfX - lfAll - logFactorial(sum-x-c))
+				p = math.Exp(lfCounts[i] + lfX - lfAll - gnum.LogFactorial(sum-x-c))
 			}
 			// 1-p because we want the inverse probability (at least 1).
 			y += 1 - p
@@ -158,20 +161,6 @@ func rarefy2(readCounts []int, step int) ([]int, []int) {
 		yy = append(yy, int(math.Round(y)))
 	}
 	return xx, yy
-}
-
-// Returns approximately log(n!), using Stirling's approximation.
-func logFactorial(n int) float64 {
-	if n < 0 {
-		panic(fmt.Sprintf("n cannot be negative: %v", n))
-	}
-	if n == 0 {
-		return 0
-	}
-	const halfLog2pi = 0x1.d67f1c864beb4p-01 // 0.5*math.Log(2*math.Pi)
-	fn := float64(n)
-	logn := math.Log(fn)
-	return halfLog2pi + 0.5*logn + fn*(logn-1)
 }
 
 // Yields multiples of step that are less than or equal

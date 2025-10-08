@@ -2,11 +2,9 @@ package rarefy
 
 import (
 	"fmt"
-	"math"
 	"slices"
 	"testing"
 
-	"github.com/fluhus/gostuff/gnum"
 	"github.com/fluhus/gostuff/snm"
 )
 
@@ -61,19 +59,6 @@ func TestSteps(t *testing.T) {
 		if !slices.Equal(got, test.want) {
 			t.Errorf("steps(%v,%v)=%v, want %v",
 				test.sum, test.step, got, test.want)
-		}
-	}
-}
-
-func TestLogFactorial(t *testing.T) {
-	tests := [][]int{
-		{0, 1}, {1, 1}, {2, 2}, {3, 6}, {4, 24}, {5, 120}, {6, 720},
-	}
-	for _, test := range tests {
-		got := math.Exp(logFactorial(test[0]))
-		want := float64(test[1])
-		if gnum.Diff(got, want) > want*0.1 {
-			t.Errorf("lf(%v)=%v, want %v", test[0], got, test[1])
 		}
 	}
 }
