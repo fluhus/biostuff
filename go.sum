@@ -1,5 +1,5 @@
-github.com/fluhus/gostuff v1.1.0 h1:o++ktH0zbT/StTwUpwffhjuY3W2mq8722uy29dNRhuo=
-github.com/fluhus/gostuff v1.1.0/go.mod h1:INEEKlfETwNxG5rOVcegi1peht0SyXwUZr2xIsDC0rs=
+github.com/fluhus/gostuff v1.3.0 h1:Zunn9mTP/q891sMx/vO2HnOpjVARbE3DC9ZBjfPsH6I=
+github.com/fluhus/gostuff v1.3.0/go.mod h1:Ors3WQq2anpr3FTDqxD3M3CBsHt4vm3nO+GBkV79XYo=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
