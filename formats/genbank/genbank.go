@@ -36,7 +36,11 @@ import (
 const (
 	// Use specialized splitting functions rather than regex,
 	// to improve performance.
-	useSplitFunc = false
+	useSplitFunc = true
+
+	// Use new specialized splitting logic to further reduce
+	// regex usage.
+	useSuperSplitFunc = true
 
 	// Ignore unknown fields, rather than returning an error.
 	tolerateUnknownFields = true
@@ -387,6 +391,34 @@ func withLineNumber(err error, i int) error {
 // Splits a line into a field name and a value,
 // the way lineRE would.
 func splitLine(line string, reuse []string) []string {
+	if useSuperSplitFunc {
+		if line == "" {
+			return append(reuse, "", "", "")
+		}
+
+		// Extract prefix.
+		prefix := line
+		if firstWordIs(line, "  ORGANISM") {
+			prefix = line[:10]
+		} else {
+			for i, c := range line {
+				if isWhitespace(c) {
+					prefix = line[:i]
+					break
+				}
+			}
+		}
+
+		// Extract suffix.
+		suffix := ""
+		for i, c := range line[len(prefix):] {
+			if !isWhitespace(c) {
+				suffix = line[len(prefix)+i:]
+				break
+			}
+		}
+		return append(reuse[:0], "", prefix, suffix)
+	}
 	if !lineRE.MatchString(line) {
 		return nil
 	}
@@ -415,10 +447,50 @@ func splitLine(line string, reuse []string) []string {
 // Splits a feature-field line into a field name and a value,
 // the way featureFieldRE would.
 func splitFeatureField(line string, reuse []string) []string {
+	if useSuperSplitFunc {
+		// Remove first whitespaces.
+		if !strings.HasPrefix(line, "      ") {
+			return nil
+		}
+		from := 0
+		for i, c := range line {
+			if isWhitespace(c) {
+				from = i + 1
+			} else {
+				break
+			}
+		}
+		line = line[from:]
+
+		// Feature has to start with '/'.
+		if !strings.HasPrefix(line, "/") {
+			return nil
+		}
+		line = line[1:]
+
+		// Extract feature name.
+		upto := 0
+		for i, c := range line {
+			if wordChars[c] {
+				upto = i + 1
+			} else {
+				break
+			}
+		}
+		prefix := line[:upto]
+		suffix := line[upto:]
+		if suffix == "" {
+			return append(reuse[:0], "", prefix, "")
+		}
+		if suffix[0] != '=' {
+			return nil
+		}
+		return append(reuse[:0], "", prefix, suffix[1:])
+	}
+
 	if !featureFieldRE.MatchString(line) {
 		return nil
 	}
-	// ^     \s+/(\w+)(?:=(.*))?
 	const (
 		preWord = iota
 		inWord
@@ -443,8 +515,16 @@ func splitFeatureField(line string, reuse []string) []string {
 				i2 = i + 1
 			} else {
 				if c != '=' {
-					// Should not happen if matched regex.
-					panic(fmt.Sprintf("bad feature line: %q", line))
+					// I am not sure what to do here.
+					// Some files don't have the '=' consistently but some do,
+					// so not sure when/how to enforce this.
+					if false {
+						// Should not happen if matched regex.
+						panic(fmt.Sprintf(
+							"bad feature line: wanted '=' but found %q: %q",
+							c, line))
+					}
+					return nil
 				}
 				state = postWord
 				i3, i4 = i+1, i+1
@@ -457,8 +537,12 @@ func splitFeatureField(line string, reuse []string) []string {
 	return append(reuse[:0], "", s1, s2)
 }
 
+type char interface {
+	byte | rune
+}
+
 // Returns whether x is a space or a tab.
-func isWhitespace(x rune) bool {
+func isWhitespace[C char](x C) bool {
 	return x == ' ' || x == '\t'
 }
 
@@ -475,4 +559,16 @@ func initWordChars() []bool {
 		}
 	}
 	return b
+}
+
+// Checks that s starts with the word, followed by a whitespace
+// or end of string.
+func firstWordIs(s, word string) bool {
+	if !strings.HasPrefix(s, word) {
+		return false
+	}
+	if len(s) == len(word) {
+		return true
+	}
+	return isWhitespace(s[len(word)])
 }
